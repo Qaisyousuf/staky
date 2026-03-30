@@ -5,23 +5,28 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --accent-green: #0F6E56;
+  --accent-blue: #2A5FA5;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+}
+
+/* Notification / post highlight flash */
+@keyframes highlight-flash {
+  0%   { background-color: rgba(15, 110, 86, 0.12); }
+  100% { background-color: transparent; }
+}
+.highlight-flash {
+  animation: highlight-flash 2s ease-out forwards;
+  border-radius: 12px;
 }

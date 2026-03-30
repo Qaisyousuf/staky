@@ -1,0 +1,483 @@
+// Staky — Prisma schema
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  USER
+  PARTNER
+  ADMIN
+}
+
+enum PlanTier {
+  FREE
+  PRO
+  BUSINESS
+}
+
+enum MigrationRequestStatus {
+  PENDING
+  MATCHED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum NotificationType {
+  LIKE
+  COMMENT
+  REPLY
+  FOLLOW
+  CONNECT
+  RECOMMENDATION
+  SAVE
+  SHARE
+}
+
+enum EmailDigestFrequency {
+  REAL_TIME
+  DAILY
+  WEEKLY
+  OFF
+}
+
+// ─── NextAuth required models ─────────────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ─── Core models ──────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  coverImage    String?
+  password      String?
+  bio           String?
+  title         String?
+  company       String?
+  location      String?
+  socialLinks   Json?
+  interests     String[]
+  role               UserRole  @default(USER)
+  plan               PlanTier  @default(FREE)
+  verified           Boolean   @default(false)
+  suspended          Boolean   @default(false)
+  profileVisibility  String    @default("PUBLIC")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // NextAuth
+  accounts Account[]
+  sessions Session[]
+
+  // Profile
+  partner  Partner?
+  stack    Stack?
+
+  // Content
+  posts           AlternativePost[]
+  comments        Comment[]
+  likes           Like[]
+  recommendations Recommendation[]
+  savedPosts      SavedPost[]
+
+  // Migration
+  migrationRequests MigrationRequest[]
+
+  // Social
+  following     Follow[]     @relation("Follower")
+  followers     Follow[]     @relation("Following")
+  connections   Connection[] @relation("ConnectionUser")
+  connectedWith Connection[] @relation("ConnectionTarget")
+
+  // Notifications & messages
+  notifications     Notification[] @relation("NotificationRecipient")
+  sentNotifications Notification[] @relation("NotificationSender")
+  messages          Message[]      @relation("MessageSender")
+  receivedMessages  Message[]      @relation("MessageRecipient")
+
+  notificationSettings NotificationSettings?
+
+  reports Report[]
+
+  profileViews   ProfileView[] @relation("ProfileViewed")
+  viewedProfiles ProfileView[] @relation("ProfileViewer")
+
+  @@index([role])
+  @@index([createdAt])
+  @@map("users")
+}
+
+model Partner {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  companyName    String
+  country        String
+  specialty      String[]
+  services       String[]
+  certifications String[]
+  description    String?
+  pricing        String?
+  logoUrl        String?
+  website        String?
+  rating         Float    @default(0)
+  projectCount   Int      @default(0)
+  approved       Boolean  @default(false)
+  featured       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leads MigrationRequest[]
+
+  @@index([approved])
+  @@index([featured])
+  @@index([rating])
+  @@map("partners")
+}
+
+// ─── Stack ────────────────────────────────────────────────────────────────────
+
+model Stack {
+  id        String      @id @default(cuid())
+  userId    String      @unique
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items StackItem[]
+
+  @@map("stacks")
+}
+
+model StackItem {
+  id        String   @id @default(cuid())
+  stackId   String
+  toolName  String
+  category  String?
+  logoUrl   String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  stack Stack @relation(fields: [stackId], references: [id], onDelete: Cascade)
+
+  @@index([stackId])
+  @@index([stackId, order])
+  @@map("stack_items")
+}
+
+// ─── Feed / Posts ─────────────────────────────────────────────────────────────
+
+model AlternativePost {
+  id              String   @id @default(cuid())
+  authorId        String
+  fromTool        String
+  toTool          String
+  story           String   @db.Text
+  tags            String[]
+  imageUrls       String[]
+  linkUrl         String?
+  linkDomain      String?
+  linkTitle       String?
+  linkDescription String?  @db.Text
+  linkImage       String?
+  published       Boolean  @default(true)
+  featured        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  author          User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments        Comment[]
+  likes           Like[]
+  recommendations Recommendation[]
+  savedBy         SavedPost[]
+
+  @@index([authorId])
+  @@index([published, createdAt(sort: Desc)])
+  @@index([fromTool])
+  @@index([toTool])
+  @@map("alternative_posts")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  postId    String
+  authorId  String
+  parentId  String?
+  content   String   @db.Text
+  hidden    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  post    AlternativePost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author  User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent  Comment?        @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies Comment[]       @relation("CommentReplies")
+
+  @@index([postId, createdAt(sort: Asc)])
+  @@index([authorId])
+  @@index([parentId])
+  @@map("comments")
+}
+
+// ─── Engagement ───────────────────────────────────────────────────────────────
+
+model Like {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post AlternativePost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+  @@map("likes")
+}
+
+model Recommendation {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post AlternativePost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+  @@map("recommendations")
+}
+
+model SavedPost {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post AlternativePost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("saved_posts")
+}
+
+// ─── Social graph ─────────────────────────────────────────────────────────────
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@map("follows")
+}
+
+model Connection {
+  id        String   @id @default(cuid())
+  userId    String
+  targetId  String
+  createdAt DateTime @default(now())
+
+  user   User @relation("ConnectionUser", fields: [userId], references: [id], onDelete: Cascade)
+  target User @relation("ConnectionTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, targetId])
+  @@index([userId])
+  @@index([targetId])
+  @@map("connections")
+}
+
+// ─── Migration ────────────────────────────────────────────────────────────────
+
+model MigrationRequest {
+  id          String                 @id @default(cuid())
+  userId      String
+  partnerId   String?
+  fromTool    String
+  toTool      String
+  description String?                @db.Text
+  budget      String?
+  teamSize    String?
+  status      MigrationRequestStatus @default(PENDING)
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  partner Partner? @relation(fields: [partnerId], references: [id])
+
+  @@index([userId])
+  @@index([partnerId])
+  @@index([status])
+  @@index([partnerId, status])
+  @@map("migration_requests")
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+
+model Notification {
+  id          String           @id @default(cuid())
+  recipientId String
+  senderId    String?
+  type        NotificationType
+  postId      String?
+  commentId   String?
+  read        Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+
+  recipient User  @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  sender    User? @relation("NotificationSender", fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@index([recipientId, createdAt(sort: Desc)])
+  @@index([recipientId, read])
+  @@map("notifications")
+}
+
+model NotificationSettings {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  // In-app toggles
+  inAppLikes           Boolean @default(true)
+  inAppComments        Boolean @default(true)
+  inAppReplies         Boolean @default(true)
+  inAppFollows         Boolean @default(true)
+  inAppConnects        Boolean @default(true)
+  inAppRecommendations Boolean @default(true)
+  inAppSaves           Boolean @default(true)
+  inAppShares          Boolean @default(true)
+
+  // Email toggles
+  emailLikes           Boolean @default(false)
+  emailComments        Boolean @default(true)
+  emailReplies         Boolean @default(true)
+  emailFollows         Boolean @default(false)
+  emailConnects        Boolean @default(true)
+  emailRecommendations Boolean @default(false)
+  emailSaves           Boolean @default(false)
+  emailShares          Boolean @default(false)
+
+  emailDigest EmailDigestFrequency @default(DAILY)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_settings")
+}
+
+// ─── Messages ─────────────────────────────────────────────────────────────────
+
+model Message {
+  id          String   @id @default(cuid())
+  senderId    String
+  recipientId String
+  content     String   @db.Text
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  sender    User @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient User @relation("MessageRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, recipientId, createdAt(sort: Desc)])
+  @@index([recipientId, read])
+  @@map("messages")
+}
+
+// ─── Moderation ───────────────────────────────────────────────────────────────
+
+model Report {
+  id         String   @id @default(cuid())
+  reporterId String
+  targetType String   // "post" | "comment" | "user"
+  targetId   String
+  reason     String
+  resolved   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  reporter User @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([resolved])
+  @@index([targetType, targetId])
+  @@map("reports")
+}
+
+// ─── Profile Views ────────────────────────────────────────────────────────────
+
+model ProfileView {
+  id        String   @id @default(cuid())
+  viewerId  String?
+  profileId String
+  createdAt DateTime @default(now())
+
+  profile User  @relation("ProfileViewed", fields: [profileId], references: [id], onDelete: Cascade)
+  viewer  User? @relation("ProfileViewer", fields: [viewerId], references: [id], onDelete: SetNull)
+
+  @@index([profileId, createdAt(sort: Desc)])
+  @@index([viewerId])
+  @@map("profile_views")
+}

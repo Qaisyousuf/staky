@@ -1,0 +1,668 @@
+"use client";
+
+import { useState, useRef, useEffect, useTransition } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  Menu, Search, Bell, Mail, Settings, X, Plus,
+  Heart, MessageCircle, Reply, UserPlus, ThumbsUp,
+  Link2, Bookmark, Share2,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { markAllNotificationsRead, markNotificationRead } from "@/actions/social";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface NotificationItem {
+  id: string;
+  type: string;
+  read: boolean;
+  createdAt: string;
+  postId: string | null;
+  commentId: string | null;
+  sender: { id: string; name: string | null; image: string | null; role: string } | null;
+  post: { fromTool: string; toTool: string } | null;
+}
+
+// ─── Notification URL builder ─────────────────────────────────────────────────
+
+function notifUrl(n: NotificationItem): string {
+  switch (n.type) {
+    case "LIKE":
+    case "RECOMMENDATION":
+    case "SAVE":
+    case "SHARE":
+      return n.postId ? `/feed?post=${n.postId}` : "/feed";
+    case "COMMENT":
+      return n.postId
+        ? n.commentId
+          ? `/feed?post=${n.postId}&comment=${n.commentId}`
+          : `/feed?post=${n.postId}`
+        : "/feed";
+    case "REPLY":
+      return n.postId
+        ? n.commentId
+          ? `/feed?post=${n.postId}&comment=${n.commentId}`
+          : `/feed?post=${n.postId}`
+        : "/feed";
+    case "FOLLOW":
+    case "CONNECT":
+      return n.sender?.id ? `/profile/${n.sender.id}` : "/feed";
+    default:
+      return "/notifications";
+  }
+}
+
+export interface MessageItem {
+  id: string;
+  content: string;
+  read: boolean;
+  createdAt: string;
+  sender: { id: string; name: string | null; image: string | null; role: string };
+}
+
+interface TopBarUser {
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+  role: "USER" | "PARTNER" | "ADMIN";
+}
+
+interface TopBarProps {
+  user: TopBarUser;
+  onMenuClick: () => void;
+  notifications?: NotificationItem[];
+  recentMessages?: MessageItem[];
+  unreadMessageCount?: number;
+}
+
+// ─── Notification type config ─────────────────────────────────────────────────
+
+const TYPE_CFG: Record<string, { icon: React.ElementType; bg: string; fg: string; action: string }> = {
+  LIKE:           { icon: Heart,          bg: "bg-pink-100",   fg: "text-red-500",   action: "liked your post" },
+  COMMENT:        { icon: MessageCircle,  bg: "bg-green-100",  fg: "text-green-600", action: "commented on your post" },
+  REPLY:          { icon: Reply,          bg: "bg-green-100",  fg: "text-green-600", action: "replied to your comment" },
+  FOLLOW:         { icon: UserPlus,       bg: "bg-blue-100",   fg: "text-blue-600",  action: "started following you" },
+  RECOMMENDATION: { icon: ThumbsUp,       bg: "bg-green-100",  fg: "text-green-600", action: "recommended your post" },
+  CONNECT:        { icon: Link2,          bg: "bg-blue-100",   fg: "text-blue-600",  action: "accepted your connection" },
+  SAVE:           { icon: Bookmark,       bg: "bg-amber-100",  fg: "text-amber-500", action: "saved your post" },
+  SHARE:          { icon: Share2,         bg: "bg-gray-100",   fg: "text-gray-500",  action: "shared your post" },
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d === 1) return "1d ago";
+  return `${d}d ago`;
+}
+
+function useClickOutside(ref: React.RefObject<HTMLElement | null>, handler: () => void) {
+  useEffect(() => {
+    const fn = (e: MouseEvent) => {
+      if (!ref.current || ref.current.contains(e.target as Node)) return;
+      handler();
+    };
+    document.addEventListener("mousedown", fn);
+    return () => document.removeEventListener("mousedown", fn);
+  }, [ref, handler]);
+}
+
+// ─── Animated panel wrapper ───────────────────────────────────────────────────
+
+function AnimatedPanel({ children, className }: { children: React.ReactNode; className?: string }) {
+  const [entered, setEntered] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setEntered(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+  return (
+    <div
+      className={cn(
+        "transition-all duration-150 ease-out",
+        entered ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1",
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ─── Sender avatar with type icon overlay ─────────────────────────────────────
+
+function SenderAvatar({
+  name,
+  image,
+  role,
+  type,
+}: {
+  name: string | null;
+  image: string | null;
+  role: string;
+  type: string;
+}) {
+  const initials = name
+    ?.split(" ")
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase() ?? "?";
+
+  const isPartner = role === "PARTNER";
+  const cfg = TYPE_CFG[type];
+  const TypeIcon = cfg?.icon;
+
+  return (
+    <div className="relative shrink-0">
+      {image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={image}
+          alt={name ?? ""}
+          className={cn("h-9 w-9 object-cover", isPartner ? "rounded-lg" : "rounded-full")}
+        />
+      ) : (
+        <div
+          className={cn(
+            "h-9 w-9 bg-[#0F6E56] flex items-center justify-center text-white text-xs font-semibold select-none",
+            isPartner ? "rounded-lg" : "rounded-full"
+          )}
+        >
+          {initials}
+        </div>
+      )}
+      {TypeIcon && (
+        <span
+          className={cn(
+            "absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full ring-2 ring-white",
+            cfg.bg
+          )}
+        >
+          <TypeIcon className={cn("h-2.5 w-2.5", cfg.fg)} />
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ─── Notification dropdown ────────────────────────────────────────────────────
+
+function NotificationDropdown({
+  notifications,
+  onClose,
+  onMarkAllRead,
+  onNotifClick,
+}: {
+  notifications: NotificationItem[];
+  onClose: () => void;
+  onMarkAllRead: () => void;
+  onNotifClick: (n: NotificationItem) => void;
+}) {
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  // Auto-mark read after 3 seconds
+  useEffect(() => {
+    if (unreadCount === 0) return;
+    const t = setTimeout(onMarkAllRead, 3000);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <AnimatedPanel className="absolute right-0 top-full mt-2 w-[400px] max-sm:w-[calc(100vw-2rem)] rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden z-50">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+        <span className="text-sm font-bold text-gray-900">Notifications</span>
+        <div className="flex items-center gap-3">
+          {unreadCount > 0 && (
+            <button
+              onClick={onMarkAllRead}
+              className="text-xs font-medium text-[#0F6E56] hover:underline"
+            >
+              Mark all as read
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="flex items-center justify-center h-6 w-6 rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Body */}
+      {notifications.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 mb-3">
+            <Bell className="h-5 w-5 text-gray-400" />
+          </div>
+          <p className="text-sm font-semibold text-gray-700">All caught up</p>
+          <p className="text-xs text-gray-400 mt-0.5">No new notifications</p>
+        </div>
+      ) : (
+        <div className="divide-y divide-gray-50 max-h-[360px] overflow-y-auto">
+          {notifications.map((n) => {
+            const senderName = n.sender?.name ?? "Someone";
+            const cfg = TYPE_CFG[n.type];
+            const action = cfg?.action ?? "interacted with your content";
+
+            return (
+              <div
+                key={n.id}
+                role="button"
+                onClick={() => onNotifClick(n)}
+                className={cn(
+                  "flex items-start gap-3 px-4 py-3.5 hover:bg-gray-50 transition-colors cursor-pointer",
+                  !n.read && "bg-green-50/50"
+                )}
+              >
+                <SenderAvatar
+                  name={n.sender?.name ?? null}
+                  image={n.sender?.image ?? null}
+                  role={n.sender?.role ?? "USER"}
+                  type={n.type}
+                />
+
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-700 leading-snug">
+                    <span className="font-semibold text-gray-900">{senderName}</span>{" "}
+                    {action}
+                  </p>
+                  {n.post && (
+                    <p className="text-xs text-gray-400 mt-0.5 truncate">
+                      {n.post.fromTool} → {n.post.toTool}
+                    </p>
+                  )}
+                  <p className="text-[11px] text-gray-400 mt-1">{timeAgo(n.createdAt)}</p>
+                </div>
+
+                {!n.read && (
+                  <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[#0F6E56]" />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Footer */}
+      <div className="border-t border-gray-100 px-4 py-2.5 flex items-center justify-between">
+        <Link
+          href="/notifications"
+          onClick={onClose}
+          className="text-xs font-medium text-[#0F6E56] hover:underline"
+        >
+          View all notifications
+        </Link>
+        <Link
+          href="/settings?tab=notifications"
+          onClick={onClose}
+          className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          Notification settings
+        </Link>
+      </div>
+    </AnimatedPanel>
+  );
+}
+
+// ─── Message item avatar (with optional online dot) ───────────────────────────
+
+function MessageAvatar({
+  name,
+  image,
+  role,
+}: {
+  name: string | null;
+  image: string | null;
+  role: string;
+}) {
+  const initials = name
+    ?.split(" ")
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase() ?? "?";
+
+  const isPartner = role === "PARTNER";
+
+  return (
+    <div className="relative shrink-0">
+      {image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={image}
+          alt={name ?? ""}
+          className={cn("h-10 w-10 object-cover", isPartner ? "rounded-xl" : "rounded-full")}
+        />
+      ) : (
+        <div
+          className={cn(
+            "h-10 w-10 flex items-center justify-center text-white text-sm font-semibold select-none",
+            isPartner ? "rounded-xl bg-[#2A5FA5]" : "rounded-full bg-[#0F6E56]"
+          )}
+        >
+          {initials}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Message dropdown ─────────────────────────────────────────────────────────
+
+function MessageDropdown({
+  messages,
+  unreadCount,
+  onClose,
+}: {
+  messages: MessageItem[];
+  unreadCount: number;
+  onClose: () => void;
+}) {
+  return (
+    <AnimatedPanel className="absolute right-0 top-full mt-2 w-[380px] max-sm:w-[calc(100vw-2rem)] rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden z-50">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+        <span className="text-sm font-bold text-gray-900">Messages</span>
+        <div className="flex items-center gap-2">
+          <button className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-[#0F6E56] border border-[#0F6E56]/20 rounded-lg hover:bg-green-50 transition-colors">
+            <Plus className="h-3.5 w-3.5" /> New message
+          </button>
+          <button
+            onClick={onClose}
+            className="flex items-center justify-center h-6 w-6 rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Body */}
+      {messages.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 mb-3">
+            <Mail className="h-5 w-5 text-gray-400" />
+          </div>
+          <p className="text-sm font-semibold text-gray-700">No messages yet</p>
+          <p className="text-xs text-gray-400 mt-0.5">Conversations with partners appear here</p>
+        </div>
+      ) : (
+        <div className="divide-y divide-gray-50 max-h-[320px] overflow-y-auto">
+          {messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={cn(
+                "flex items-start gap-3 px-4 py-3.5 hover:bg-gray-50 transition-colors cursor-pointer",
+                !msg.read && "bg-green-50/50"
+              )}
+            >
+              <MessageAvatar
+                name={msg.sender.name}
+                image={msg.sender.image}
+                role={msg.sender.role}
+              />
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2 mb-0.5">
+                  <span className={cn("text-sm truncate", !msg.read ? "font-semibold text-gray-900" : "font-medium text-gray-700")}>
+                    {msg.sender.name ?? "Unknown"}
+                  </span>
+                  <span className="text-[11px] text-gray-400 shrink-0">{timeAgo(msg.createdAt)}</span>
+                </div>
+                <p className={cn("text-xs line-clamp-2 leading-relaxed", !msg.read ? "text-gray-700" : "text-gray-400")}>
+                  {msg.content}
+                </p>
+              </div>
+
+              {!msg.read && (
+                <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#0F6E56]" />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Footer */}
+      <div className="border-t border-gray-100 px-4 py-2.5 text-center">
+        <Link
+          href="/messages"
+          onClick={onClose}
+          className="text-xs font-medium text-[#0F6E56] hover:underline"
+        >
+          View all messages
+        </Link>
+      </div>
+    </AnimatedPanel>
+  );
+}
+
+// ─── User menu dropdown ───────────────────────────────────────────────────────
+
+function UserMenuDropdown({ user, onClose }: { user: TopBarUser; onClose: () => void }) {
+  const initials = user.name
+    ?.split(" ")
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase() ?? "?";
+
+  const roleBadge: Record<string, { label: string; color: string }> = {
+    USER:    { label: "Switcher", color: "bg-green-50 text-[#0F6E56]" },
+    PARTNER: { label: "Partner",  color: "bg-blue-50 text-[#2A5FA5]" },
+    ADMIN:   { label: "Admin",    color: "bg-red-50 text-red-600" },
+  };
+  const badge = roleBadge[user.role] ?? roleBadge.USER;
+
+  return (
+    <AnimatedPanel className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden z-50">
+      <div className="px-4 py-3 border-b border-gray-100">
+        <div className="flex items-center gap-2.5">
+          {user.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={user.image} alt="" className="h-8 w-8 rounded-full object-cover shrink-0" />
+          ) : (
+            <div className="h-8 w-8 rounded-full bg-[#0F6E56] flex items-center justify-center text-white text-xs font-semibold shrink-0 select-none">
+              {initials}
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
+            <p className="text-xs text-gray-400 truncate">{user.email}</p>
+          </div>
+        </div>
+        <span className={cn("mt-2 inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium", badge.color)}>
+          {badge.label}
+        </span>
+      </div>
+      <div className="py-1">
+        <Link
+          href="/settings"
+          onClick={onClose}
+          className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          <Settings className="h-4 w-4 text-gray-400" />
+          Settings
+        </Link>
+      </div>
+    </AnimatedPanel>
+  );
+}
+
+// ─── Main TopBar ──────────────────────────────────────────────────────────────
+
+type Panel = "notifications" | "messages" | "user" | null;
+
+export function TopBar({
+  user,
+  onMenuClick,
+  notifications = [],
+  recentMessages = [],
+  unreadMessageCount = 0,
+}: TopBarProps) {
+  const router = useRouter();
+  const [activePanel, setActivePanel] = useState<Panel>(null);
+  const [localNotifications, setLocalNotifications] = useState(notifications);
+  const [, startTransition] = useTransition();
+
+  const unreadCount = localNotifications.filter((n) => !n.read).length;
+
+  const notifRef = useRef<HTMLDivElement>(null);
+  const msgRef   = useRef<HTMLDivElement>(null);
+  const userRef  = useRef<HTMLDivElement>(null);
+
+  const toggle = (panel: Panel) =>
+    setActivePanel((prev) => (prev === panel ? null : panel));
+
+  useClickOutside(notifRef, () => activePanel === "notifications" && setActivePanel(null));
+  useClickOutside(msgRef,   () => activePanel === "messages"      && setActivePanel(null));
+  useClickOutside(userRef,  () => activePanel === "user"          && setActivePanel(null));
+
+  function handleMarkAllRead() {
+    setLocalNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    startTransition(() => markAllNotificationsRead());
+  }
+
+  function handleNotifClick(n: NotificationItem) {
+    if (!n.read) {
+      setLocalNotifications((prev) =>
+        prev.map((item) => (item.id === n.id ? { ...item, read: true } : item))
+      );
+      startTransition(() => markNotificationRead(n.id));
+    }
+    setActivePanel(null);
+    router.push(notifUrl(n));
+  }
+
+  const initials = user.name
+    ?.split(" ")
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase() ?? "?";
+
+  return (
+    <header className="flex h-14 items-center gap-4 border-b border-gray-100 bg-white px-4 lg:px-6 shrink-0">
+      {/* Mobile menu toggle */}
+      <button
+        className="lg:hidden flex items-center justify-center h-9 w-9 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+        onClick={onMenuClick}
+        aria-label="Open navigation"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+
+      {/* Search */}
+      <div className="flex-1 max-w-sm">
+        <div className="relative flex items-center">
+          <Search className="absolute left-3 h-4 w-4 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search…"
+            className="w-full h-9 pl-9 pr-14 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-[#0F6E56] focus:bg-white transition-colors placeholder:text-gray-400"
+          />
+          <kbd className="absolute right-3 flex items-center gap-0.5 text-[10px] text-gray-400 font-mono pointer-events-none">
+            <span className="text-[11px]">⌘</span>K
+          </kbd>
+        </div>
+      </div>
+
+      {/* Right actions */}
+      <div className="flex items-center gap-1 ml-auto">
+
+        {/* Notification bell */}
+        <div ref={notifRef} className="relative">
+          <button
+            onClick={() => toggle("notifications")}
+            className={cn(
+              "relative flex items-center justify-center h-9 w-9 rounded-lg transition-colors",
+              activePanel === "notifications"
+                ? "bg-gray-100 text-gray-900"
+                : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+            )}
+            aria-label="Notifications"
+          >
+            <Bell className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 flex">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-60" />
+                <span className="relative flex items-center justify-center h-[18px] min-w-[18px] rounded-full bg-red-500 px-1 text-[10px] font-bold text-white leading-none">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              </span>
+            )}
+          </button>
+          {activePanel === "notifications" && (
+            <NotificationDropdown
+              notifications={localNotifications}
+              onClose={() => setActivePanel(null)}
+              onMarkAllRead={handleMarkAllRead}
+              onNotifClick={handleNotifClick}
+            />
+          )}
+        </div>
+
+        {/* Messages */}
+        <div ref={msgRef} className="relative">
+          <button
+            onClick={() => toggle("messages")}
+            className={cn(
+              "relative flex items-center justify-center h-9 w-9 rounded-lg transition-colors",
+              activePanel === "messages"
+                ? "bg-gray-100 text-gray-900"
+                : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+            )}
+            aria-label="Messages"
+          >
+            <Mail className="h-5 w-5" />
+            {unreadMessageCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
+            )}
+          </button>
+          {activePanel === "messages" && (
+            <MessageDropdown
+              messages={recentMessages}
+              unreadCount={unreadMessageCount}
+              onClose={() => setActivePanel(null)}
+            />
+          )}
+        </div>
+
+        {/* Divider */}
+        <div className="h-6 w-px bg-gray-200 mx-1" />
+
+        {/* User avatar */}
+        <div ref={userRef} className="relative">
+          <button
+            onClick={() => toggle("user")}
+            className={cn(
+              "flex items-center justify-center h-9 w-9 rounded-lg transition-colors",
+              activePanel === "user" ? "ring-2 ring-[#0F6E56] ring-offset-1" : "hover:opacity-80"
+            )}
+            aria-label="User menu"
+          >
+            {user.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={user.image} alt="" className="h-8 w-8 rounded-full object-cover" />
+            ) : (
+              <div className="h-8 w-8 rounded-full bg-[#0F6E56] flex items-center justify-center text-white text-xs font-semibold select-none">
+                {initials}
+              </div>
+            )}
+          </button>
+          {activePanel === "user" && (
+            <UserMenuDropdown user={user} onClose={() => setActivePanel(null)} />
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}
