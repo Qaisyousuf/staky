@@ -44,7 +44,9 @@ export function stripHashtagsFromText(input: string) {
 export function splitPostContent(input: string, storedTags: string[] = []): ParsedPostContent {
   const text = sanitizePostText(stripHashtagsFromText(input));
   const parsedTags = parseHashtags(input);
-  const hashtags = [...new Set([...parsedTags, ...storedTags.map((tag) => tag.toLowerCase())])].slice(
+  const hashtags = Array.from(
+    new Set([...parsedTags, ...storedTags.map((tag) => tag.toLowerCase())])
+  ).slice(
     0,
     MAX_POST_HASHTAGS
   );
