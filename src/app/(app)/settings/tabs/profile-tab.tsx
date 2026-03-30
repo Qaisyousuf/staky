@@ -7,7 +7,6 @@ import {
   Camera, Link2, Globe, MapPin,
   CheckCircle2, AlertCircle, Save, Loader2, Building2, X, Trash2, ImageIcon,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { updateProfile } from "@/actions/settings";
 import type { SettingsUser } from "../settings-shell";
 

@@ -361,11 +361,9 @@ function MessageAvatar({
 
 function MessageDropdown({
   messages,
-  unreadCount,
   onClose,
 }: {
   messages: MessageItem[];
-  unreadCount: number;
   onClose: () => void;
 }) {
   return (
@@ -630,7 +628,6 @@ export function TopBar({
           {activePanel === "messages" && (
             <MessageDropdown
               messages={recentMessages}
-              unreadCount={unreadMessageCount}
               onClose={() => setActivePanel(null)}
             />
           )}

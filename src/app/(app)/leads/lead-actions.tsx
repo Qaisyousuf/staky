@@ -2,16 +2,7 @@
 
 import { useTransition } from "react";
 import { CheckCircle2, Loader2, PlayCircle, UserCheck, XCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { claimLead, updateLeadStatus } from "@/actions/partner";
-
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: "Open lead",
-  MATCHED: "Matched",
-  IN_PROGRESS: "In progress",
-  COMPLETED: "Completed",
-  CANCELLED: "Cancelled",
-};
 
 interface LeadActionsProps {
   requestId: string;

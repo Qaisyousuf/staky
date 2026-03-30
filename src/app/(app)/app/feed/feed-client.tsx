@@ -20,7 +20,6 @@ import { getAppFeedPosts, checkNewPosts } from "@/actions/feed";
 import type { AppFeedFilter } from "@/actions/feed";
 import { POPULAR_SWITCHES, TOOLS } from "@/data/mock-data";
 import { ToolIcon } from "@/components/shared/tool-icon";
-import { getSuggestedProfiles } from "@/actions/profile";
 import { toggleFollow } from "@/actions/social";
 
 // ─── Types ────────────────────────────────────────────────────────────────────

@@ -79,10 +79,8 @@ function VisibilityCard({
 
 export function PrivacyTab({
   profileVisibility,
-  userEmail,
 }: {
   profileVisibility: string;
-  userEmail: string;
 }) {
   const [visibility, setVisibility] = useState(profileVisibility);
   const [saved, setSaved] = useState(false);

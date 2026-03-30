@@ -4,8 +4,6 @@ import { useState, useTransition, useRef } from "react";
 import {
   Building2,
   Globe,
-  MapPin,
-  DollarSign,
   Award,
   Wrench,
   Tag,
@@ -14,10 +12,8 @@ import {
   AlertCircle,
   Save,
   Loader2,
-  Plus,
   X,
   BadgeCheck,
-  Image,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { updateCompanyProfile } from "@/actions/partner";
@@ -145,7 +141,7 @@ function TagInput({
     blue:   { chip: "bg-blue-50 text-[#2A5FA5] border-blue-200",    focus: "focus:border-[#2A5FA5]" },
     purple: { chip: "bg-purple-50 text-purple-700 border-purple-200", focus: "focus:border-purple-500" },
   };
-  const { chip, focus } = colorMap[color];
+  const { chip } = colorMap[color];
 
   const add = (val: string) => {
     const trimmed = val.trim();
@@ -273,7 +269,7 @@ export function ProfileEditor({ partner }: { partner: PartnerData }) {
         setSaved(true);
         setSaveError("");
         setTimeout(() => setSaved(false), 3000);
-      } catch (err) {
+      } catch {
         setSaveError("Failed to save. Please try again.");
       }
     });

@@ -208,13 +208,11 @@ type Filter = typeof FILTERS[number];
 
 // ─── Main client component ────────────────────────────────────────────────────
 
-export function NotificationsClient({
-  notifications: initial,
-  unreadCount: initialUnread,
-}: {
+export function NotificationsClient(props: {
   notifications: Notification[];
   unreadCount: number;
 }) {
+  const { notifications: initial } = props;
   const router = useRouter();
   const [notifications, setNotifications] = useState(initial);
   const [filter, setFilter] = useState<Filter>("All");

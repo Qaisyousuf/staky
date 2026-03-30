@@ -119,7 +119,6 @@ export default async function ProfilePage({
       isFollowing={!!isFollowing}
       isConnected={!!isConnected}
       connectionCount={connectionCount}
-      currentUserId={currentUserId}
       isSelf={currentUserId === params.userId}
       suggestedProfiles={suggestedProfiles}
     />

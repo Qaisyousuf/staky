@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
-  Layers, Users, Handshake, ClipboardList,
+  Layers, Users, Handshake,
   Star, Inbox, FileText, TrendingUp,
   ArrowRight, Plus, Compass, PenSquare,
   ThumbsUp, MessageCircle, Bookmark,
@@ -211,14 +211,13 @@ async function UserDashboard({
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
   // Fetch all metrics in parallel
-  const [stackCount, followingCount, connectionCount, requestCount, stackItems, profileViewsCount, recentViewers] =
+  const [stackCount, followingCount, connectionCount, stackItems, profileViewsCount, recentViewers] =
     await Promise.all([
       prisma.stackItem.count({ where: { stack: { userId } } }),
       prisma.follow.count({ where: { followerId: userId } }),
       prisma.connection.count({
         where: { OR: [{ userId }, { targetId: userId }] },
       }),
-      prisma.migrationRequest.count({ where: { userId } }),
       prisma.stackItem.findMany({
         where: { stack: { userId } },
         orderBy: { order: "asc" },
@@ -608,7 +607,7 @@ async function PartnerDashboard({
           <div>
             <p className="text-sm font-semibold text-amber-800">Approval pending</p>
             <p className="text-xs text-amber-600 mt-0.5">
-              Your partner profile is under review. You'll be notified once approved.
+              Your partner profile is under review. You&apos;ll be notified once approved.
             </p>
           </div>
         </div>
@@ -789,7 +788,7 @@ async function PartnerDashboard({
                 { href: "/my-posts",        icon: PenSquare,    label: "Write a post",        accent: "blue" },
                 { href: "/company-profile", icon: Building2,    label: "Edit company profile",accent: "green" },
                 { href: "/discover",        icon: Compass,      label: "Browse alternatives", accent: "green" },
-              ].map(({ href, icon: Icon, label, accent }) => (
+              ].map(({ href, icon: Icon, label }) => (
                 <Link
                   key={href}
                   href={href}

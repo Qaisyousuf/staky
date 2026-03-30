@@ -286,7 +286,6 @@ export function ProfileClient({
   isFollowing,
   isConnected,
   connectionCount,
-  currentUserId,
   isSelf,
   suggestedProfiles,
 }: {
@@ -296,7 +295,6 @@ export function ProfileClient({
   isFollowing: boolean;
   isConnected: boolean;
   connectionCount: number | null;
-  currentUserId: string | null;
   isSelf: boolean;
   suggestedProfiles: SuggestedProfile[];
 }) {

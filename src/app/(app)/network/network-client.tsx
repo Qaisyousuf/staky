@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Search, UserPlus, UserCheck, MessageSquare, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toggleFollow } from "@/actions/social";
-import { getSuggestedProfiles } from "@/actions/profile";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

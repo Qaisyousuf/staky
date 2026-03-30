@@ -8,9 +8,7 @@ import {
   Star,
   ArrowRight,
   PenSquare,
-  TrendingUp,
   BarChart3,
-  Eye,
 } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -31,26 +29,6 @@ function timeAgo(date: Date) {
 }
 
 // ─── Stat pill ────────────────────────────────────────────────────────────────
-
-function StatPill({
-  icon: Icon,
-  value,
-  label,
-  color,
-}: {
-  icon: React.ElementType;
-  value: number;
-  label: string;
-  color: string;
-}) {
-  return (
-    <div className={cn("flex items-center gap-1.5 text-xs font-medium", color)}>
-      <Icon className="h-3.5 w-3.5 shrink-0" />
-      <span>{value}</span>
-      <span className="text-gray-400 font-normal hidden sm:inline">{label}</span>
-    </div>
-  );
-}
 
 // ─── Engagement bar ───────────────────────────────────────────────────────────
 

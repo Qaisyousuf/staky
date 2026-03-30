@@ -119,7 +119,7 @@ export default async function ProfileViewsPage() {
                 <p className="px-5 py-2 text-[10px] font-semibold uppercase tracking-widest text-gray-400 bg-gray-50 border-b border-gray-100">
                   {group.label}
                 </p>
-                {(group.items as typeof data.recentViewers).map((v, idx) => {
+                {(group.items as typeof data.recentViewers).map((v) => {
                   const overallIdx = data.recentViewers.indexOf(v);
                   const isBlurred = isFreePlan && overallIdx >= 3;
 

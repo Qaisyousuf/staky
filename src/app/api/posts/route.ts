@@ -74,7 +74,7 @@ export async function POST(request: Request) {
       fromTool,
       toTool,
     });
-    const mergedTags = [...new Set([...explicitTags, ...hashtags])].slice(0, 5);
+    const mergedTags = Array.from(new Set([...explicitTags, ...hashtags])).slice(0, 5);
 
     const uploadsDir = path.join(process.cwd(), "public", "uploads", "posts");
     await mkdir(uploadsDir, { recursive: true });

@@ -146,10 +146,7 @@ export function SettingsShell({
             <NotificationsTab settings={notifSettings ?? defaultNotifSettings} />
           )}
           {activeTab === "privacy" && (
-            <PrivacyTab
-              profileVisibility={user.profileVisibility}
-              userEmail={user.email}
-            />
+            <PrivacyTab profileVisibility={user.profileVisibility} />
           )}
           {activeTab === "account" && (
             <AccountTab email={user.email} createdAt={user.createdAt} />
