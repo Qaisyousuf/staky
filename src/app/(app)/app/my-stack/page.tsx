@@ -56,6 +56,7 @@ export default async function MyStackPage() {
     ...MOCK_PARTNERS.map((p) => ({
       ...p,
       userId: p.id,
+      logoUrl: p.logoUrl ?? null,
       hasRequest: false,
       isReal: false as const,
     })),
