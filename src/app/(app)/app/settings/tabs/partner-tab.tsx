@@ -6,9 +6,10 @@ import { useRouter } from "next/navigation";
 import {
   Handshake, Building2, Globe, Tag, DollarSign,
   FileText, CheckCircle2, Clock, ArrowLeftRight, Loader2, Camera, X,
+  Search, BadgeCheck, AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { applyAsPartner, setActiveMode, updatePartnerLogo } from "@/actions/partner-mode";
+import { applyAsPartner, lookupCVR, setActiveMode, updatePartnerLogo } from "@/actions/partner-mode";
 
 interface PartnerInfo {
   companyName: string;
@@ -148,11 +149,15 @@ interface PartnerTabProps {
 
 function ApplicationForm({ onSuccess }: { onSuccess: () => void }) {
   const [isPending, startTransition] = useTransition();
+  const [isLookingUp, startLookup] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [cvrStatus, setCvrStatus] = useState<"idle" | "valid" | "invalid">("idle");
+  const [cvrMessage, setCvrMessage] = useState<string>("");
 
   const [form, setForm] = useState({
     companyName: "",
-    country: "",
+    country: "Denmark",
+    cvr: "",
     specialty: "",
     pricing: "",
     description: "",
@@ -160,6 +165,25 @@ function ApplicationForm({ onSuccess }: { onSuccess: () => void }) {
   });
 
   const inputClass = "w-full py-2.5 px-3 text-sm rounded-lg border border-gray-200 bg-white outline-none transition-colors focus:border-[#0F6E56]";
+
+  const handleCvrLookup = () => {
+    setCvrStatus("idle");
+    setCvrMessage("");
+    startLookup(async () => {
+      const result = await lookupCVR(form.cvr);
+      if (result.status === "found") {
+        setCvrStatus("valid");
+        setCvrMessage(`${result.name}${result.city ? ` · ${result.city}` : ""}`);
+        setForm((f) => ({ ...f, companyName: result.name }));
+      } else if (result.status === "not_found") {
+        setCvrStatus("invalid");
+        setCvrMessage("CVR not found in the Danish Business Register.");
+      } else {
+        setCvrStatus("invalid");
+        setCvrMessage("Could not reach the CVR registry. Please try again.");
+      }
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,7 +205,7 @@ function ApplicationForm({ onSuccess }: { onSuccess: () => void }) {
         <div>
           <p className="text-sm font-semibold text-[#2A5FA5]">Become a Migration Partner</p>
           <p className="text-xs text-blue-600 mt-0.5">
-            Help businesses migrate to EU software. Your application will be reviewed by our team.
+            Enter your Danish CVR number to verify your business. Approved companies are instantly activated.
           </p>
         </div>
       </div>
@@ -192,6 +216,60 @@ function ApplicationForm({ onSuccess }: { onSuccess: () => void }) {
         </div>
       )}
 
+      {/* CVR number */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          CVR number <span className="text-red-400">*</span>
+        </label>
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="12345678"
+              maxLength={8}
+              value={form.cvr}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, cvr: e.target.value.replace(/\D/g, "") }));
+                setCvrStatus("idle");
+                setCvrMessage("");
+              }}
+              className={cn(
+                inputClass,
+                "pl-9 font-mono tracking-widest",
+                cvrStatus === "valid" && "border-green-400 bg-green-50/30",
+                cvrStatus === "invalid" && "border-red-300 bg-red-50/30"
+              )}
+              required
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleCvrLookup}
+            disabled={isLookingUp || form.cvr.length !== 8}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+          >
+            {isLookingUp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+            {isLookingUp ? "Looking up…" : "Look up"}
+          </button>
+        </div>
+        {cvrStatus === "valid" && (
+          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-green-700 font-medium">
+            <BadgeCheck className="h-3.5 w-3.5 shrink-0" />
+            {cvrMessage}
+          </p>
+        )}
+        {cvrStatus === "invalid" && (
+          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600">
+            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+            {cvrMessage}
+          </p>
+        )}
+        <p className="mt-1 text-[11px] text-gray-400">
+          Your CVR is verified against the Danish Business Register (virk.dk). Valid companies are instantly approved.
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -201,7 +279,7 @@ function ApplicationForm({ onSuccess }: { onSuccess: () => void }) {
             <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             <input
               type="text"
-              placeholder="Acme GmbH"
+              placeholder="Auto-filled from CVR lookup"
               value={form.companyName}
               onChange={(e) => setForm((f) => ({ ...f, companyName: e.target.value }))}
               className={`${inputClass} pl-9`}
@@ -218,7 +296,6 @@ function ApplicationForm({ onSuccess }: { onSuccess: () => void }) {
             <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             <input
               type="text"
-              placeholder="Germany"
               value={form.country}
               onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))}
               className={`${inputClass} pl-9`}
@@ -480,9 +557,8 @@ export function PartnerTab({ partner }: PartnerTabProps) {
   // Track if the user just submitted so we can show PendingState immediately
   const [justSubmitted, setJustSubmitted] = useState(false);
 
-  const showApproved = partner?.approved === true;
-  // Show pending if: DB says pending, OR user just submitted
-  const showPending = (partner && !partner.approved && !showForm) || (justSubmitted && !showForm);
+  const showApproved = partner?.approved === true || justSubmitted;
+  const showPending = partner && !partner.approved && !showForm && !justSubmitted;
   const showFormState = !justSubmitted && (!partner || showForm) && !showApproved;
 
   const handleSuccess = () => {

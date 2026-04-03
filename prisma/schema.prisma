@@ -184,6 +184,7 @@ model Partner {
   specialty      String[]
   services       String[]
   certifications String[]
+  cvr            String?
   description    String?
   pricing        String?
   logoUrl        String?
