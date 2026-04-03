@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "crypto";
 import { prisma } from "@/lib/prisma";
 
 export type AppNotificationType =
@@ -23,6 +24,13 @@ export type AppNotificationType =
   | "PARTNER_REJECTED"
   | "PARTNER_DELETED";
 
+const PARTNER_TYPES = new Set([
+  "PARTNER_APPLICATION",
+  "PARTNER_APPROVED",
+  "PARTNER_REJECTED",
+  "PARTNER_DELETED",
+]);
+
 export async function createNotification(input: {
   recipientId: string;
   senderId?: string | null;
@@ -34,6 +42,26 @@ export async function createNotification(input: {
 }) {
   if (!input.recipientId) return;
   if (input.senderId && input.recipientId === input.senderId) return;
+
+  // Partner notification types may not be in the Prisma-generated enum yet
+  // (happens when prisma generate couldn't run due to a file lock).
+  // Use a raw INSERT so the DB cast handles the enum value directly.
+  if (PARTNER_TYPES.has(input.type)) {
+    try {
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO notifications (id, "recipientId", "senderId", "senderMode", type, "read", "createdAt")
+         VALUES ($1, $2, $3, $4, $5::"NotificationType", false, NOW())`,
+        randomUUID(),
+        input.recipientId,
+        input.senderId ?? null,
+        input.senderMode ?? "user",
+        input.type
+      );
+    } catch {
+      // Best-effort — never block the main action
+    }
+    return;
+  }
 
   try {
     await prisma.notification.create({
@@ -50,8 +78,6 @@ export async function createNotification(input: {
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
 
-    // Keep request actions working even if the NotificationType enum
-    // has not been migrated yet in the current database/client.
     if (
       message.includes("Expected NotificationType") ||
       message.includes("Invalid value for argument `type`")
