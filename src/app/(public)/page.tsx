@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Users, Package, Handshake, Shield, Zap, Globe } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { POPULAR_SWITCHES, MOCK_PARTNERS, TOOLS } from "@/data/mock-data";
 import { ToolIcon } from "@/components/shared/tool-icon";
 import { PartnerCard } from "@/components/shared/partner-card";
@@ -13,47 +13,53 @@ function getInitials(name: string | null | undefined) {
 // ─── Hero ──────────────────────────────────────────────────────────────────────
 
 function Hero() {
+  const usTools = Object.values(TOOLS).filter((t) => t.origin === "us");
+  const euTools = Object.values(TOOLS).filter((t) => t.origin === "eu");
+  const usDoubled = [...usTools, ...usTools];
+  const euDoubled = [...euTools, ...euTools];
+
   return (
-    <section className="bg-white">
-      {/* Very soft top glow — no grid, no pattern */}
+    <section className="overflow-hidden bg-white">
+      <style>{`
+        @keyframes marquee-fwd {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-50%); }
+        }
+        @keyframes marquee-rev {
+          from { transform: translateX(-50%); }
+          to   { transform: translateX(0); }
+        }
+      `}</style>
+
+      {/* Soft top glow */}
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[500px]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[480px]"
         style={{
           background:
-            "radial-gradient(ellipse 70% 55% at 50% 0%, rgba(15,110,86,0.055) 0%, transparent 100%)",
+            "radial-gradient(ellipse 65% 50% at 50% 0%, rgba(15,110,86,0.06) 0%, transparent 100%)",
         }}
       />
 
-      <div className="relative mx-auto max-w-5xl px-4 pb-20 pt-20 text-center sm:px-6 lg:pb-24 lg:pt-24">
-
-        {/* Badge */}
-        <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3.5 py-1 shadow-sm">
-          <span className="flex h-3.5 w-[18px] items-center justify-center rounded-[3px] bg-[#003399] text-[7px] font-black tracking-widest text-[#FFCC00] select-none">
-            EU
-          </span>
-          <span className="text-[11px] font-semibold text-gray-500">
-            Built for European businesses
-          </span>
-        </div>
+      {/* Centered content */}
+      <div className="relative mx-auto max-w-5xl px-4 pb-14 pt-20 text-center sm:px-6 lg:pt-24">
 
         {/* Headline */}
-        <h1 className="mx-auto max-w-4xl text-5xl font-extrabold leading-[1.06] tracking-tight text-gray-950 sm:text-6xl lg:text-[76px]">
-          The smarter way to
-          <br />
+        <h1 className="mx-auto max-w-4xl text-5xl font-semibold leading-[1.06] tracking-tight text-gray-950 sm:text-6xl lg:text-[76px]">
+          The platform for{" "}
           <span
             className="bg-clip-text text-transparent"
             style={{
               backgroundImage: "linear-gradient(135deg, #0d5a47 0%, #0F6E56 45%, #1aaa7a 100%)",
             }}
           >
-            switch to EU software.
+            European software migration.
           </span>
         </h1>
 
         {/* Subtext */}
-        <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-gray-500 sm:text-lg">
-          Discover EU-based alternatives, read honest migration stories,
-          and connect with certified partners — all in one place.
+        <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-gray-500 sm:text-lg">
+          Explore EU tools, understand the migration effort, share experiences with the community,
+          and get expert help from trusted EU IT partners.
         </p>
 
         {/* CTAs */}
@@ -72,122 +78,65 @@ function Hero() {
             Browse alternatives
           </Link>
         </div>
+      </div>
 
-        {/* Stats */}
-        <div className="mt-14 flex flex-wrap items-center justify-center gap-x-12 gap-y-6">
-          {[
-            { value: "2,400+", label: "EU alternatives" },
-            { value: "18k+", label: "Companies switched" },
-            { value: "120+", label: "Migration partners" },
-          ].map(({ value, label }, i) => (
-            <div key={label} className="flex items-center gap-x-12">
-              {i > 0 && <div className="hidden h-7 w-px bg-gray-200 sm:block" />}
-              <div className="text-center">
-                <p className="text-[28px] font-black leading-none tracking-tight text-gray-900">{value}</p>
-                <p className="mt-1 text-[11px] font-medium text-gray-400">{label}</p>
+      {/* Full-width marquee — intentionally breaks out of centered container */}
+      {/* Marquee — clipped to title width, overflows hidden on both sides */}
+      <div className="relative mx-auto max-w-5xl overflow-hidden pb-20 pt-2">
+        {/* Edge fades */}
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-20 bg-gradient-to-r from-white to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-20 bg-gradient-to-l from-white to-transparent" />
+
+        <div className="space-y-3">
+          {/* Row 1 — US tools → left */}
+          <div className="flex w-max gap-3" style={{ animation: "marquee-fwd 50s linear infinite" }}>
+            {usDoubled.map((tool, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-2.5 rounded-full border border-gray-100 bg-white px-4 py-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.07)] select-none"
+              >
+                <span
+                  className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[5px] text-[9px] font-black text-white"
+                  style={{ backgroundColor: tool.color }}
+                >
+                  {tool.abbr}
+                </span>
+                <span className="text-[13.5px] font-medium text-gray-600 whitespace-nowrap">
+                  {tool.name}
+                </span>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+
+          {/* Row 2 — EU tools → right */}
+          <div className="flex w-max gap-3" style={{ animation: "marquee-rev 50s linear infinite" }}>
+            {euDoubled.map((tool, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-2.5 rounded-full border border-gray-100 bg-white px-4 py-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.07)] select-none"
+              >
+                <span
+                  className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[5px] text-[9px] font-black text-white"
+                  style={{ backgroundColor: tool.color }}
+                >
+                  {tool.abbr}
+                </span>
+                <span className="text-[13.5px] font-medium text-gray-600 whitespace-nowrap">
+                  {tool.name}
+                </span>
+                {tool.country && (
+                  <span className="text-[10px] text-gray-300">{tool.country}</span>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>
   );
 }
 
-// ─── How it works ──────────────────────────────────────────────────────────────
 
-function HowItWorks() {
-  const steps = [
-    {
-      number: "01",
-      icon: Package,
-      color: "bg-green-50",
-      iconColor: "text-[#0F6E56]",
-      title: "Discover EU alternatives",
-      description:
-        "Browse 2,400+ privacy-first European tools by category, use case, or the US product you want to replace.",
-    },
-    {
-      number: "02",
-      icon: Users,
-      color: "bg-blue-50",
-      iconColor: "text-[#2A5FA5]",
-      title: "Learn from real stories",
-      description:
-        "Read honest migration stories from companies who already made the switch — real challenges, real outcomes.",
-    },
-    {
-      number: "03",
-      icon: Handshake,
-      color: "bg-amber-50",
-      iconColor: "text-amber-600",
-      title: "Get expert support",
-      description:
-        "Connect with vetted EU migration partners for guided, end-to-end support from audit to go-live.",
-    },
-  ];
-
-  return (
-    <section className="border-y border-gray-100 bg-gray-50/50 py-20">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-14 text-center">
-          <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-[#0F6E56]">
-            How it works
-          </p>
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-            Your migration, simplified
-          </h2>
-          <p className="mx-auto mt-3 max-w-md text-base text-gray-500">
-            Everything you need for a smooth transition to European software.
-          </p>
-        </div>
-        <div className="grid gap-5 sm:grid-cols-3">
-          {steps.map(({ number, icon: Icon, color, iconColor, title, description }) => (
-            <div
-              key={number}
-              className="group relative rounded-2xl border border-gray-200 bg-white p-7 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
-            >
-              <span className="mb-5 block text-5xl font-black leading-none tracking-tighter text-gray-100 transition-colors group-hover:text-gray-200">
-                {number}
-              </span>
-              <div className={`mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl ${color}`}>
-                <Icon className={`h-5 w-5 ${iconColor}`} />
-              </div>
-              <h3 className="mb-2 text-base font-bold text-gray-900">{title}</h3>
-              <p className="text-sm leading-relaxed text-gray-500">{description}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── Trust strip ───────────────────────────────────────────────────────────────
-
-function TrustStrip() {
-  const items = [
-    { icon: Shield, text: "GDPR compliant by design" },
-    { icon: Globe, text: "100% EU-hosted data" },
-    { icon: Zap, text: "No vendor lock-in" },
-    { icon: Users, text: "Community verified" },
-  ];
-
-  return (
-    <div className="border-b border-gray-100 bg-white py-5">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
-          {items.map(({ icon: Icon, text }) => (
-            <div key={text} className="flex items-center gap-2">
-              <Icon className="h-3.5 w-3.5 text-[#0F6E56]" />
-              <span className="text-xs font-medium text-gray-500">{text}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─── Switch card ───────────────────────────────────────────────────────────────
 
@@ -303,52 +252,44 @@ function StoryCard({
 
 function CtaBanner() {
   return (
-    <section className="relative overflow-hidden">
-      <div
-        className="relative py-24 sm:py-32"
-        style={{
-          background: "linear-gradient(135deg, #053d2f 0%, #0F6E56 40%, #1a9a70 75%, #0d5a47 100%)",
-        }}
-      >
-        {/* Decorative glows */}
-        <div
-          className="pointer-events-none absolute -right-32 -top-32 h-[500px] w-[500px] rounded-full opacity-[0.07]"
-          style={{ background: "radial-gradient(circle, white, transparent 65%)" }}
-        />
-        <div
-          className="pointer-events-none absolute -bottom-20 -left-20 h-[350px] w-[350px] rounded-full opacity-[0.05]"
-          style={{ background: "radial-gradient(circle, white, transparent 65%)" }}
-        />
+    <section className="border-t border-gray-100 bg-white py-24 sm:py-32">
+      <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
+        <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.15em] text-[#0F6E56]">
+          Join 18,000+ European businesses
+        </p>
 
-        <div className="relative mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3.5 py-1.5 backdrop-blur-sm">
-            <span className="h-1.5 w-1.5 rounded-full bg-green-300 shadow-[0_0_6px_rgba(134,239,172,0.8)]" />
-            <span className="text-[11px] font-semibold text-white/80">Join 18,000+ European businesses</span>
-          </div>
+        <h2 className="text-4xl font-semibold tracking-tight text-gray-950 sm:text-5xl">
+          Ready to break free
+          <br />
+          <span
+            className="bg-clip-text text-transparent"
+            style={{
+              backgroundImage: "linear-gradient(135deg, #0d5a47 0%, #0F6E56 45%, #1aaa7a 100%)",
+            }}
+          >
+            from US Big Tech?
+          </span>
+        </h2>
 
-          <h2 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
-            Ready to break free<br />from US Big Tech?
-          </h2>
-          <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-white/65">
-            Privacy-first EU software is ready. Your migration partner is waiting.
-            Start today — completely free.
-          </p>
+        <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-gray-500">
+          Privacy-first EU software is ready. Your migration partner is waiting.
+          Start today — completely free.
+        </p>
 
-          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link
-              href="/signup"
-              className="group inline-flex items-center gap-2 rounded-2xl bg-white px-7 py-3.5 text-sm font-semibold text-[#0F6E56] shadow-xl transition-all hover:-translate-y-px hover:bg-green-50 hover:shadow-2xl"
-            >
-              Create free account
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </Link>
-            <Link
-              href="/partners"
-              className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-7 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:-translate-y-px hover:bg-white/15"
-            >
-              Find a migration partner
-            </Link>
-          </div>
+        <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Link
+            href="/signup"
+            className="group inline-flex items-center gap-2 rounded-2xl bg-[#0F6E56] px-7 py-3.5 text-sm font-semibold text-white shadow-[0_2px_12px_rgba(15,110,86,0.3)] transition-all hover:-translate-y-px hover:bg-[#0a5a45] hover:shadow-[0_4px_20px_rgba(15,110,86,0.4)]"
+          >
+            Create free account
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </Link>
+          <Link
+            href="/partners"
+            className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-7 py-3.5 text-sm font-semibold text-gray-600 transition-all hover:-translate-y-px hover:border-gray-300 hover:shadow-sm"
+          >
+            Find a migration partner
+          </Link>
         </div>
       </div>
     </section>
@@ -392,8 +333,6 @@ export default async function LandingPage() {
   return (
     <>
       <Hero />
-      <TrustStrip />
-      <HowItWorks />
 
       {/* ── Popular switches ── */}
       <section className="py-20">
