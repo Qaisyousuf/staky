@@ -393,7 +393,20 @@ export default async function LandingPage() {
               View all EU alternatives <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          {/* Mobile: horizontal scroll — Desktop: grid */}
+          <div className="sm:hidden -mx-4 flex gap-3 overflow-x-auto px-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {POPULAR_SWITCHES.slice(0, 10).map((sw) => (
+              <div key={sw.id} className="w-[72vw] max-w-[240px] shrink-0">
+                <SwitchCard
+                  from={sw.from}
+                  to={sw.to}
+                  category={sw.category}
+                  switcherCount={sw.switcherCount}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="hidden sm:grid sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {POPULAR_SWITCHES.slice(0, 10).map((sw) => (
               <SwitchCard
                 key={sw.id}
