@@ -22,16 +22,16 @@ export const TOOLS: Record<string, Tool> = {
   asana:        { slug: "asana",        name: "Asana",        color: "#F06A6A", abbr: "As", origin: "us" },
   hubspot:      { slug: "hubspot",      name: "HubSpot",      color: "#FF7A59", abbr: "Hs", origin: "us" },
   // EU tools
-  mattermost:   { slug: "mattermost",   name: "Mattermost",   color: "#1A5EAD", abbr: "Mm", origin: "eu", country: "🇺🇸→🇩🇪" },
-  appflowy:     { slug: "appflowy",     name: "AppFlowy",     color: "#00BCF0", abbr: "AF", origin: "eu", country: "🇩🇪" },
-  penpot:       { slug: "penpot",       name: "Penpot",       color: "#7238F5", abbr: "Pp", origin: "eu", country: "🇪🇸" },
-  nextcloud:    { slug: "nextcloud",    name: "Nextcloud",    color: "#0082C9", abbr: "Nc", origin: "eu", country: "🇩🇪" },
-  jitsi:        { slug: "jitsi",        name: "Jitsi Meet",   color: "#0769BC", abbr: "Ji", origin: "eu", country: "🇫🇷" },
-  gitea:        { slug: "gitea",        name: "Gitea",        color: "#609926", abbr: "Gt", origin: "eu", country: "🇩🇪" },
-  suitecrm:     { slug: "suitecrm",     name: "SuiteCRM",     color: "#5A2D82", abbr: "SC", origin: "eu", country: "🇬🇧" },
-  brevo:        { slug: "brevo",        name: "Brevo",        color: "#0A2C6E", abbr: "Br", origin: "eu", country: "🇫🇷" },
-  plane:        { slug: "plane",        name: "Plane",        color: "#2563EB", abbr: "Pl", origin: "eu", country: "🇩🇪" },
-  twentycrm:    { slug: "twentycrm",    name: "Twenty CRM",   color: "#1F1F1F", abbr: "Tw", origin: "eu", country: "🇫🇷" },
+  mattermost:   { slug: "mattermost",   name: "Mattermost",   color: "#1A5EAD", abbr: "Mm", origin: "eu", country: "de" },
+  appflowy:     { slug: "appflowy",     name: "AppFlowy",     color: "#00BCF0", abbr: "AF", origin: "eu", country: "de" },
+  penpot:       { slug: "penpot",       name: "Penpot",       color: "#7238F5", abbr: "Pp", origin: "eu", country: "es" },
+  nextcloud:    { slug: "nextcloud",    name: "Nextcloud",    color: "#0082C9", abbr: "Nc", origin: "eu", country: "de" },
+  jitsi:        { slug: "jitsi",        name: "Jitsi Meet",   color: "#0769BC", abbr: "Ji", origin: "eu", country: "fr" },
+  gitea:        { slug: "gitea",        name: "Gitea",        color: "#609926", abbr: "Gt", origin: "eu", country: "de" },
+  suitecrm:     { slug: "suitecrm",     name: "SuiteCRM",     color: "#5A2D82", abbr: "SC", origin: "eu", country: "gb" },
+  brevo:        { slug: "brevo",        name: "Brevo",        color: "#0A2C6E", abbr: "Br", origin: "eu", country: "fr" },
+  plane:        { slug: "plane",        name: "Plane",        color: "#2563EB", abbr: "Pl", origin: "eu", country: "de" },
+  twentycrm:    { slug: "twentycrm",    name: "Twenty CRM",   color: "#1F1F1F", abbr: "Tw", origin: "eu", country: "fr" },
 };
 
 // ─── Popular switches (landing + discover) ────────────────────────────────────

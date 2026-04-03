@@ -95,39 +95,38 @@ export function PartnerCard({ partner, compact = false, homepage = false }: Part
           </div>
         </div>
 
-        <div
-          className={cn(
-            "mb-4 border border-gray-100",
-            homepage ? "rounded-[20px] p-3" : "rounded-2xl p-3.5"
-          )}
-        >
-          <div className={cn("flex items-center justify-between gap-3", homepage ? "mb-2.5" : "mb-3")}>
-            <div className="flex items-center gap-2">
-              <StarRating rating={partner.rating} />
-              <span className="text-[11px] text-gray-400">{partner.reviewCount} reviews</span>
+        {homepage ? (
+          <div className="mb-4 flex items-center gap-3">
+            <div className="flex items-center gap-1.5 rounded-full border border-gray-100 bg-gray-50 px-3 py-1.5">
+              <Briefcase className="h-3 w-3 text-gray-400" />
+              <span className="text-[11px] font-medium text-gray-600">{partner.projects} projects</span>
             </div>
-            {homepage ? (
-              <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[10px] font-semibold text-gray-500">
-                Verified
-              </span>
-            ) : (
+            <div className="flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5">
+              <BadgeCheck className="h-3 w-3 text-[#2A5FA5]" />
+              <span className="text-[11px] font-medium text-[#2A5FA5]">Verified</span>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-4 rounded-2xl border border-gray-100 p-3.5">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <StarRating rating={partner.rating} />
+                <span className="text-[11px] text-gray-400">{partner.reviewCount} reviews</span>
+              </div>
               <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
                 Partner
               </span>
-            )}
-          </div>
-
-          <div className={cn("grid gap-2", homepage ? "grid-cols-1" : "grid-cols-2")}>
-            <div className={cn("rounded-xl px-3 py-2", homepage ? "border border-gray-100 bg-[#fafafa]" : "bg-white")}>
-              <div className="flex items-center justify-between gap-3 text-xs text-gray-600">
-                <div className="flex items-center gap-2">
-                  <Briefcase className="h-3.5 w-3.5 text-gray-400" />
-                  <p className="text-[11px] font-medium text-gray-500">Migration projects</p>
-                </div>
-                <p className="text-base font-semibold text-gray-900">{partner.projects}</p>
-              </div>
             </div>
-            {!homepage && (
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-xl bg-white px-3 py-2">
+                <div className="flex items-center justify-between gap-3 text-xs text-gray-600">
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="h-3.5 w-3.5 text-gray-400" />
+                    <p className="text-[11px] font-medium text-gray-500">Projects</p>
+                  </div>
+                  <p className="text-base font-semibold text-gray-900">{partner.projects}</p>
+                </div>
+              </div>
               <div className="rounded-xl bg-white px-3 py-2">
                 <div className="flex items-center gap-2 text-xs text-gray-600">
                   <Clock className="h-3.5 w-3.5 text-gray-400" />
@@ -137,9 +136,9 @@ export function PartnerCard({ partner, compact = false, homepage = false }: Part
                   </div>
                 </div>
               </div>
-            )}
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="mb-4 flex flex-wrap gap-1.5">
           {(partner.specialty ?? []).slice(0, compact ? 3 : 4).map((spec) => (

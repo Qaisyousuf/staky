@@ -125,7 +125,14 @@ function Hero() {
                   {tool.name}
                 </span>
                 {tool.country && (
-                  <span className="text-[10px] text-gray-300">{tool.country}</span>
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={`https://flagcdn.com/16x12/${tool.country}.png`}
+                    width={16}
+                    height={12}
+                    alt={tool.country}
+                    className="rounded-[2px] opacity-70"
+                  />
                 )}
               </div>
             ))}
@@ -152,29 +159,62 @@ function SwitchCard({
   return (
     <Link
       href={`/discover?category=${encodeURIComponent(category)}`}
-      className="group flex flex-col gap-3.5 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-gray-300 hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)]"
+      className="group flex flex-col rounded-2xl border border-gray-100 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-1 hover:border-gray-200 hover:shadow-[0_16px_48px_rgba(0,0,0,0.09)]"
     >
-      <span className="inline-flex w-fit items-center rounded-full border border-gray-100 bg-gray-50 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
-        {category}
-      </span>
+      {/* Header */}
+      <div className="mb-5 flex items-center justify-between">
+        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">
+          {category}
+        </span>
+        <ArrowRight className="h-3.5 w-3.5 text-gray-200 transition-colors duration-200 group-hover:text-[#0F6E56]" />
+      </div>
 
-      <div className="flex items-center gap-2 py-0.5">
-        <div className="flex flex-1 flex-col items-center gap-1.5 text-center">
+      {/* Tools */}
+      <div className="flex flex-1 flex-col gap-2.5">
+        {/* From */}
+        <div className="flex items-center gap-3 rounded-xl bg-gray-50 px-3 py-2.5">
           <ToolIcon slug={from} size="lg" />
-          <span className="line-clamp-2 text-[10px] leading-tight text-gray-400">{fromTool.name}</span>
+          <div>
+            <p className="text-[10px] font-medium text-gray-400">Switching from</p>
+            <p className="text-[12px] font-semibold text-gray-700">{fromTool.name}</p>
+          </div>
         </div>
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-gray-100 bg-white shadow-sm transition-transform duration-200 group-hover:translate-x-0.5">
-          <ArrowRight className="h-3 w-3 text-gray-400" />
+
+        {/* Divider with arrow */}
+        <div className="flex items-center gap-2 px-1">
+          <div className="h-px flex-1 bg-gray-100" />
+          <div className="flex h-5 w-5 items-center justify-center rounded-full border border-gray-100 bg-white shadow-sm">
+            <ArrowRight className="h-2.5 w-2.5 rotate-90 text-gray-300" />
+          </div>
+          <div className="h-px flex-1 bg-gray-100" />
         </div>
-        <div className="flex flex-1 flex-col items-center gap-1.5 text-center">
+
+        {/* To */}
+        <div className="flex items-center gap-3 rounded-xl bg-green-50/60 px-3 py-2.5 ring-1 ring-green-100">
           <ToolIcon slug={to} size="lg" />
-          <span className="line-clamp-2 text-[10px] font-semibold leading-tight text-[#0F6E56]">{toTool.name}</span>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <p className="text-[10px] font-medium text-[#0F6E56]">EU alternative</p>
+              {toTool.country && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={`https://flagcdn.com/16x12/${toTool.country}.png`}
+                  width={16}
+                  height={12}
+                  alt={toTool.country}
+                  className="rounded-[2px]"
+                />
+              )}
+            </div>
+            <p className="text-[12px] font-semibold text-gray-800">{toTool.name}</p>
+          </div>
         </div>
       </div>
 
-      <div className="border-t border-gray-100 pt-3">
+      {/* Footer */}
+      <div className="mt-5 border-t border-gray-100 pt-4">
         <p className="text-[11px] text-gray-400">
-          <span className="font-semibold text-gray-600">{switcherCount.toLocaleString()}</span> companies switched
+          <span className="font-semibold text-gray-700">{switcherCount.toLocaleString()}</span> companies switched
         </p>
       </div>
     </Link>
@@ -335,26 +375,25 @@ export default async function LandingPage() {
       <Hero />
 
       {/* ── Popular switches ── */}
-      <section className="py-20">
+      <section className="py-24">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.15em] text-[#0F6E56]">Popular switches</p>
-              <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+              <h2 className="text-3xl font-semibold tracking-tight text-gray-950 sm:text-4xl">
                 The most switched tools in Europe
               </h2>
-              <p className="mt-1.5 max-w-lg text-sm text-gray-500">
-                See what companies are replacing and where they&apos;re going.
+              <p className="mt-2 text-base text-gray-500">
+                See what companies are replacing — and where they&apos;re going.
               </p>
             </div>
             <Link
               href="/discover"
               className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-[#0F6E56] hover:underline"
             >
-              View all alternatives <ArrowRight className="h-3.5 w-3.5" />
+              View all EU alternatives <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {POPULAR_SWITCHES.slice(0, 10).map((sw) => (
               <SwitchCard
                 key={sw.id}
@@ -404,23 +443,22 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Partners ── */}
-      <section className="py-20">
+      <section className="border-t border-gray-100 py-24">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.15em] text-[#0F6E56]">Migration experts</p>
-              <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+              <h2 className="text-3xl font-semibold tracking-tight text-gray-950 sm:text-4xl">
                 Certified EU migration partners
               </h2>
-              <p className="mt-1.5 text-sm text-gray-500">
-                Vetted specialists for end-to-end migration support.
+              <p className="mt-2 text-base text-gray-500">
+                Vetted specialists ready to guide your migration from start to finish.
               </p>
             </div>
             <Link
               href="/partners"
               className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-[#0F6E56] hover:underline"
             >
-              All partners <ArrowRight className="h-3.5 w-3.5" />
+              View all partners <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
