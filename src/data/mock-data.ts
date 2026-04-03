@@ -302,7 +302,7 @@ export interface Partner {
   name: string;
   initials: string;
   color: string;
-  logoUrl?: string;
+  logoUrl: string | null;
   country: string;
   countryFlag: string;
   specialty: string[];
