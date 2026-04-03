@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, BadgeCheck, MapPin, Globe, Briefcase, Building2 } from "lucide-react";
 import { POPULAR_SWITCHES, MOCK_PARTNERS, TOOLS } from "@/data/mock-data";
 import { ToolIcon } from "@/components/shared/tool-icon";
 import { PartnerCard } from "@/components/shared/partner-card";
@@ -221,72 +221,6 @@ function SwitchCard({
   );
 }
 
-// ─── Story card ────────────────────────────────────────────────────────────────
-
-function StoryCard({
-  post,
-}: {
-  post: {
-    id: string;
-    fromTool: string;
-    toTool: string;
-    story: string;
-    author: { name: string | null; image: string | null; title: string | null; company: string | null };
-    recommendCount: number;
-  };
-}) {
-  const fromTool = TOOLS[post.fromTool];
-  const toTool = TOOLS[post.toTool];
-  const preview = post.story.length > 140 ? post.story.slice(0, 140).trim() + "…" : post.story;
-
-  return (
-    <Link
-      href={`/feed#post-${post.id}`}
-      className="group flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-gray-300 hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)]"
-    >
-      {/* Switch flow */}
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1.5">
-          <ToolIcon slug={post.fromTool} size="sm" />
-          <span className="text-[11px] text-gray-400">{fromTool?.name ?? post.fromTool}</span>
-        </div>
-        <ArrowRight className="h-3 w-3 shrink-0 text-gray-300" />
-        <div className="flex items-center gap-1.5">
-          <ToolIcon slug={post.toTool} size="sm" />
-          <span className="text-[11px] font-semibold text-[#0F6E56]">{toTool?.name ?? post.toTool}</span>
-        </div>
-      </div>
-
-      {/* Preview */}
-      <p className="flex-1 text-sm leading-relaxed text-gray-600">{preview}</p>
-
-      {/* Author */}
-      <div className="flex items-center justify-between border-t border-gray-100 pt-3.5">
-        <div className="flex items-center gap-2">
-          {post.author.image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={post.author.image} alt="" className="h-7 w-7 rounded-full object-cover" />
-          ) : (
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#0F6E56] text-[9px] font-bold text-white">
-              {getInitials(post.author.name)}
-            </div>
-          )}
-          <div className="min-w-0">
-            <p className="truncate text-[11px] font-semibold leading-none text-gray-800">{post.author.name ?? "Anonymous"}</p>
-            {(post.author.title || post.author.company) && (
-              <p className="mt-0.5 truncate text-[10px] leading-none text-gray-400">
-                {[post.author.title, post.author.company].filter(Boolean).join(" · ")}
-              </p>
-            )}
-          </div>
-        </div>
-        <span className="shrink-0 text-[10px] font-semibold text-[#0F6E56]">
-          {post.recommendCount} recs
-        </span>
-      </div>
-    </Link>
-  );
-}
 
 // ─── CTA banner ────────────────────────────────────────────────────────────────
 
@@ -339,36 +273,15 @@ function CtaBanner() {
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default async function LandingPage() {
-  const rawPosts = await prisma.alternativePost.findMany({
-    where: { published: true },
-    orderBy: [
-      { recommendations: { _count: "desc" } },
-      { createdAt: "desc" },
-    ],
-    take: 4,
-    include: {
-      author: {
-        select: { id: true, name: true, image: true, title: true, company: true },
-      },
-      _count: { select: { recommendations: true } },
-    },
-  });
-
-  const previewPosts = rawPosts.map((post) => ({
-    id: post.id,
-    fromTool: post.fromTool,
-    toTool: post.toTool,
-    story: post.story,
-    author: {
-      name: post.author.name,
-      image: post.author.image,
-      title: post.author.title,
-      company: post.author.company,
-    },
-    recommendCount: post._count.recommendations,
-  }));
-
-  const featuredPartners = MOCK_PARTNERS.slice(0, 4);
+  const [communityMembers, featuredPartners] = await Promise.all([
+    prisma.user.findMany({
+      where: { suspended: false, name: { not: null } },
+      orderBy: { createdAt: "desc" },
+      take: 3,
+      select: { id: true, name: true, image: true, coverImage: true, bio: true, title: true, company: true, location: true, interests: true, socialLinks: true, role: true, verified: true },
+    }),
+    Promise.resolve(MOCK_PARTNERS.slice(0, 4)),
+  ]);
 
   return (
     <>
@@ -420,38 +333,198 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* ── Community stories ── */}
-      <section className="border-y border-gray-100 bg-gray-50/60 py-20">
+      {/* ── Community members ── */}
+      <section className="border-y border-gray-100 bg-gray-50/40 py-24">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.15em] text-[#0F6E56]">From the community</p>
-              <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Real migration stories</h2>
-              <p className="mt-1.5 text-sm text-gray-500">
-                Honest experiences from companies who made the switch.
+              <h2 className="text-3xl font-semibold tracking-tight text-gray-950 sm:text-4xl">
+                Join a growing community
+              </h2>
+              <p className="mt-2 text-base text-gray-500">
+                Thousands of European businesses already making the switch.
               </p>
             </div>
             <Link
-              href="/feed"
+              href="/signup"
               className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-[#0F6E56] hover:underline"
             >
-              See all posts <ArrowRight className="h-3.5 w-3.5" />
+              Join the community <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
-          {previewPosts.length > 0 ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {previewPosts.map((post) => (
-                <StoryCard key={post.id} post={post} />
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-dashed border-gray-200 bg-white py-16 text-center">
-              <p className="text-sm font-semibold text-gray-700">No stories yet</p>
-              <p className="mt-1 text-xs text-gray-400">
-                Real migration posts will appear here as soon as they are published.
-              </p>
-            </div>
-          )}
+
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+            {communityMembers.map((member, idx) => {
+              const isPartner = member.role === "PARTNER";
+              const COVER_GRADIENTS = [
+                "linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)",
+                "linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)",
+                "linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)",
+                "linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)",
+                "linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)",
+                "linear-gradient(135deg, #fef9c3 0%, #fde68a 100%)",
+              ];
+              const defaultCover = COVER_GRADIENTS[idx % COVER_GRADIENTS.length];
+
+              return (
+                <div
+                  key={member.id}
+                  className="group flex flex-col rounded-2xl border border-gray-100 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-1 hover:border-gray-200 hover:shadow-[0_16px_48px_rgba(0,0,0,0.1)]"
+                >
+                  {/* Cover + avatar — relative wrapper so avatar can overlap */}
+                  <div className="relative">
+                    {/* Cover */}
+                    {member.coverImage ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={member.coverImage}
+                        alt=""
+                        className="h-24 w-full rounded-t-2xl object-cover"
+                      />
+                    ) : (
+                      <div
+                        className="relative h-24 w-full overflow-hidden rounded-t-2xl"
+                        style={{ background: defaultCover }}
+                      >
+                        <svg className="absolute inset-0 h-full w-full opacity-[0.07]" xmlns="http://www.w3.org/2000/svg">
+                          <defs>
+                            <pattern id={`grid-${member.id}`} width="28" height="28" patternUnits="userSpaceOnUse">
+                              <path d="M 28 0 L 0 0 0 28" fill="none" stroke="white" strokeWidth="0.8" />
+                            </pattern>
+                          </defs>
+                          <rect width="100%" height="100%" fill={`url(#grid-${member.id})`} />
+                        </svg>
+                        <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white opacity-[0.06]" />
+                      </div>
+                    )}
+
+                    {/* Avatar — absolutely placed at bottom of cover, hangs 50% below */}
+                    <div className="absolute bottom-0 left-5 translate-y-1/2">
+                      {member.image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={member.image}
+                          alt={member.name ?? ""}
+                          className="h-16 w-16 rounded-2xl object-cover shadow-md ring-[3px] ring-white"
+                        />
+                      ) : (
+                        <div
+                          className="flex h-16 w-16 items-center justify-center rounded-2xl text-xl font-bold text-white shadow-md ring-[3px] ring-white"
+                          style={{ backgroundColor: isPartner ? "#2A5FA5" : "#0F6E56" }}
+                        >
+                          {getInitials(member.name)}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Partner badge — top right of cover */}
+                    {isPartner && (
+                      <div className="absolute bottom-2 right-4">
+                        <span className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-semibold text-[#2A5FA5]">
+                          <BadgeCheck className="h-3 w-3" />
+                          Migration Partner
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Body — pt accounts for avatar hanging below cover */}
+                  <div className="flex flex-1 flex-col px-6 pb-6 pt-11">
+
+                    {/* Name + badge */}
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <p className="text-[16px] font-semibold leading-tight text-gray-900">
+                        {member.name}
+                      </p>
+                      <BadgeCheck
+                        className="h-[17px] w-[17px] shrink-0"
+                        style={{ color: isPartner ? "#2A5FA5" : "#0F6E56" }}
+                      />
+                    </div>
+
+                    {/* Visit my website */}
+                    {(() => {
+                      const links = member.socialLinks as Record<string, string> | null;
+                      const website = links?.website;
+                      if (!website) return null;
+                      const href = website.startsWith("http") ? website : `https://${website}`;
+                      return (
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mb-1 inline-flex items-center gap-1 text-[10.5px] font-medium text-[#0F6E56]"
+                        >
+                          <Globe className="h-2.5 w-2.5 shrink-0" />
+                          Visit my website
+                        </a>
+                      );
+                    })()}
+
+                    {/* Title */}
+                    {member.title && (
+                      <div className="mt-1 flex items-center gap-1.5 truncate">
+                        <Briefcase className="h-3 w-3 shrink-0 text-gray-300" />
+                        <p className="text-[12.5px] text-gray-500 truncate">{member.title}</p>
+                      </div>
+                    )}
+
+                    {/* Company */}
+                    {member.company && (
+                      <div className="mt-0.5 flex items-center gap-1.5 truncate">
+                        <Building2 className="h-3 w-3 shrink-0 text-gray-300" />
+                        <p className="text-[12.5px] text-gray-500 truncate">
+                          Founder at {member.company}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Location */}
+                    {member.location && (
+                      <div className="mt-1 flex items-center gap-1.5">
+                        <MapPin className="h-3 w-3 shrink-0 text-gray-300" />
+                        <span className="text-[12.5px] text-gray-500 truncate">{member.location}</span>
+                      </div>
+                    )}
+
+                    {/* Interests */}
+                    {member.interests.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {member.interests.slice(0, 3).map((tag) => (
+                          <span
+                            key={tag}
+                            className="rounded-full border border-gray-100 bg-gray-50 px-2.5 py-1 text-[10px] font-medium text-gray-500"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Bio */}
+                    <div className="mt-3 flex-1">
+                      {member.bio ? (
+                        <p className="text-[13px] leading-relaxed text-gray-400 line-clamp-3">
+                          {member.bio}
+                        </p>
+                      ) : (
+                        <p className="text-[13px] italic text-gray-300">No bio yet.</p>
+                      )}
+                    </div>
+
+                    {/* View profile */}
+                    <Link
+                      href={`/profile/${member.id}`}
+                      className="mt-5 flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 py-2.5 text-[12.5px] font-semibold text-gray-600 transition-all hover:border-gray-900 hover:text-gray-900"
+                    >
+                      View profile
+                      <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </section>
 
