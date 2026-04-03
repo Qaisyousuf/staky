@@ -95,12 +95,12 @@ function Hero() {
                 key={i}
                 className="flex items-center gap-2.5 rounded-full border border-gray-100 bg-white px-4 py-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.07)] select-none"
               >
-                <span
-                  className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[5px] text-[9px] font-black text-white"
-                  style={{ backgroundColor: tool.color }}
-                >
-                  {tool.abbr}
-                </span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`/logos/tools/${tool.slug}.svg`}
+                  alt={tool.name}
+                  className="h-5 w-5 shrink-0 object-contain"
+                />
                 <span className="text-[13.5px] font-medium text-gray-600 whitespace-nowrap">
                   {tool.name}
                 </span>
@@ -115,12 +115,12 @@ function Hero() {
                 key={i}
                 className="flex items-center gap-2.5 rounded-full border border-gray-100 bg-white px-4 py-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.07)] select-none"
               >
-                <span
-                  className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[5px] text-[9px] font-black text-white"
-                  style={{ backgroundColor: tool.color }}
-                >
-                  {tool.abbr}
-                </span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`/logos/tools/${tool.slug}.svg`}
+                  alt={tool.name}
+                  className="h-5 w-5 shrink-0 object-contain"
+                />
                 <span className="text-[13.5px] font-medium text-gray-600 whitespace-nowrap">
                   {tool.name}
                 </span>
