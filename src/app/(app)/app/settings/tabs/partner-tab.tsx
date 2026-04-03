@@ -557,7 +557,7 @@ export function PartnerTab({ partner }: PartnerTabProps) {
   // Track if the user just submitted so we can show PendingState immediately
   const [justSubmitted, setJustSubmitted] = useState(false);
 
-  const showApproved = partner?.approved === true || justSubmitted;
+  const showApproved = partner?.approved === true;
   const showPending = partner && !partner.approved && !showForm && !justSubmitted;
   const showFormState = !justSubmitted && (!partner || showForm) && !showApproved;
 
@@ -575,7 +575,20 @@ export function PartnerTab({ partner }: PartnerTabProps) {
         </p>
       </div>
 
-      {showApproved && <ApprovedState partner={partner} />}
+      {justSubmitted && !partner && (
+        <div className="flex items-start gap-4 rounded-xl border border-green-200 bg-green-50 px-5 py-4">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-100">
+            <CheckCircle2 className="h-5 w-5 text-[#0F6E56]" />
+          </span>
+          <div>
+            <p className="text-sm font-bold text-green-800">Partner account approved!</p>
+            <p className="text-xs text-green-600 mt-1 leading-relaxed">
+              Your CVR was verified and your account is now active. Refresh the page to access your partner settings.
+            </p>
+          </div>
+        </div>
+      )}
+      {showApproved && partner && <ApprovedState partner={partner} />}
       {showPending && <PendingState onResubmit={() => { setJustSubmitted(false); setShowForm(true); }} />}
       {showFormState && <ApplicationForm onSuccess={handleSuccess} />}
     </div>
