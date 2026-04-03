@@ -311,7 +311,6 @@ function NotificationDropdown({
                 <SenderAvatar
                   name={n.sender?.name ?? null}
                   image={n.sender?.image ?? null}
-                  role={n.sender?.role ?? "USER"}
                   type={n.type}
                   senderMode={n.senderMode}
                   partnerName={n.sender?.partnerName}
