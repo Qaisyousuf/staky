@@ -9,7 +9,6 @@ export type ApplyAsPartnerData = {
   country: string;
   cvr: string;
   specialty: string;
-  pricing?: string;
   description?: string;
   website?: string;
 };
@@ -17,7 +16,20 @@ export type ApplyAsPartnerData = {
 // ─── CVR lookup (public cvrapi.dk) ────────────────────────────────────────────
 
 export type CvrResult =
-  | { status: "found"; name: string; city: string; address: string }
+  | {
+      status: "found";
+      name: string;
+      address: string;
+      zipcode: string;
+      city: string;
+      fullLocation: string;    // "Street 1, 1234 Copenhagen"
+      industrydesc: string | null;
+      companytype: string | null;
+      employees: string | null;
+      email: string | null;
+      phone: string | null;
+      startdate: string | null;
+    }
   | { status: "not_found" }
   | { status: "error" };
 
@@ -31,9 +43,25 @@ export async function lookupCVR(cvr: string): Promise<CvrResult> {
       { headers: { "User-Agent": "Staky/1.0 (staky.dk)" }, next: { revalidate: 0 } }
     );
     if (!res.ok) return { status: "not_found" };
-    const data = await res.json();
-    if (data.error || !data.name) return { status: "not_found" };
-    return { status: "found", name: data.name, city: data.city ?? "", address: data.address ?? "" };
+    const d = await res.json();
+    if (d.error || !d.name) return { status: "not_found" };
+
+    const parts = [d.address, [d.zipcode, d.city].filter(Boolean).join(" ")].filter(Boolean);
+
+    return {
+      status: "found",
+      name: d.name ?? "",
+      address: d.address ?? "",
+      zipcode: d.zipcode ?? "",
+      city: d.city ?? "",
+      fullLocation: parts.join(", "),
+      industrydesc: d.industrydesc ?? null,
+      companytype: d.companytype ?? null,
+      employees: d.employees ?? null,
+      email: d.email ?? null,
+      phone: d.phone ?? null,
+      startdate: d.startdate ?? null,
+    };
   } catch {
     return { status: "error" };
   }
@@ -82,7 +110,6 @@ export async function applyAsPartner(data: ApplyAsPartnerData): Promise<PartnerM
       specialty: specialtyList,
       services: [],
       certifications: [],
-      pricing: data.pricing?.trim() || null,
       description: data.description?.trim() || null,
       website: data.website?.trim() || null,
       approved: true,
@@ -92,7 +119,6 @@ export async function applyAsPartner(data: ApplyAsPartnerData): Promise<PartnerM
       country: data.country.trim(),
       cvr: cvrCleaned,
       specialty: specialtyList,
-      pricing: data.pricing?.trim() || null,
       description: data.description?.trim() || null,
       website: data.website?.trim() || null,
       approved: true,
@@ -107,17 +133,21 @@ export async function applyAsPartner(data: ApplyAsPartnerData): Promise<PartnerM
 
   const { createNotification } = await import("@/lib/notifications");
 
-  // Notify user that their application was auto-approved
-  await createNotification({
-    recipientId: session.user.id,
-    type: "PARTNER_APPROVED",
-  });
-
-  // Notify admins (FYI)
+  // Use first admin as sender so notification shows "Admin approved your application"
   const admins = await prisma.user.findMany({
     where: { role: "ADMIN" },
     select: { id: true },
   });
+  const firstAdminId = admins[0]?.id ?? null;
+
+  // Notify the user — from admin
+  await createNotification({
+    recipientId: session.user.id,
+    senderId: firstAdminId,
+    type: "PARTNER_APPROVED",
+  });
+
+  // Notify all admins (FYI)
   await Promise.all(
     admins.map((admin) =>
       createNotification({

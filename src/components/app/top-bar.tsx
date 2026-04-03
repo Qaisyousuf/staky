@@ -129,9 +129,9 @@ const TYPE_CFG: Record<string, { icon: React.ElementType; bg: string; fg: string
   REQUEST_MESSAGE:   { icon: MessageSquare,     bg: "bg-blue-100",   fg: "text-blue-600",    action: "sent you a message about your request" },
   PROFILE_VIEW:          { icon: Eye,          bg: "bg-purple-100", fg: "text-purple-600",  action: "viewed your profile" },
   PARTNER_APPLICATION:   { icon: Handshake,    bg: "bg-blue-100",   fg: "text-blue-600",   action: "submitted a partner application" },
-  PARTNER_APPROVED:      { icon: ShieldCheck,  bg: "bg-green-100",  fg: "text-green-600",  action: "Your partner application was approved" },
-  PARTNER_REJECTED:      { icon: ShieldX,      bg: "bg-rose-100",   fg: "text-rose-600",   action: "Your partner application was rejected" },
-  PARTNER_DELETED:       { icon: Trash2,       bg: "bg-rose-100",   fg: "text-rose-600",   action: "Your partner account was removed" },
+  PARTNER_APPROVED:      { icon: ShieldCheck,  bg: "bg-green-100",  fg: "text-green-600",  action: "approved your partner application" },
+  PARTNER_REJECTED:      { icon: ShieldX,      bg: "bg-rose-100",   fg: "text-rose-600",   action: "rejected your partner application" },
+  PARTNER_DELETED:       { icon: Trash2,       bg: "bg-rose-100",   fg: "text-rose-600",   action: "removed your partner account" },
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

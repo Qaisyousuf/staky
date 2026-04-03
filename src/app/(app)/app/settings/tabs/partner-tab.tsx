@@ -4,7 +4,7 @@ import { useState, useTransition, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import {
-  Handshake, Building2, Globe, Tag, DollarSign,
+  Handshake, Building2, Globe, Tag,
   FileText, CheckCircle2, Clock, ArrowLeftRight, Loader2, Camera, X,
   Search, BadgeCheck, AlertCircle,
 } from "lucide-react";
@@ -147,19 +147,30 @@ interface PartnerTabProps {
 
 // ─── State A — Application form ───────────────────────────────────────────────
 
+type CvrInfo = {
+  name: string;
+  fullLocation: string;
+  industrydesc: string | null;
+  companytype: string | null;
+  employees: string | null;
+  email: string | null;
+  phone: string | null;
+  startdate: string | null;
+};
+
 function ApplicationForm({ onSuccess }: { onSuccess: () => void }) {
   const [isPending, startTransition] = useTransition();
   const [isLookingUp, startLookup] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [cvrStatus, setCvrStatus] = useState<"idle" | "valid" | "invalid">("idle");
-  const [cvrMessage, setCvrMessage] = useState<string>("");
+  const [cvrInfo, setCvrInfo] = useState<CvrInfo | null>(null);
+  const [cvrError, setCvrError] = useState<string>("");
 
   const [form, setForm] = useState({
     companyName: "",
     country: "Denmark",
     cvr: "",
     specialty: "",
-    pricing: "",
     description: "",
     website: "",
   });
@@ -168,19 +179,27 @@ function ApplicationForm({ onSuccess }: { onSuccess: () => void }) {
 
   const handleCvrLookup = () => {
     setCvrStatus("idle");
-    setCvrMessage("");
+    setCvrInfo(null);
+    setCvrError("");
     startLookup(async () => {
       const result = await lookupCVR(form.cvr);
       if (result.status === "found") {
         setCvrStatus("valid");
-        setCvrMessage(`${result.name}${result.city ? ` · ${result.city}` : ""}`);
-        setForm((f) => ({ ...f, companyName: result.name }));
+        setCvrInfo(result);
+        // Auto-fill known fields; suggest industry as specialty
+        setForm((f) => ({
+          ...f,
+          companyName: result.name,
+          country: result.city ? `${result.city}, Denmark` : "Denmark",
+          specialty: f.specialty || result.industrydesc || "",
+          website: f.website || (result.email ? `https://${result.email.split("@")[1] ?? ""}` : ""),
+        }));
       } else if (result.status === "not_found") {
         setCvrStatus("invalid");
-        setCvrMessage("CVR not found in the Danish Business Register.");
+        setCvrError("CVR not found in the Danish Business Register.");
       } else {
         setCvrStatus("invalid");
-        setCvrMessage("Could not reach the CVR registry. Please try again.");
+        setCvrError("Could not reach the CVR registry. Please try again.");
       }
     });
   };
@@ -205,7 +224,7 @@ function ApplicationForm({ onSuccess }: { onSuccess: () => void }) {
         <div>
           <p className="text-sm font-semibold text-[#2A5FA5]">Become a Migration Partner</p>
           <p className="text-xs text-blue-600 mt-0.5">
-            Enter your Danish CVR number to verify your business. Approved companies are instantly activated.
+            Enter your Danish CVR number to verify your business. Valid companies are instantly approved.
           </p>
         </div>
       </div>
@@ -216,7 +235,7 @@ function ApplicationForm({ onSuccess }: { onSuccess: () => void }) {
         </div>
       )}
 
-      {/* CVR number */}
+      {/* CVR lookup */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1.5">
           CVR number <span className="text-red-400">*</span>
@@ -232,11 +251,11 @@ function ApplicationForm({ onSuccess }: { onSuccess: () => void }) {
               onChange={(e) => {
                 setForm((f) => ({ ...f, cvr: e.target.value.replace(/\D/g, "") }));
                 setCvrStatus("idle");
-                setCvrMessage("");
+                setCvrInfo(null);
+                setCvrError("");
               }}
               className={cn(
-                inputClass,
-                "pl-9 font-mono tracking-widest",
+                inputClass, "pl-9 font-mono tracking-widest",
                 cvrStatus === "valid" && "border-green-400 bg-green-50/30",
                 cvrStatus === "invalid" && "border-red-300 bg-red-50/30"
               )}
@@ -253,49 +272,66 @@ function ApplicationForm({ onSuccess }: { onSuccess: () => void }) {
             {isLookingUp ? "Looking up…" : "Look up"}
           </button>
         </div>
-        {cvrStatus === "valid" && (
-          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-green-700 font-medium">
-            <BadgeCheck className="h-3.5 w-3.5 shrink-0" />
-            {cvrMessage}
-          </p>
+
+        {/* CVR result card */}
+        {cvrStatus === "valid" && cvrInfo && (
+          <div className="mt-2 rounded-xl border border-green-200 bg-green-50/50 px-4 py-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <BadgeCheck className="h-4 w-4 text-green-600 shrink-0" />
+              <span className="text-sm font-semibold text-green-800">{cvrInfo.name}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11.5px] text-gray-500">
+              {cvrInfo.fullLocation && <span><span className="font-medium text-gray-700">Address:</span> {cvrInfo.fullLocation}</span>}
+              {cvrInfo.industrydesc && <span><span className="font-medium text-gray-700">Industry:</span> {cvrInfo.industrydesc}</span>}
+              {cvrInfo.companytype && <span><span className="font-medium text-gray-700">Type:</span> {cvrInfo.companytype}</span>}
+              {cvrInfo.employees && <span><span className="font-medium text-gray-700">Employees:</span> {cvrInfo.employees}</span>}
+              {cvrInfo.startdate && <span><span className="font-medium text-gray-700">Founded:</span> {cvrInfo.startdate}</span>}
+              {cvrInfo.phone && <span><span className="font-medium text-gray-700">Phone:</span> {cvrInfo.phone}</span>}
+            </div>
+            <p className="text-[11px] text-green-700">Fields below have been pre-filled — review and adjust if needed.</p>
+          </div>
         )}
         {cvrStatus === "invalid" && (
           <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600">
-            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-            {cvrMessage}
+            <AlertCircle className="h-3.5 w-3.5 shrink-0" /> {cvrError}
           </p>
         )}
-        <p className="mt-1 text-[11px] text-gray-400">
-          Your CVR is verified against the Danish Business Register (virk.dk). Valid companies are instantly approved.
-        </p>
+        {cvrStatus === "idle" && (
+          <p className="mt-1 text-[11px] text-gray-400">
+            Verified against the Danish Business Register (virk.dk). Fields are auto-filled after lookup.
+          </p>
+        )}
       </div>
 
+      {/* Company name */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          Company name <span className="text-red-400">*</span>
+        </label>
+        <div className="relative">
+          <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Auto-filled after CVR lookup"
+            value={form.companyName}
+            onChange={(e) => setForm((f) => ({ ...f, companyName: e.target.value }))}
+            className={`${inputClass} pl-9`}
+            required
+          />
+        </div>
+      </div>
+
+      {/* Location + Website */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Company name <span className="text-red-400">*</span>
-          </label>
-          <div className="relative">
-            <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Auto-filled from CVR lookup"
-              value={form.companyName}
-              onChange={(e) => setForm((f) => ({ ...f, companyName: e.target.value }))}
-              className={`${inputClass} pl-9`}
-              required
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Country <span className="text-red-400">*</span>
+            Location <span className="text-red-400">*</span>
           </label>
           <div className="relative">
             <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             <input
               type="text"
+              placeholder="Copenhagen, Denmark"
               value={form.country}
               onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))}
               className={`${inputClass} pl-9`}
@@ -303,43 +339,6 @@ function ApplicationForm({ onSuccess }: { onSuccess: () => void }) {
             />
           </div>
         </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          Specialty <span className="text-red-400">*</span>{" "}
-          <span className="font-normal text-gray-400">(comma-separated)</span>
-        </label>
-        <div className="relative">
-          <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Nextcloud, self-hosting, GDPR compliance"
-            value={form.specialty}
-            onChange={(e) => setForm((f) => ({ ...f, specialty: e.target.value }))}
-            className={`${inputClass} pl-9`}
-            required
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Pricing <span className="font-normal text-gray-400">(optional)</span>
-          </label>
-          <div className="relative">
-            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="From €150/hour"
-              value={form.pricing}
-              onChange={(e) => setForm((f) => ({ ...f, pricing: e.target.value }))}
-              className={`${inputClass} pl-9`}
-            />
-          </div>
-        </div>
-
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
             Website <span className="font-normal text-gray-400">(optional)</span>
@@ -357,6 +356,29 @@ function ApplicationForm({ onSuccess }: { onSuccess: () => void }) {
         </div>
       </div>
 
+      {/* Specialty */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          Specialty <span className="text-red-400">*</span>{" "}
+          <span className="font-normal text-gray-400">(comma-separated)</span>
+        </label>
+        <div className="relative">
+          <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Nextcloud, self-hosting, GDPR compliance"
+            value={form.specialty}
+            onChange={(e) => setForm((f) => ({ ...f, specialty: e.target.value }))}
+            className={`${inputClass} pl-9`}
+            required
+          />
+        </div>
+        {cvrInfo?.industrydesc && form.specialty === cvrInfo.industrydesc && (
+          <p className="mt-1 text-[11px] text-amber-600">Suggested from CVR industry — add more specific services if you&apos;d like.</p>
+        )}
+      </div>
+
+      {/* Description */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1.5">
           Description <span className="font-normal text-gray-400">(optional)</span>
@@ -379,7 +401,7 @@ function ApplicationForm({ onSuccess }: { onSuccess: () => void }) {
         className="inline-flex items-center gap-2 rounded-xl bg-[#2A5FA5] hover:bg-[#244d8a] text-white text-sm font-semibold px-5 py-2.5 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Handshake className="h-4 w-4" />}
-        {isPending ? "Submitting…" : "Submit application"}
+        {isPending ? "Verifying &amp; activating…" : "Submit application"}
       </button>
     </form>
   );
@@ -553,8 +575,8 @@ function ApprovedState({ partner }: { partner: PartnerInfo }) {
 // ─── Main PartnerTab ──────────────────────────────────────────────────────────
 
 export function PartnerTab({ partner }: PartnerTabProps) {
+  const router = useRouter();
   const [showForm, setShowForm] = useState(false);
-  // Track if the user just submitted so we can show PendingState immediately
   const [justSubmitted, setJustSubmitted] = useState(false);
 
   const showApproved = partner?.approved === true;
@@ -564,6 +586,7 @@ export function PartnerTab({ partner }: PartnerTabProps) {
   const handleSuccess = () => {
     setShowForm(false);
     setJustSubmitted(true);
+    router.refresh(); // re-fetch server component so partner data loads
   };
 
   return (
