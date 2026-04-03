@@ -321,7 +321,7 @@ function PendingState({ onResubmit }: { onResubmit: () => void }) {
           <p className="text-sm font-bold text-amber-800">Application under review</p>
           <p className="text-xs text-amber-600 mt-1 leading-relaxed">
             Your partner application has been received. Our team will review it within 2–3 business days.
-            You'll be notified by email once approved.
+            You&apos;ll be notified by email once approved.
           </p>
         </div>
       </div>
@@ -500,7 +500,7 @@ export function PartnerTab({ partner }: PartnerTabProps) {
 
       {submitted && !partner && (
         <div className="rounded-lg bg-green-50 border border-green-100 px-4 py-3 text-sm text-green-700">
-          Application submitted! We'll review it within 2–3 business days.
+          Application submitted! We&apos;ll review it within 2&#8211;3 business days.
         </div>
       )}
 

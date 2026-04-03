@@ -13,7 +13,6 @@ import {
   Settings,
   TrendingUp,
   Users,
-  Briefcase,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toggleFollow } from "@/actions/social";

@@ -325,7 +325,7 @@ export function PartnerMatchList({
         <div className="rounded-2xl border border-dashed border-gray-200 px-6 py-8 text-center">
           <p className="text-sm font-semibold text-gray-600">No stack migrations detected</p>
           <p className="text-xs text-gray-400 mt-1 mb-4">
-            Add your US tools to My Stack and we'll pre-fill your request automatically.
+            Add your US tools to My Stack and we&apos;ll pre-fill your request automatically.
           </p>
           <Link
             href="/app/my-stack"

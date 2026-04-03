@@ -175,7 +175,6 @@ function AnimatedPanel({ children, className }: { children: React.ReactNode; cla
 function SenderAvatar({
   name,
   image,
-  role,
   type,
   senderMode,
   partnerName,
@@ -183,7 +182,6 @@ function SenderAvatar({
 }: {
   name: string | null;
   image: string | null;
-  role: string;
   type: string;
   senderMode?: string;
   partnerName?: string | null;

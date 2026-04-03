@@ -543,7 +543,7 @@ async function PartnerDashboard({ userId, userName }: { userId: string; userName
           <AlertCircle className="h-5 w-5 text-amber-500 shrink-0" />
           <div>
             <p className="text-sm font-bold text-amber-800">Approval pending</p>
-            <p className="text-xs text-amber-600 mt-0.5">Your partner profile is under review. You'll be notified once approved.</p>
+            <p className="text-xs text-amber-600 mt-0.5">Your partner profile is under review. You&apos;ll be notified once approved.</p>
           </div>
         </div>
       )}
@@ -739,7 +739,7 @@ export const metadata = { title: "Dashboard — Staky" };
 export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
-  const { id: userId, role, name } = session.user;
+  const { id: userId, name } = session.user;
 
   // Read activeMode + partner approval from DB — session JWT can be stale after a mode switch
   const userRecord = await prisma.user.findUnique({
