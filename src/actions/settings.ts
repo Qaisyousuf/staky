@@ -37,8 +37,8 @@ export async function updateProfile(data: {
     },
   });
 
-  revalidatePath("/settings");
-  revalidatePath("/dashboard");
+  revalidatePath("/app/settings");
+  revalidatePath("/app/dashboard");
   return { ok: true };
 }
 
@@ -72,7 +72,7 @@ export async function updateNotificationSettings(data: {
     update: data,
   });
 
-  revalidatePath("/settings");
+  revalidatePath("/app/settings");
   return { ok: true };
 }
 
@@ -89,7 +89,7 @@ export async function updatePrivacy(data: {
     data: { profileVisibility: data.profileVisibility },
   });
 
-  revalidatePath("/settings");
+  revalidatePath("/app/settings");
   return { ok: true };
 }
 

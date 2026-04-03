@@ -9,10 +9,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const userId = session.user.id;
 
-  const [userRecord, rawNotifications, rawMessages] = await Promise.all([
+  const [userRecord, partnerRecord, rawNotifications, rawMessages] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
-      select: { image: true },
+      select: { image: true, activeMode: true },
+    }),
+    prisma.partner.findUnique({
+      where: { userId },
+      select: { approved: true, logoUrl: true, companyName: true },
     }),
     prisma.notification.findMany({
       where: { recipientId: userId },
@@ -25,7 +29,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         createdAt: true,
         postId: true,
         commentId: true,
-        sender: { select: { id: true, name: true, image: true, role: true } },
+        requestId: true,
+        senderMode: true,
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            role: true,
+            partner: { select: { companyName: true, logoUrl: true } },
+          },
+        },
       },
     }),
     // Last 20 received messages, dedupe by sender below
@@ -61,7 +75,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     createdAt: n.createdAt.toISOString(),
     postId: n.postId,
     commentId: n.commentId,
-    sender: n.sender,
+    requestId: n.requestId,
+    senderMode: n.senderMode,
+    sender: n.sender
+      ? {
+          id: n.sender.id,
+          name: n.sender.name,
+          image: n.sender.image,
+          role: n.sender.role,
+          partnerName: n.sender.partner?.companyName ?? null,
+          partnerLogoUrl: n.sender.partner?.logoUrl ?? null,
+        }
+      : null,
     post: n.postId ? (postMap[n.postId] ?? null) : null,
   }));
 
@@ -83,6 +108,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     email: session.user.email,
     image: userRecord?.image ?? null,
     role: session.user.role,
+    activeMode: userRecord?.activeMode ?? session.user.activeMode ?? "user",
+    partnerApproved: partnerRecord?.approved ?? false,
+    partnerLogoUrl: partnerRecord?.logoUrl ?? null,
+    partnerName: partnerRecord?.companyName ?? null,
   };
 
   return (

@@ -21,6 +21,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
+  // Determine if posting in partner mode
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      activeMode: true,
+      partner: { select: { approved: true } },
+    },
+  });
+  const postedAsPartner =
+    dbUser?.activeMode === "partner" && dbUser?.partner?.approved === true;
+
   try {
     const formData = await request.formData();
     const fromTool = String(formData.get("fromTool") ?? "");
@@ -108,6 +119,7 @@ export async function POST(request: Request) {
         linkTitle: linkMetadata?.title || null,
         linkDescription: linkMetadata?.description || null,
         linkImage: linkMetadata?.image || null,
+        postedAsPartner,
       },
       select: { id: true },
     });

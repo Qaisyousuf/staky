@@ -297,7 +297,7 @@ export default async function PublicFeedPage({
           verified: true,
           title: true,
           company: true,
-          partner: { select: { rating: true, projectCount: true } },
+          partner: { select: { rating: true, projectCount: true, companyName: true, logoUrl: true } },
         },
       },
       _count: {
@@ -311,20 +311,26 @@ export default async function PublicFeedPage({
   let savedSet = new Set<string>();
   let recommendedSet = new Set<string>();
   let followingSet = new Set<string>();
+  let connectedSet = new Set<string>();
 
   if (userId) {
     const postIds = rawPosts.map((p) => p.id);
     const authorIds = Array.from(new Set(rawPosts.map((p) => p.authorId)));
-    const [likes, saves, recs, follows] = await Promise.all([
+    const [likes, saves, recs, follows, connections] = await Promise.all([
       prisma.like.findMany({ where: { userId, postId: { in: postIds } }, select: { postId: true } }),
       prisma.savedPost.findMany({ where: { userId, postId: { in: postIds } }, select: { postId: true } }),
       prisma.recommendation.findMany({ where: { userId, postId: { in: postIds } }, select: { postId: true } }),
       prisma.follow.findMany({ where: { followerId: userId, followingId: { in: authorIds } }, select: { followingId: true } }),
+      prisma.connection.findMany({
+        where: { OR: [{ userId, targetId: { in: authorIds } }, { userId: { in: authorIds }, targetId: userId }] },
+        select: { userId: true, targetId: true },
+      }),
     ]);
     likedSet = new Set(likes.map((l) => l.postId));
     savedSet = new Set(saves.map((s) => s.postId));
     recommendedSet = new Set(recs.map((r) => r.postId));
     followingSet = new Set(follows.map((f) => f.followingId));
+    connectedSet = new Set(connections.map((c) => (c.userId === userId ? c.targetId : c.userId)));
   }
 
   const posts: FeedPostData[] = rawPosts.map((p) => ({
@@ -340,6 +346,7 @@ export default async function PublicFeedPage({
     linkImage: p.linkImage,
     linkDomain: p.linkDomain,
     createdAt: p.createdAt.toISOString(),
+    postedAsPartner: p.postedAsPartner,
     author: {
       id: p.author.id,
       name: p.author.name,
@@ -406,6 +413,7 @@ export default async function PublicFeedPage({
                   initialSaved={savedSet.has(post.id)}
                   initialRecommended={recommendedSet.has(post.id)}
                   initialFollowing={followingSet.has(post.author.id)}
+                  initialConnected={connectedSet.has(post.author.id)}
                   autoExpandComments={
                     !!searchParams.comment && post.id === searchParams.post
                   }

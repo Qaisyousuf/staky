@@ -72,7 +72,7 @@ function UserMenu({ name, image }: { name?: string | null; image?: string | null
           <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-full mt-1.5 z-40 w-44 rounded-xl border border-gray-200 bg-white shadow-lg py-1 overflow-hidden">
             <Link
-              href="/dashboard"
+              href="/app/dashboard"
               onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
             >
@@ -184,7 +184,7 @@ export function TopNav({ userImage }: { userImage?: string | null }) {
             {isLoggedIn ? (
               <>
                 <Link
-                  href="/dashboard"
+                  href="/app/dashboard"
                   onClick={() => setOpen(false)}
                   className="flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
                 >

@@ -10,6 +10,10 @@ interface ShellUser {
   email?: string | null;
   image?: string | null;
   role: "USER" | "PARTNER" | "ADMIN";
+  activeMode: string;
+  partnerApproved: boolean;
+  partnerLogoUrl?: string | null;
+  partnerName?: string | null;
 }
 
 interface AppShellProps {

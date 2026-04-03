@@ -120,8 +120,8 @@ export async function adminModeratePost(
     });
   }
 
-  revalidatePath("/admin");
-  revalidatePath("/feed");
+  revalidatePath("/app/admin");
+  revalidatePath("/app/feed");
 }
 
 // ─── Comments ─────────────────────────────────────────────────────────────────
@@ -164,7 +164,7 @@ export async function adminModerateComment(
     });
   }
 
-  revalidatePath("/admin");
+  revalidatePath("/app/admin");
 }
 
 // ─── Requests ─────────────────────────────────────────────────────────────────
@@ -183,16 +183,44 @@ export async function adminGetRequests() {
 
 export async function adminUpdateRequest(
   requestId: string,
-  action: "cancel" | "reopen"
+  action: "cancel" | "reopen" | "review"
 ) {
   await requireAdmin();
 
+  const status =
+    action === "cancel" ? "CANCELLED" :
+    action === "review" ? "UNDER_REVIEW" :
+    "PENDING";
+
   await prisma.migrationRequest.update({
     where: { id: requestId },
-    data: { status: action === "cancel" ? "CANCELLED" : "PENDING" },
+    data: { status },
   });
 
-  revalidatePath("/admin");
+  revalidatePath("/app/admin");
+}
+
+export async function adminMatchPartner(requestId: string, partnerUserId: string) {
+  await requireAdmin();
+
+  const partner = await prisma.partner.findUnique({ where: { userId: partnerUserId } });
+  if (!partner) throw new Error("Partner not found");
+
+  await prisma.migrationRequest.update({
+    where: { id: requestId },
+    data: { partnerId: partner.id, status: "MATCHED" },
+  });
+
+  const { createNotification } = await import("@/lib/notifications");
+  await createNotification({
+    recipientId: partnerUserId,
+    type: "REQUEST_RECEIVED",
+    requestId,
+  });
+
+  revalidatePath("/app/admin");
+  revalidatePath("/app/leads");
+  revalidatePath(`/app/leads/${requestId}`);
 }
 
 // ─── Partners ─────────────────────────────────────────────────────────────────
@@ -238,8 +266,8 @@ export async function adminManagePartner(
     });
   }
 
-  revalidatePath("/admin");
-  revalidatePath("/partners");
+  revalidatePath("/app/admin");
+  revalidatePath("/app/partners");
 }
 
 // ─── Users ────────────────────────────────────────────────────────────────────
@@ -277,7 +305,7 @@ export async function adminManageUser(
     await prisma.user.update({ where: { id: userId }, data: { role } });
   }
 
-  revalidatePath("/admin");
+  revalidatePath("/app/admin");
 }
 
 // ─── Reports (analytics) ──────────────────────────────────────────────────────

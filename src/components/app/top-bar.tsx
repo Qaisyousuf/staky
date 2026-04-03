@@ -3,13 +3,16 @@
 import { useState, useRef, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   Menu, Search, Bell, Mail, Settings, X, Plus,
   Heart, MessageCircle, Reply, UserPlus, ThumbsUp,
-  Link2, Bookmark, Share2,
+  Link2, Bookmark, Share2, BriefcaseBusiness, CircleCheckBig, CircleOff, CircleDot, MessageSquare,
+  ArrowLeftRight, Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { markAllNotificationsRead, markNotificationRead } from "@/actions/social";
+import { setActiveMode } from "@/actions/partner-mode";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,13 +23,23 @@ export interface NotificationItem {
   createdAt: string;
   postId: string | null;
   commentId: string | null;
-  sender: { id: string; name: string | null; image: string | null; role: string } | null;
+  requestId: string | null;
+  senderMode: string;
+  sender: {
+    id: string;
+    name: string | null;
+    image: string | null;
+    role: string;
+    partnerName?: string | null;
+    partnerLogoUrl?: string | null;
+  } | null;
   post: { fromTool: string; toTool: string } | null;
 }
 
 // ─── Notification URL builder ─────────────────────────────────────────────────
 
-function notifUrl(n: NotificationItem): string {
+function notifUrl(n: NotificationItem, role?: string): string {
+  const isPartner = role === "PARTNER" || role === "ADMIN";
   switch (n.type) {
     case "LIKE":
     case "RECOMMENDATION":
@@ -47,9 +60,20 @@ function notifUrl(n: NotificationItem): string {
         : "/feed";
     case "FOLLOW":
     case "CONNECT":
-      return n.sender?.id ? `/profile/${n.sender.id}` : "/feed";
+    case "PROFILE_VIEW":
+      return n.sender?.id ? `/app/profile/${n.sender.id}?from=views` : "/app/profile/views";
+    case "REQUEST_RECEIVED":
+      return n.requestId ? `/app/leads/${n.requestId}` : "/app/leads";
+    case "REQUEST_ACCEPTED":
+    case "REQUEST_REJECTED":
+    case "REQUEST_ACTIVE":
+    case "REQUEST_COMPLETED":
+      return n.requestId ? `/app/requests/${n.requestId}` : "/app/requests";
+    case "REQUEST_MESSAGE":
+      if (!n.requestId) return isPartner ? "/app/leads" : "/app/requests";
+      return isPartner ? `/app/leads/${n.requestId}` : `/app/requests/${n.requestId}`;
     default:
-      return "/notifications";
+      return "/app/notifications";
   }
 }
 
@@ -66,6 +90,10 @@ interface TopBarUser {
   email?: string | null;
   image?: string | null;
   role: "USER" | "PARTNER" | "ADMIN";
+  activeMode: string;
+  partnerApproved: boolean;
+  partnerLogoUrl?: string | null;
+  partnerName?: string | null;
 }
 
 interface TopBarProps {
@@ -87,6 +115,13 @@ const TYPE_CFG: Record<string, { icon: React.ElementType; bg: string; fg: string
   CONNECT:        { icon: Link2,          bg: "bg-blue-100",   fg: "text-blue-600",  action: "accepted your connection" },
   SAVE:           { icon: Bookmark,       bg: "bg-amber-100",  fg: "text-amber-500", action: "saved your post" },
   SHARE:          { icon: Share2,         bg: "bg-gray-100",   fg: "text-gray-500",  action: "shared your post" },
+  REQUEST_RECEIVED:  { icon: BriefcaseBusiness, bg: "bg-blue-100",   fg: "text-blue-600",  action: "sent you a migration request" },
+  REQUEST_ACCEPTED:  { icon: CircleCheckBig,    bg: "bg-green-100",  fg: "text-green-600", action: "accepted your migration request" },
+  REQUEST_REJECTED:  { icon: CircleOff,         bg: "bg-rose-100",   fg: "text-rose-600",  action: "rejected your migration request" },
+  REQUEST_ACTIVE:    { icon: CircleDot,         bg: "bg-amber-100",  fg: "text-amber-600", action: "started work on your migration request" },
+  REQUEST_COMPLETED: { icon: CircleCheckBig,    bg: "bg-emerald-100",fg: "text-emerald-600", action: "completed your migration request" },
+  REQUEST_MESSAGE:   { icon: MessageSquare,     bg: "bg-blue-100",   fg: "text-blue-600",    action: "sent you a message about your request" },
+  PROFILE_VIEW:      { icon: Eye,              bg: "bg-purple-100", fg: "text-purple-600",  action: "viewed your profile" },
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -142,37 +177,48 @@ function SenderAvatar({
   image,
   role,
   type,
+  senderMode,
+  partnerName,
+  partnerLogoUrl,
 }: {
   name: string | null;
   image: string | null;
   role: string;
   type: string;
+  senderMode?: string;
+  partnerName?: string | null;
+  partnerLogoUrl?: string | null;
 }) {
-  const initials = name
+  const isPartnerSender = senderMode === "partner";
+  const displayName = isPartnerSender ? (partnerName ?? name) : name;
+  const displayImage = isPartnerSender ? (partnerLogoUrl ?? image) : image;
+
+  const initials = displayName
     ?.split(" ")
     .map((n) => n[0])
     .slice(0, 2)
     .join("")
     .toUpperCase() ?? "?";
 
-  const isPartner = role === "PARTNER";
   const cfg = TYPE_CFG[type];
   const TypeIcon = cfg?.icon;
 
   return (
     <div className="relative shrink-0">
-      {image ? (
+      {displayImage ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={image}
-          alt={name ?? ""}
-          className={cn("h-9 w-9 object-cover", isPartner ? "rounded-lg" : "rounded-full")}
+          src={displayImage}
+          alt={displayName ?? ""}
+          className={cn("h-9 w-9 object-cover", isPartnerSender ? "rounded-lg" : "rounded-full")}
         />
       ) : (
         <div
           className={cn(
-            "h-9 w-9 bg-[#0F6E56] flex items-center justify-center text-white text-xs font-semibold select-none",
-            isPartner ? "rounded-lg" : "rounded-full"
+            "h-9 w-9 flex items-center justify-center text-white text-xs font-semibold select-none",
+            isPartnerSender
+              ? "rounded-lg bg-[#2A5FA5]"
+              : "rounded-full bg-[#0F6E56]"
           )}
         >
           {initials}
@@ -269,11 +315,18 @@ function NotificationDropdown({
                   image={n.sender?.image ?? null}
                   role={n.sender?.role ?? "USER"}
                   type={n.type}
+                  senderMode={n.senderMode}
+                  partnerName={n.sender?.partnerName}
+                  partnerLogoUrl={n.sender?.partnerLogoUrl}
                 />
 
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-gray-700 leading-snug">
-                    <span className="font-semibold text-gray-900">{senderName}</span>{" "}
+                    <span className="font-semibold text-gray-900">
+                      {n.senderMode === "partner" && n.sender?.partnerName
+                        ? n.sender.partnerName
+                        : senderName}
+                    </span>{" "}
                     {action}
                   </p>
                   {n.post && (
@@ -296,14 +349,14 @@ function NotificationDropdown({
       {/* Footer */}
       <div className="border-t border-gray-100 px-4 py-2.5 flex items-center justify-between">
         <Link
-          href="/notifications"
+          href="/app/notifications"
           onClick={onClose}
           className="text-xs font-medium text-[#0F6E56] hover:underline"
         >
           View all notifications
         </Link>
         <Link
-          href="/settings?tab=notifications"
+          href="/app/settings?tab=notifications"
           onClick={onClose}
           className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
         >
@@ -432,7 +485,7 @@ function MessageDropdown({
       {/* Footer */}
       <div className="border-t border-gray-100 px-4 py-2.5 text-center">
         <Link
-          href="/messages"
+          href="/app/messages"
           onClick={onClose}
           className="text-xs font-medium text-[#0F6E56] hover:underline"
         >
@@ -446,6 +499,10 @@ function MessageDropdown({
 // ─── User menu dropdown ───────────────────────────────────────────────────────
 
 function UserMenuDropdown({ user, onClose }: { user: TopBarUser; onClose: () => void }) {
+  const router = useRouter();
+  const { update } = useSession();
+  const [isSwitching, startSwitching] = useTransition();
+
   const initials = user.name
     ?.split(" ")
     .map((n) => n[0])
@@ -453,18 +510,39 @@ function UserMenuDropdown({ user, onClose }: { user: TopBarUser; onClose: () => 
     .join("")
     .toUpperCase() ?? "?";
 
-  const roleBadge: Record<string, { label: string; color: string }> = {
-    USER:    { label: "Switcher", color: "bg-green-50 text-[#0F6E56]" },
-    PARTNER: { label: "Partner",  color: "bg-blue-50 text-[#2A5FA5]" },
-    ADMIN:   { label: "Admin",    color: "bg-red-50 text-red-600" },
+  const isPartnerMode = user.activeMode === "partner" && user.partnerApproved;
+
+  const badgeLabel = isPartnerMode ? "Partner" : user.role === "ADMIN" ? "Admin" : "Switcher";
+  const badgeColor = isPartnerMode
+    ? "bg-blue-50 text-[#2A5FA5]"
+    : user.role === "ADMIN"
+    ? "bg-red-50 text-red-600"
+    : "bg-green-50 text-[#0F6E56]";
+
+  const handleSwitch = () => {
+    const nextMode = isPartnerMode ? "user" : "partner";
+    startSwitching(async () => {
+      await setActiveMode(nextMode);
+      await update();
+      onClose();
+      router.refresh();
+    });
   };
-  const badge = roleBadge[user.role] ?? roleBadge.USER;
 
   return (
     <AnimatedPanel className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden z-50">
       <div className="px-4 py-3 border-b border-gray-100">
         <div className="flex items-center gap-2.5">
-          {user.image ? (
+          {isPartnerMode ? (
+            user.partnerLogoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={user.partnerLogoUrl} alt="" className="h-8 w-8 rounded-xl object-cover shrink-0" />
+            ) : (
+              <div className="h-8 w-8 rounded-xl bg-[#2A5FA5] flex items-center justify-center text-white text-xs font-semibold shrink-0 select-none">
+                {(user.partnerName ?? "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
+              </div>
+            )
+          ) : user.image ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={user.image} alt="" className="h-8 w-8 rounded-full object-cover shrink-0" />
           ) : (
@@ -473,23 +551,43 @@ function UserMenuDropdown({ user, onClose }: { user: TopBarUser; onClose: () => 
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
-            <p className="text-xs text-gray-400 truncate">{user.email}</p>
+            <p className="text-sm font-semibold text-gray-900 truncate">
+              {isPartnerMode ? (user.partnerName ?? user.name) : user.name}
+            </p>
+            <p className="text-xs text-gray-400 truncate">
+              {isPartnerMode ? user.name : user.email}
+            </p>
           </div>
         </div>
-        <span className={cn("mt-2 inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium", badge.color)}>
-          {badge.label}
+        <span className={cn("mt-2 inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium", badgeColor)}>
+          {badgeLabel}
         </span>
       </div>
       <div className="py-1">
         <Link
-          href="/settings"
+          href="/app/settings"
           onClick={onClose}
           className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
         >
           <Settings className="h-4 w-4 text-gray-400" />
           Settings
         </Link>
+
+        {/* Mode switch — only for approved partners */}
+        {user.partnerApproved && (
+          <button
+            onClick={handleSwitch}
+            disabled={isSwitching}
+            className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+          >
+            <ArrowLeftRight className="h-4 w-4 text-gray-400" />
+            {isSwitching
+              ? "Switching…"
+              : isPartnerMode
+              ? "Switch to Switcher account"
+              : "Switch to Partner account"}
+          </button>
+        )}
       </div>
     </AnimatedPanel>
   );
@@ -537,7 +635,7 @@ export function TopBar({
       startTransition(() => markNotificationRead(n.id));
     }
     setActivePanel(null);
-    router.push(notifUrl(n));
+    router.push(notifUrl(n, user.role));
   }
 
   const initials = user.name
@@ -546,6 +644,9 @@ export function TopBar({
     .slice(0, 2)
     .join("")
     .toUpperCase() ?? "?";
+
+  const isPartnerMode = user.activeMode === "partner" && user.partnerApproved;
+  const partnerInitials = (user.partnerName ?? "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
 
   return (
     <header className="flex h-14 items-center gap-4 border-b border-gray-100 bg-white px-4 lg:px-6 shrink-0">
@@ -646,7 +747,16 @@ export function TopBar({
             )}
             aria-label="User menu"
           >
-            {user.image ? (
+            {isPartnerMode ? (
+              user.partnerLogoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={user.partnerLogoUrl} alt="" className="h-8 w-8 rounded-xl object-cover" />
+              ) : (
+                <div className="h-8 w-8 rounded-xl bg-[#2A5FA5] flex items-center justify-center text-white text-xs font-semibold select-none">
+                  {partnerInitials}
+                </div>
+              )
+            ) : user.image ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={user.image} alt="" className="h-8 w-8 rounded-full object-cover" />
             ) : (

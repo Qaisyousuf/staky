@@ -39,11 +39,17 @@ function PostModal({
   userName,
   userInitials,
   userImage,
+  isPartnerMode,
+  partnerName,
+  partnerLogoUrl,
   onClose,
 }: {
   userName: string;
   userInitials: string;
   userImage?: string | null;
+  isPartnerMode?: boolean;
+  partnerName?: string | null;
+  partnerLogoUrl?: string | null;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -206,7 +212,16 @@ function PostModal({
 
           <div className="max-h-[78vh] space-y-5 overflow-y-auto px-5 py-4">
             <div className="flex items-center gap-3">
-              {userImage ? (
+              {isPartnerMode ? (
+                partnerLogoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={partnerLogoUrl} alt={partnerName ?? ""} className="h-10 w-10 rounded-xl object-cover shrink-0" />
+                ) : (
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#2A5FA5] text-sm font-bold text-white shrink-0 select-none">
+                    {(partnerName ?? "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
+                  </span>
+                )
+              ) : userImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={userImage} alt={userName} className="h-10 w-10 rounded-full object-cover shrink-0" />
               ) : (
@@ -215,8 +230,14 @@ function PostModal({
                 </span>
               )}
               <div>
-                <p className="text-sm font-semibold text-gray-900">{userName}</p>
-                <p className="text-xs text-gray-400">Share with everyone</p>
+                <p className="text-sm font-semibold text-gray-900">{isPartnerMode ? (partnerName ?? userName) : userName}</p>
+                {isPartnerMode ? (
+                  <span className="inline-flex items-center rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-[#2A5FA5]">
+                    Migration Partner
+                  </span>
+                ) : (
+                  <p className="text-xs text-gray-400">Share with everyone</p>
+                )}
               </div>
             </div>
 
@@ -453,18 +474,35 @@ export function FeedComposer({
   userName,
   userInitials,
   userImage,
+  isPartnerMode,
+  partnerName,
+  partnerLogoUrl,
 }: {
   userName: string;
   userInitials: string;
   userImage?: string | null;
+  isPartnerMode?: boolean;
+  partnerName?: string | null;
+  partnerLogoUrl?: string | null;
 }) {
   const [open, setOpen] = useState(false);
+
+  const partnerInitials = (partnerName ?? "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
 
   return (
     <>
       <div className="mb-4 rounded-xl border border-gray-200 bg-white p-4">
         <div className="mb-3 flex items-center gap-3">
-          {userImage ? (
+          {isPartnerMode ? (
+            partnerLogoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={partnerLogoUrl} alt={partnerName ?? ""} className="h-10 w-10 rounded-xl object-cover shrink-0 select-none" />
+            ) : (
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#2A5FA5] text-xs font-bold text-white shrink-0 select-none">
+                {partnerInitials}
+              </span>
+            )
+          ) : userImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={userImage} alt={userName} className="h-10 w-10 rounded-full object-cover shrink-0 select-none" />
           ) : (
@@ -476,7 +514,7 @@ export function FeedComposer({
             onClick={() => setOpen(true)}
             className="flex-1 rounded-full border border-gray-300 px-4 py-2.5 text-left text-sm text-gray-400 transition-colors hover:border-gray-400 hover:bg-gray-50"
           >
-            Share your EU migration story…
+            {isPartnerMode ? `Post as ${partnerName ?? "your company"}…` : "Share your EU migration story…"}
           </button>
         </div>
         <div className="flex items-center gap-1 border-t border-gray-100 pt-3">
@@ -509,6 +547,9 @@ export function FeedComposer({
           userName={userName}
           userInitials={userInitials}
           userImage={userImage}
+          isPartnerMode={isPartnerMode}
+          partnerName={partnerName}
+          partnerLogoUrl={partnerLogoUrl}
           onClose={() => setOpen(false)}
         />
       )}

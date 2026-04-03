@@ -31,6 +31,8 @@ interface SidebarUser {
   email?: string | null;
   image?: string | null;
   role: UserRole;
+  activeMode: string;
+  partnerApproved: boolean;
 }
 
 interface SidebarProps {
@@ -42,23 +44,23 @@ interface SidebarProps {
 // ─── Nav structure ────────────────────────────────────────────────────────────
 
 const MAIN_NAV = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/discover", label: "Discover", icon: Compass },
+  { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/app/discover", label: "Discover", icon: Compass },
   { href: "/app/feed", label: "Feed", icon: Rss },
-  { href: "/my-stack", label: "My Stack", icon: Layers },
-  { href: "/partners", label: "Partners", icon: Users },
-  { href: "/requests", label: "Requests", icon: ClipboardList },
-  { href: "/network", label: "Network", icon: Network },
+  { href: "/app/my-stack", label: "My Stack", icon: Layers },
+  { href: "/app/partners", label: "Partners", icon: Users },
+  { href: "/app/requests", label: "Requests", icon: ClipboardList },
+  { href: "/app/network", label: "Network", icon: Network },
 ];
 
 const PARTNER_NAV = [
-  { href: "/leads", label: "Leads", icon: Inbox },
-  { href: "/my-posts", label: "My Posts", icon: FileText },
-  { href: "/company-profile", label: "Company Profile", icon: Building2 },
+  { href: "/app/leads", label: "Leads", icon: Inbox },
+  { href: "/app/my-posts", label: "My Posts", icon: FileText },
+  { href: "/app/company-profile", label: "Company Profile", icon: Building2 },
 ];
 
 const BOTTOM_NAV = [
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/app/settings", label: "Settings", icon: Settings },
 ];
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -66,7 +68,7 @@ const BOTTOM_NAV = [
 function Logo({ onClose }: { onClose: () => void }) {
   return (
     <div className="flex h-14 items-center justify-between px-4 border-b border-gray-100">
-      <Link href="/dashboard" className="flex items-center gap-2">
+      <Link href="/app/dashboard" className="flex items-center gap-2">
         <span className="inline-flex items-center justify-center h-5 w-7 rounded bg-[#003399] text-[#FFCC00] text-[9px] font-bold tracking-widest select-none">
           EU
         </span>
@@ -207,7 +209,7 @@ export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
-  const isPartner = user.role === "PARTNER" || user.role === "ADMIN";
+  const isPartnerMode = user.partnerApproved && user.activeMode === "partner";
   const isAdmin = user.role === "ADMIN";
 
   return (
@@ -240,7 +242,7 @@ export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           </NavSection>
 
           {/* Partner-only */}
-          {isPartner && (
+          {isPartnerMode && (
             <NavSection label="Partner">
               {PARTNER_NAV.map(({ href, label, icon }) => (
                 <NavItem
@@ -269,10 +271,10 @@ export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             ))}
             {isAdmin && (
               <NavItem
-                href="/admin"
+                href="/app/admin"
                 label="Admin"
                 icon={ShieldCheck}
-                active={isActive("/admin")}
+                active={isActive("/app/admin")}
                 onClick={onClose}
               />
             )}

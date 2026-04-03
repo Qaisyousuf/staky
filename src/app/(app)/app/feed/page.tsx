@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getAppFeedPosts } from "@/actions/feed";
 import type { AppFeedFilter } from "@/actions/feed";
 import { getSuggestedProfiles } from "@/actions/profile";
+import { TOOLS } from "@/data/mock-data";
 import { FeedClient } from "./feed-client";
 
 export const metadata: Metadata = {
@@ -36,12 +37,20 @@ export default async function AppFeedPage({
   const userName = session.user.name ?? "";
   const userInitials = getInitials(userName);
 
-  // Fetch avatar from DB (base64 images don't fit in JWT)
+  // Fetch avatar + activeMode + partner info from DB
   const dbUser = await prisma.user.findUnique({
     where: { id: userId },
-    select: { image: true },
+    select: {
+      image: true,
+      activeMode: true,
+      partner: { select: { approved: true, companyName: true, logoUrl: true } },
+    },
   });
   const userImage = dbUser?.image ?? null;
+  const isPartnerMode =
+    dbUser?.activeMode === "partner" && dbUser?.partner?.approved === true;
+  const partnerName = dbUser?.partner?.companyName ?? null;
+  const partnerLogoUrl = dbUser?.partner?.logoUrl ?? null;
 
   const rawFilter = searchParams.filter as AppFeedFilter | undefined;
   const filter: AppFeedFilter = rawFilter && VALID_FILTERS.has(rawFilter) ? rawFilter : "all";
@@ -49,10 +58,22 @@ export default async function AppFeedPage({
   // Timestamp this render — used as key + new-posts poll baseline
   const loadedAt = new Date().toISOString();
 
-  const [feedResult, suggestedUsers] = await Promise.all([
+  const TOOL_NAME_TO_SLUG = Object.fromEntries(
+    Object.entries(TOOLS).map(([slug, t]) => [t.name.toLowerCase(), slug])
+  );
+
+  const [feedResult, followingRows, stackItems] = await Promise.all([
     getAppFeedPosts({ filter }),
-    getSuggestedProfiles([userId]),
+    prisma.follow.findMany({ where: { followerId: userId }, select: { followingId: true } }),
+    prisma.stackItem.findMany({ where: { stack: { userId } }, orderBy: { order: "asc" }, take: 8 }),
   ]);
+
+  const followingIds = followingRows.map((r) => r.followingId);
+  const suggestedUsers = await getSuggestedProfiles([userId, ...followingIds]);
+
+  const stackSlugs = stackItems
+    .map((i) => TOOL_NAME_TO_SLUG[i.toolName.toLowerCase()])
+    .filter((s): s is string => Boolean(s));
 
   return (
     <FeedClient
@@ -62,6 +83,7 @@ export default async function AppFeedPage({
       initialSavedIds={feedResult.savedIds}
       initialRecommendedIds={feedResult.recommendedIds}
       initialFollowingIds={feedResult.followingIds}
+      initialConnectedIds={feedResult.connectedIds}
       initialHasMore={feedResult.hasMore}
       initialNextCursor={feedResult.nextCursor}
       filter={filter}
@@ -69,10 +91,14 @@ export default async function AppFeedPage({
       currentUserImage={userImage}
       userName={userName}
       userInitials={userInitials}
+      isPartnerMode={isPartnerMode}
+      partnerName={partnerName}
+      partnerLogoUrl={partnerLogoUrl}
       loadedAt={loadedAt}
       targetPostId={searchParams.post}
       targetCommentId={searchParams.comment}
       suggestedUsers={suggestedUsers}
+      stackSlugs={stackSlugs}
     />
   );
 }

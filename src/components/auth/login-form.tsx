@@ -13,7 +13,7 @@ export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const registered = searchParams.get("registered");
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/app/dashboard";
 
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -39,7 +39,8 @@ export function LoginForm() {
       return;
     }
 
-    router.push(callbackUrl);
+    // Always go through mode-select; it will redirect to dashboard if no partner mode
+    router.push("/mode-select");
     router.refresh();
   };
 

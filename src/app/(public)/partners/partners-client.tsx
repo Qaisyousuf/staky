@@ -55,17 +55,19 @@ function SpecialtyFilter({
 export function PartnersClient({
   initialQuery,
   initialSpec,
+  isAuthenticated = false,
 }: {
-  initialQuery: string;
-  initialSpec: string;
+  initialQuery?: string;
+  initialSpec?: string;
+  isAuthenticated?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
-  const [query, setQuery] = useState(initialQuery);
-  const [activeSpec, setActiveSpec] = useState(initialSpec);
+  const [query, setQuery] = useState(initialQuery ?? "");
+  const [activeSpec, setActiveSpec] = useState(initialSpec ?? "");
   const deferredQuery = useDeferredValue(query);
   const normalizedQuery = deferredQuery.trim().toLowerCase();
 
@@ -110,7 +112,7 @@ export function PartnersClient({
   }, [activeSpec, pathname, query, router, searchParams]);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-[#2A5FA5]">
@@ -123,13 +125,15 @@ export function PartnersClient({
             {MOCK_PARTNERS.length} vetted specialists for end-to-end EU software migrations.
           </p>
         </div>
-        <Link
-          href="/signup"
-          className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[#2A5FA5] px-5 py-2.5 text-sm font-medium text-[#2A5FA5] transition-colors hover:bg-blue-50"
-        >
-          <Handshake className="h-4 w-4" />
-          Become a partner
-        </Link>
+        {!isAuthenticated && (
+          <Link
+            href="/signup"
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[#2A5FA5] px-5 py-2.5 text-sm font-medium text-[#2A5FA5] transition-colors hover:bg-blue-50"
+          >
+            <Handshake className="h-4 w-4" />
+            Become a partner
+          </Link>
+        )}
       </div>
 
       <div className="relative mb-5">
@@ -182,18 +186,20 @@ export function PartnersClient({
         </div>
       )}
 
-      <div className="mt-16 rounded-2xl bg-[#2A5FA5] px-8 py-10 text-center">
-        <h2 className="mb-2 text-xl font-bold text-white">Are you a migration specialist?</h2>
-        <p className="mx-auto mb-6 max-w-md text-sm text-blue-100">
-          Join the Staky partner network to reach European businesses looking for expert help.
-        </p>
-        <Link
-          href="/signup"
-          className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 font-semibold text-[#2A5FA5] transition-colors hover:bg-blue-50"
-        >
-          Apply to become a partner
-        </Link>
-      </div>
+      {!isAuthenticated && (
+        <div className="mt-16 rounded-2xl bg-[#2A5FA5] px-8 py-10 text-center">
+          <h2 className="mb-2 text-xl font-bold text-white">Are you a migration specialist?</h2>
+          <p className="mx-auto mb-6 max-w-md text-sm text-blue-100">
+            Join the Staky partner network to reach European businesses looking for expert help.
+          </p>
+          <Link
+            href="/signup"
+            className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 font-semibold text-[#2A5FA5] transition-colors hover:bg-blue-50"
+          >
+            Apply to become a partner
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

@@ -142,7 +142,7 @@ export function PartnerCard({ partner, compact = false, homepage = false }: Part
         </div>
 
         <div className="mb-4 flex flex-wrap gap-1.5">
-          {partner.specialty.slice(0, compact ? 3 : 4).map((spec) => (
+          {(partner.specialty ?? []).slice(0, compact ? 3 : 4).map((spec) => (
             <span
               key={spec}
               className={cn(
@@ -155,9 +155,9 @@ export function PartnerCard({ partner, compact = false, homepage = false }: Part
               {spec}
             </span>
           ))}
-          {partner.specialty.length > (compact ? 3 : 4) && (
+          {(partner.specialty ?? []).length > (compact ? 3 : 4) && (
             <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[10px] font-medium text-gray-500">
-              +{partner.specialty.length - (compact ? 3 : 4)} more
+              +{(partner.specialty ?? []).length - (compact ? 3 : 4)} more
             </span>
           )}
         </div>

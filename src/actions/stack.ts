@@ -38,8 +38,8 @@ export async function addStackItem(toolName: string, category?: string) {
     },
   });
 
-  revalidatePath("/my-stack");
-  revalidatePath("/dashboard");
+  revalidatePath("/app/my-stack");
+  revalidatePath("/app/dashboard");
   return { ok: true };
 }
 
@@ -55,6 +55,6 @@ export async function removeStackItem(itemId: string) {
 
   await prisma.stackItem.delete({ where: { id: itemId } });
 
-  revalidatePath("/my-stack");
-  revalidatePath("/dashboard");
+  revalidatePath("/app/my-stack");
+  revalidatePath("/app/dashboard");
 }

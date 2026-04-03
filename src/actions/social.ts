@@ -3,29 +3,38 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { createNotification, type AppNotificationType } from "@/lib/notifications";
 
-// ─── Internal helper ──────────────────────────────────────────────────────────
+// ─── Internal helpers ─────────────────────────────────────────────────────────
 
-type NotifType =
-  | "LIKE" | "COMMENT" | "REPLY" | "FOLLOW"
-  | "CONNECT" | "RECOMMENDATION" | "SAVE" | "SHARE";
+async function getSenderMode(userId: string): Promise<string> {
+  const record = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      activeMode: true,
+      partner: { select: { approved: true } },
+    },
+  });
+  const isPartnerMode =
+    record?.activeMode === "partner" && record?.partner?.approved === true;
+  return isPartnerMode ? "partner" : "user";
+}
 
 async function notify(
   recipientId: string,
   senderId: string,
-  type: NotifType,
+  type: AppNotificationType,
   postId?: string,
-  commentId?: string
+  commentId?: string,
+  senderMode?: string
 ) {
-  if (recipientId === senderId) return;
-  await prisma.notification.create({
-    data: {
-      recipientId,
-      senderId,
-      type,
-      postId: postId ?? null,
-      commentId: commentId ?? null,
-    },
+  await createNotification({
+    recipientId,
+    senderId,
+    senderMode,
+    type,
+    postId,
+    commentId,
   });
 }
 
@@ -47,11 +56,11 @@ export async function toggleLike(postId: string) {
   }
 
   await prisma.like.create({ data: { postId, userId } });
-  const post = await prisma.alternativePost.findUnique({
-    where: { id: postId },
-    select: { authorId: true },
-  });
-  if (post) await notify(post.authorId, userId, "LIKE", postId);
+  const [post, senderMode] = await Promise.all([
+    prisma.alternativePost.findUnique({ where: { id: postId }, select: { authorId: true } }),
+    getSenderMode(userId),
+  ]);
+  if (post) await notify(post.authorId, userId, "LIKE", postId, undefined, senderMode);
   const count = await prisma.like.count({ where: { postId } });
   return { liked: true, count };
 }
@@ -74,11 +83,11 @@ export async function toggleSave(postId: string) {
   }
 
   await prisma.savedPost.create({ data: { postId, userId } });
-  const post = await prisma.alternativePost.findUnique({
-    where: { id: postId },
-    select: { authorId: true },
-  });
-  if (post) await notify(post.authorId, userId, "SAVE", postId);
+  const [post, senderMode] = await Promise.all([
+    prisma.alternativePost.findUnique({ where: { id: postId }, select: { authorId: true } }),
+    getSenderMode(userId),
+  ]);
+  if (post) await notify(post.authorId, userId, "SAVE", postId, undefined, senderMode);
   const count = await prisma.savedPost.count({ where: { postId } });
   return { saved: true, count };
 }
@@ -101,11 +110,11 @@ export async function toggleRecommend(postId: string) {
   }
 
   await prisma.recommendation.create({ data: { postId, userId } });
-  const post = await prisma.alternativePost.findUnique({
-    where: { id: postId },
-    select: { authorId: true },
-  });
-  if (post) await notify(post.authorId, userId, "RECOMMENDATION", postId);
+  const [post, senderMode] = await Promise.all([
+    prisma.alternativePost.findUnique({ where: { id: postId }, select: { authorId: true } }),
+    getSenderMode(userId),
+  ]);
+  if (post) await notify(post.authorId, userId, "RECOMMENDATION", postId, undefined, senderMode);
   const count = await prisma.recommendation.count({ where: { postId } });
   return { recommended: true, count };
 }
@@ -130,7 +139,8 @@ export async function toggleFollow(targetUserId: string) {
   }
 
   await prisma.follow.create({ data: { followerId, followingId: targetUserId } });
-  await notify(targetUserId, followerId, "FOLLOW");
+  const senderMode = await getSenderMode(followerId);
+  await notify(targetUserId, followerId, "FOLLOW", undefined, undefined, senderMode);
   return { following: true };
 }
 
@@ -157,7 +167,8 @@ export async function toggleConnect(targetUserId: string) {
   }
 
   await prisma.connection.create({ data: { userId, targetId: targetUserId } });
-  await notify(targetUserId, userId, "CONNECT");
+  const senderMode = await getSenderMode(userId);
+  await notify(targetUserId, userId, "CONNECT", undefined, undefined, senderMode);
   return { connected: true };
 }
 
@@ -183,11 +194,11 @@ export async function addComment(
     include: { author: { select: { id: true, name: true, role: true } } },
   });
 
-  const post = await prisma.alternativePost.findUnique({
-    where: { id: postId },
-    select: { authorId: true },
-  });
-  if (post) await notify(post.authorId, userId, "COMMENT", postId, comment.id);
+  const [post, senderMode] = await Promise.all([
+    prisma.alternativePost.findUnique({ where: { id: postId }, select: { authorId: true } }),
+    getSenderMode(userId),
+  ]);
+  if (post) await notify(post.authorId, userId, "COMMENT", postId, comment.id, senderMode);
 
   if (parentId) {
     const parent = await prisma.comment.findUnique({
@@ -195,7 +206,7 @@ export async function addComment(
       select: { authorId: true },
     });
     if (parent && parent.authorId !== userId) {
-      await notify(parent.authorId, userId, "REPLY", postId, comment.id);
+      await notify(parent.authorId, userId, "REPLY", postId, comment.id, senderMode);
     }
   }
 
@@ -242,8 +253,8 @@ export async function markAllNotificationsRead() {
     where: { recipientId: session.user.id, read: false },
     data: { read: true },
   });
-  revalidatePath("/dashboard");
-  revalidatePath("/notifications");
+  revalidatePath("/app/dashboard");
+  revalidatePath("/app/notifications");
 }
 
 export async function markNotificationRead(notificationId: string) {
@@ -253,5 +264,5 @@ export async function markNotificationRead(notificationId: string) {
     where: { id: notificationId, recipientId: session.user.id },
     data: { read: true },
   });
-  revalidatePath("/notifications");
+  revalidatePath("/app/notifications");
 }

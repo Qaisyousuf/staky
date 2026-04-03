@@ -12,6 +12,8 @@ export async function recordProfileView(profileId: string) {
   // Skip own view
   if (viewerId === profileId) return;
 
+  // Determine viewer's current mode (partner or user)
+  let viewerMode = "user";
   if (viewerId) {
     // Authenticated: dedup within 24h
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -19,9 +21,42 @@ export async function recordProfileView(profileId: string) {
       where: { viewerId, profileId, createdAt: { gte: yesterday } },
     });
     if (existing) return;
+
+    const viewerRecord = await prisma.user.findUnique({
+      where: { id: viewerId },
+      select: { activeMode: true, partner: { select: { approved: true } } },
+    });
+    if (viewerRecord?.activeMode === "partner" && viewerRecord?.partner?.approved) {
+      viewerMode = "partner";
+    }
   }
 
-  await prisma.profileView.create({ data: { profileId, viewerId } });
+  await prisma.$executeRaw`
+    INSERT INTO profile_views (id, "viewerId", "profileId", "viewerMode", "createdAt")
+    VALUES (gen_random_uuid()::text, ${viewerId}, ${profileId}, ${viewerMode}, NOW())
+  `;
+
+  // Notify the profile owner (only for authenticated viewers).
+  // Use raw SQL to bypass Prisma client enum validation in case the
+  // generated client hasn't picked up the PROFILE_VIEW enum value yet.
+  if (viewerId) {
+    try {
+      await prisma.$executeRaw`
+        INSERT INTO notifications (id, "recipientId", "senderId", type, read, "createdAt", "senderMode")
+        VALUES (
+          gen_random_uuid()::text,
+          ${profileId},
+          ${viewerId},
+          'PROFILE_VIEW'::"NotificationType",
+          false,
+          NOW(),
+          'user'
+        )
+      `;
+    } catch {
+      // Non-critical — don't fail the view record if notification fails
+    }
+  }
 }
 
 // ─── Get profile views (own profile only) ─────────────────────────────────────
@@ -42,7 +77,10 @@ export async function getProfileViews(userId: string) {
       where: { profileId: userId, viewerId: { not: null } },
       include: {
         viewer: {
-          select: { id: true, name: true, image: true, title: true, company: true },
+          select: {
+            id: true, name: true, image: true, title: true, company: true,
+            partner: { select: { companyName: true, logoUrl: true, approved: true } },
+          },
         },
       },
       orderBy: { createdAt: "desc" },
@@ -77,6 +115,7 @@ export async function getProfileViews(userId: string) {
     recentViewers: uniqueViewers.map((v) => ({
       id: v.id,
       viewerId: v.viewerId,
+      viewerMode: (v as { viewerMode?: string }).viewerMode ?? "user",
       createdAt: v.createdAt.toISOString(),
       viewer: v.viewer,
     })),
@@ -98,6 +137,7 @@ export async function getSuggestedProfiles(excludeIds: string[]) {
       title: true,
       company: true,
       role: true,
+      partner: { select: { companyName: true, logoUrl: true, approved: true } },
     },
     take: 4,
     orderBy: { createdAt: "desc" },
@@ -133,13 +173,13 @@ export async function getNetworkData(userId: string) {
         user: {
           select: {
             id: true, name: true, image: true, title: true, company: true, role: true,
-            partner: { select: { companyName: true, rating: true } },
+            partner: { select: { companyName: true, logoUrl: true, rating: true, approved: true } },
           },
         },
         target: {
           select: {
             id: true, name: true, image: true, title: true, company: true, role: true,
-            partner: { select: { companyName: true, rating: true } },
+            partner: { select: { companyName: true, logoUrl: true, rating: true, approved: true } },
           },
         },
       },

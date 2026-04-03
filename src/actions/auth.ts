@@ -19,11 +19,6 @@ export async function signupAction(
     email: formData.get("email"),
     password: formData.get("password"),
     confirmPassword: formData.get("confirmPassword"),
-    userType: formData.get("userType"),
-    companyName: formData.get("companyName") ?? undefined,
-    country: formData.get("country") ?? undefined,
-    specialty: formData.get("specialty") ?? undefined,
-    pricing: formData.get("pricing") ?? undefined,
   };
 
   const parsed = signupSchema.safeParse(raw);
@@ -34,8 +29,7 @@ export async function signupAction(
     };
   }
 
-  const { name, email, password, userType, companyName, country, specialty, pricing } =
-    parsed.data;
+  const { name, email, password } = parsed.data;
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -49,24 +43,7 @@ export async function signupAction(
       name,
       email,
       password: hashedPassword,
-      role: userType === "partner" ? "PARTNER" : "USER",
-      ...(userType === "partner" &&
-        companyName &&
-        country &&
-        specialty && {
-          partner: {
-            create: {
-              companyName: companyName.trim(),
-              country: country.trim(),
-              specialty: specialty
-                .split(",")
-                .map((s) => s.trim())
-                .filter(Boolean),
-              pricing: pricing?.trim() || null,
-              approved: false,
-            },
-          },
-        }),
+      role: "USER",
     },
   });
 

@@ -28,6 +28,7 @@ import {
   toggleSave,
   toggleRecommend,
   toggleFollow,
+  toggleConnect,
   addComment,
   getPostComments,
 } from "@/actions/social";
@@ -45,6 +46,7 @@ export interface FeedPostData {
   linkImage: string | null;
   linkDomain: string | null;
   createdAt: string;
+  postedAsPartner: boolean;
   author: {
     id: string;
     name: string | null;
@@ -53,7 +55,12 @@ export interface FeedPostData {
     verified: boolean;
     title: string | null;
     company: string | null;
-    partner?: { rating: number; projectCount: number } | null;
+    partner?: {
+      rating: number;
+      projectCount: number;
+      companyName: string;
+      logoUrl: string | null;
+    } | null;
   };
   likeCount: number;
   recommendCount: number;
@@ -80,6 +87,7 @@ interface FeedPostProps {
   initialSaved?: boolean;
   initialRecommended?: boolean;
   initialFollowing?: boolean;
+  initialConnected?: boolean;
   autoExpandComments?: boolean;
 }
 
@@ -252,24 +260,24 @@ function LinkPreview({
       href={url}
       target="_blank"
       rel="noreferrer"
-      className="block overflow-hidden rounded-2xl border border-gray-200 bg-white transition-colors hover:border-gray-300 hover:shadow-sm"
+      className="block overflow-hidden rounded-lg border border-[#eee] bg-white transition-colors hover:border-gray-300 hover:shadow-sm"
     >
       {image && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={image} alt="" className="aspect-[1.91/1] w-full object-cover" />
+        <img src={image} alt="" className="aspect-[1.91/1] max-h-[350px] w-full object-cover" />
       )}
-      <div className="border-t border-gray-100 bg-[#f8fafb] p-4">
-        <div className="flex items-start justify-between gap-3">
+      <div className="border-t border-[#eee] bg-[#f8fafb] px-3 py-2.5">
+        <div className="flex items-start justify-between gap-2.5">
         <div className="min-w-0">
           <p className="text-[11px] uppercase tracking-wide text-gray-400">{displayDomain}</p>
-          <p className="mt-1 line-clamp-2 text-[15px] font-semibold leading-snug text-gray-900">
+          <p className="mt-0.5 line-clamp-2 text-[14px] font-semibold leading-snug text-gray-900">
             {title || url}
           </p>
           {description && (
-            <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-gray-500">{description}</p>
+            <p className="mt-0.5 line-clamp-2 text-[12px] leading-5 text-gray-500">{description}</p>
           )}
           {!title && (
-            <p className="mt-1 truncate text-xs text-[#0F6E56]">{url}</p>
+            <p className="mt-1 truncate text-[11px] text-[#0F6E56]">{url}</p>
           )}
         </div>
         <ExternalLink className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
@@ -290,9 +298,13 @@ function ImageGallery({
 
   if (imageUrls.length === 1) {
     return (
-      <button type="button" onClick={() => onOpen(0)} className="block w-full overflow-hidden rounded-2xl">
+      <button
+        type="button"
+        onClick={() => onOpen(0)}
+        className="block w-full overflow-hidden rounded-lg border border-[#eee] bg-gray-50"
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={imageUrls[0]} alt="" className="max-h-[520px] w-full rounded-2xl object-cover" />
+        <img src={imageUrls[0]} alt="" className="max-h-[320px] w-full rounded-lg object-contain" />
       </button>
     );
   }
@@ -304,10 +316,10 @@ function ImageGallery({
           key={url}
           type="button"
           onClick={() => onOpen(index)}
-          className="block overflow-hidden rounded-2xl"
+          className="block overflow-hidden rounded-lg border border-[#eee] bg-gray-50"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={url} alt="" className="aspect-[4/3] w-full rounded-2xl object-cover" />
+          <img src={url} alt="" className="aspect-[4/3] max-h-[320px] w-full rounded-lg object-cover" />
         </button>
       ))}
     </div>
@@ -324,10 +336,14 @@ export function FeedPost({
   initialSaved = false,
   initialRecommended = false,
   initialFollowing = false,
+  initialConnected = false,
   autoExpandComments = false,
 }: FeedPostProps) {
   const isOwn = currentUserId === post.author.id;
-  const isPartner = post.author.role === "PARTNER";
+  const isPartner = post.postedAsPartner;
+  // When posted as partner, show company identity
+  const displayName = isPartner ? (post.author.partner?.companyName ?? post.author.name) : post.author.name;
+  const displayImage = isPartner ? (post.author.partner?.logoUrl ?? post.author.image) : post.author.image;
   const { text, hashtags } = splitPostContent(post.story, post.tags);
 
   const [liked, setLiked] = useState(initialLiked);
@@ -336,6 +352,7 @@ export function FeedPost({
   const [recommended, setRecommended] = useState(initialRecommended);
   const [recommendCount, setRecommendCount] = useState(post.recommendCount);
   const [following, setFollowing] = useState(initialFollowing);
+  const [connected, setConnected] = useState(initialConnected);
   const [expanded, setExpanded] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(autoExpandComments);
   const [comments, setComments] = useState<SerializedComment[] | null>(null);
@@ -418,6 +435,19 @@ export function FeedPost({
     });
   }
 
+  function handleConnect() {
+    if (!currentUserId || isOwn) return;
+    setConnected((value) => !value);
+    startTransition(async () => {
+      try {
+        const response = await toggleConnect(post.author.id);
+        setConnected(response.connected);
+      } catch {
+        setConnected((value) => !value);
+      }
+    });
+  }
+
   function handleComment() {
     if (!newComment.trim()) return;
     startTransition(async () => {
@@ -445,55 +475,54 @@ export function FeedPost({
       <article
         id={`post-${post.id}`}
         className={cn(
-          "overflow-hidden rounded-xl border border-gray-200 bg-white",
+          "overflow-hidden rounded-xl border border-[#eee] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]",
           isPartner && "border-l-[3px] border-l-[#2A5FA5]"
         )}
       >
-        <div className="p-4 sm:p-5">
-          <div className="mb-3 flex items-start justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3">
+        <div className="px-4 py-3">
+          <div className="mb-2 flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2.5">
               <Avatar
-                name={post.author.name}
-                image={post.author.image}
-                size={isPartner ? 11 : 10}
+                name={displayName}
+                image={displayImage}
+                size={10}
                 rounded={isPartner ? "xl" : "full"}
               />
               <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="truncate text-sm font-semibold text-gray-900">{post.author.name}</span>
-                  {post.author.verified && <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-[#2A5FA5]" />}
-                  {isPartner && (
-                    <span className="inline-flex items-center rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-[#2A5FA5]">
-                      Migration Partner
-                    </span>
-                  )}
+                <div className="flex flex-wrap items-center gap-1.5 leading-tight">
+                  <span className="truncate text-sm font-semibold leading-tight text-gray-900">{displayName}</span>
+                  {(post.author.verified || isPartner) && <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-[#2A5FA5]" />}
                 </div>
-                {(post.author.title || post.author.company) && (
-                  <p className="truncate text-xs text-gray-400">
+                {!isPartner && (post.author.title || post.author.company) && (
+                  <p className="truncate text-xs leading-tight text-gray-400">
                     {[post.author.title, post.author.company].filter(Boolean).join(" · ")}
                   </p>
                 )}
-                <p className="text-[10px] text-gray-400">{timeAgo(post.createdAt)}</p>
-                {isPartner && post.author.partner && (
-                  <div className="mt-0.5 flex items-center gap-1">
-                    <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                    <span className="text-[10px] font-semibold text-gray-600">
-                      {post.author.partner.rating.toFixed(1)}
-                    </span>
-                    <span className="text-[10px] text-gray-400">
-                      · {post.author.partner.projectCount} projects
-                    </span>
-                  </div>
-                )}
+                <p className="text-[10px] leading-tight text-gray-400">{timeAgo(post.createdAt)}</p>
               </div>
             </div>
 
-            {!isOwn && currentUserId && (
+            {!isOwn && currentUserId && isPartner && (
+              <button
+                onClick={handleConnect}
+                disabled={isPending}
+                className={cn(
+                  "shrink-0 flex items-center gap-1 rounded-full border px-3 py-1 text-[12px] font-semibold transition-colors",
+                  connected
+                    ? "border-[#2A5FA5] bg-blue-50 text-[#2A5FA5]"
+                    : "border-gray-300 text-gray-600 hover:border-[#2A5FA5] hover:text-[#2A5FA5]"
+                )}
+              >
+                {connected ? <UserCheck className="h-3.5 w-3.5" /> : <UserPlus className="h-3.5 w-3.5" />}
+                {connected ? "Connected" : "Connect"}
+              </button>
+            )}
+            {!isOwn && currentUserId && !isPartner && (
               <button
                 onClick={handleFollow}
                 disabled={isPending}
                 className={cn(
-                  "shrink-0 flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors",
+                  "shrink-0 flex items-center gap-1 rounded-full border px-3 py-1 text-[12px] font-semibold transition-colors",
                   following
                     ? "border-[#0F6E56] bg-green-50 text-[#0F6E56]"
                     : "border-gray-300 text-gray-600 hover:border-[#0F6E56] hover:text-[#0F6E56]"
@@ -506,24 +535,24 @@ export function FeedPost({
             {!currentUserId && (
               <a
                 href="/login"
-                className="shrink-0 rounded-full border border-gray-300 px-3.5 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:border-[#0F6E56] hover:text-[#0F6E56]"
+                className="shrink-0 rounded-full border border-gray-300 px-3 py-1 text-[12px] font-semibold text-gray-600 transition-colors hover:border-[#0F6E56] hover:text-[#0F6E56]"
               >
                 {isPartner ? "Connect" : "Follow"}
               </a>
             )}
           </div>
 
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5">
+          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#eee] bg-gray-50 px-2.5 py-1">
             <SwitchBadge from={post.fromTool} to={post.toTool} size="sm" />
           </div>
 
           {hashtags.length > 0 && (
-            <div className="mb-2.5 flex flex-wrap gap-1.5">
+            <div className="mb-2 flex flex-wrap gap-x-2 gap-y-0.5">
               {hashtags.map((tag) => (
                 <Link
                   key={tag}
                   href={`/feed?tag=${encodeURIComponent(tag)}`}
-                  className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500 transition-colors hover:bg-gray-200 hover:text-[#0F6E56]"
+                  className="text-[12px] font-medium text-[#0F6E56] transition-colors hover:text-[#0d5f4a]"
                 >
                   #{tag}
                 </Link>
@@ -532,7 +561,7 @@ export function FeedPost({
           )}
 
           {text && (
-            <div className="text-sm leading-relaxed text-gray-700 whitespace-pre-line">
+            <div className="mb-2 text-[14px] leading-[1.5] text-gray-700 whitespace-pre-line">
               {displayStory}
               {isLong && !expanded && "…"}
             </div>
@@ -540,20 +569,20 @@ export function FeedPost({
           {isLong && (
             <button
               onClick={() => setExpanded((value) => !value)}
-              className="mt-1 text-xs font-semibold text-[#0F6E56] hover:underline"
+              className="mt-1 text-[12px] font-semibold text-[#0F6E56] hover:underline"
             >
               {expanded ? "Show less" : "…see more"}
             </button>
           )}
 
           {post.imageUrls.length > 0 && (
-            <div className={cn("mt-4", !text && hashtags.length === 0 && "mt-0")}>
+            <div className={cn("mt-2", !text && hashtags.length === 0 && "mt-0")}>
               <ImageGallery imageUrls={post.imageUrls} onOpen={setActiveImageIndex} />
             </div>
           )}
 
           {post.linkUrl && (
-            <div className="mt-4">
+            <div className="mt-2">
               <LinkPreview
                 url={post.linkUrl}
                 title={post.linkTitle}
@@ -566,7 +595,7 @@ export function FeedPost({
         </div>
 
         {(likeCount > 0 || recommendCount > 0 || commentCount > 0) && (
-          <div className="flex items-center justify-between border-t border-gray-100 px-5 py-1.5 text-[11px] text-gray-400">
+          <div className="flex items-center justify-between border-t border-[#eee] px-4 py-1.5 text-[11px] text-gray-400">
             <span>
               {likeCount > 0 && `${likeCount} like${likeCount !== 1 ? "s" : ""}`}
               {likeCount > 0 && recommendCount > 0 && " · "}
@@ -584,60 +613,60 @@ export function FeedPost({
           </div>
         )}
 
-        <div className="flex border-t border-gray-100">
+        <div className="flex border-t border-[#eee]">
           <button
             onClick={handleLike}
             className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors",
+              "flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 text-[13px] font-medium transition-colors",
               liked
                 ? "bg-green-50 text-[#0F6E56] hover:bg-green-100"
                 : "text-gray-500 hover:bg-gray-50 hover:text-[#0F6E56]"
             )}
           >
             <ThumbsUp className={cn("h-4 w-4 shrink-0", liked && "fill-[#0F6E56]")} />
-            <span className="hidden sm:inline">Like</span>
+            <span>Like</span>
           </button>
 
           <button
             onClick={() => setCommentsOpen((value) => !value)}
             className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors",
+              "flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 text-[13px] font-medium transition-colors",
               commentsOpen ? "bg-green-50 text-[#0F6E56]" : "text-gray-500 hover:bg-gray-50 hover:text-[#0F6E56]"
             )}
           >
             <MessageCircle className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">Comment</span>
+            <span>Comment</span>
           </button>
 
           <button
             onClick={handleSave}
             className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors",
+              "flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 text-[13px] font-medium transition-colors",
               saved
                 ? "bg-green-50 text-[#0F6E56] hover:bg-green-100"
                 : "text-gray-500 hover:bg-gray-50 hover:text-[#0F6E56]"
             )}
           >
             <Bookmark className={cn("h-4 w-4 shrink-0", saved && "fill-[#0F6E56]")} />
-            <span className="hidden sm:inline">Save</span>
+            <span>Save</span>
           </button>
 
           <button
             onClick={handleRecommend}
             className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors",
+              "flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 text-[13px] font-medium transition-colors",
               recommended
                 ? "bg-amber-50 text-amber-500 hover:bg-amber-100"
                 : "text-gray-500 hover:bg-gray-50 hover:text-amber-500"
             )}
           >
             <Star className={cn("h-4 w-4 shrink-0", recommended && "fill-amber-500")} />
-            <span className="hidden sm:inline">Recommend</span>
+            <span>Recommend</span>
           </button>
         </div>
 
         {commentsOpen && (
-          <div className="space-y-3 border-t border-gray-100 px-5 pb-5 pt-4">
+          <div className="space-y-3 border-t border-[#eee] px-4 pb-4 pt-3">
             {loadingComments && (
               <div className="flex justify-center py-4">
                 <Loader2 className="h-5 w-5 animate-spin text-gray-300" />
