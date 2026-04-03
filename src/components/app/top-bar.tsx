@@ -270,7 +270,7 @@ function NotificationDropdown({
   }, []);
 
   return (
-    <AnimatedPanel className="absolute right-0 top-full mt-2 w-[400px] max-sm:w-[calc(100vw-2rem)] rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden z-50">
+    <AnimatedPanel className="absolute right-0 top-full mt-2 w-[380px] max-sm:fixed max-sm:inset-x-0 max-sm:top-14 max-sm:mt-0 max-sm:w-full rounded-xl max-sm:rounded-none border border-gray-200 bg-white shadow-lg overflow-hidden z-50">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
         <span className="text-sm font-bold text-gray-900">Notifications</span>
@@ -294,15 +294,15 @@ function NotificationDropdown({
 
       {/* Body */}
       {notifications.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 mb-3">
-            <Bell className="h-5 w-5 text-gray-400" />
+        <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 mb-3">
+            <Bell className="h-4 w-4 text-gray-400" />
           </div>
           <p className="text-sm font-semibold text-gray-700">All caught up</p>
           <p className="text-xs text-gray-400 mt-0.5">No new notifications</p>
         </div>
       ) : (
-        <div className="divide-y divide-gray-50 max-h-[360px] overflow-y-auto">
+        <div className="divide-y divide-gray-50 max-h-[360px] max-sm:max-h-[calc(100svh-7rem)] overflow-y-auto">
           {notifications.map((n) => {
             const senderName = n.sender?.name ?? "Someone";
             const cfg = TYPE_CFG[n.type];
@@ -314,7 +314,7 @@ function NotificationDropdown({
                 role="button"
                 onClick={() => onNotifClick(n)}
                 className={cn(
-                  "flex items-start gap-3 px-4 py-3.5 hover:bg-gray-50 transition-colors cursor-pointer",
+                  "flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer",
                   !n.read && "bg-green-50/50"
                 )}
               >
@@ -328,7 +328,7 @@ function NotificationDropdown({
                 />
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-700 leading-snug">
+                  <p className="text-[13px] text-gray-700 leading-snug">
                     <span className="font-semibold text-gray-900">
                       {n.senderMode === "partner" && n.sender?.partnerName
                         ? n.sender.partnerName
@@ -341,11 +341,11 @@ function NotificationDropdown({
                       {n.post.fromTool} → {n.post.toTool}
                     </p>
                   )}
-                  <p className="text-[11px] text-gray-400 mt-1">{timeAgo(n.createdAt)}</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">{timeAgo(n.createdAt)}</p>
                 </div>
 
                 {!n.read && (
-                  <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[#0F6E56]" />
+                  <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#0F6E56]" />
                 )}
               </div>
             );
@@ -367,7 +367,7 @@ function NotificationDropdown({
           onClick={onClose}
           className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
         >
-          Notification settings
+          Settings
         </Link>
       </div>
     </AnimatedPanel>
