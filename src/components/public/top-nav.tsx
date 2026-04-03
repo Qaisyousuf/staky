@@ -104,22 +104,22 @@ export function TopNav({ userImage }: { userImage?: string | null }) {
     exact ? pathname === href : pathname.startsWith(href);
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-white border-b border-gray-100">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-40 w-full border-b border-gray-100 bg-white/90 backdrop-blur-md">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-14 items-center justify-between gap-8">
           <Logo />
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-0.5">
             {NAV_LINKS.map(({ href, label, exact }) => (
               <Link
                 key={href}
                 href={href}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
+                  "px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors",
                   isActive(href, exact)
                     ? "text-[#0F6E56] bg-green-50"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
                 )}
               >
                 {label}
@@ -135,15 +135,15 @@ export function TopNav({ userImage }: { userImage?: string | null }) {
               <>
                 <Link
                   href="/login"
-                  className="px-3.5 py-1.5 text-sm font-medium text-gray-700 hover:text-gray-900 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-3.5 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Log in
                 </Link>
                 <Link
                   href="/signup"
-                  className="px-3.5 py-1.5 text-sm font-medium rounded-lg bg-[#0F6E56] hover:bg-[#0d5f4a] text-white transition-colors"
+                  className="px-4 py-1.5 text-sm font-semibold rounded-xl bg-[#0F6E56] hover:bg-[#0a5a45] text-white shadow-sm transition-all hover:shadow-md hover:-translate-y-px"
                 >
-                  Sign up
+                  Sign up free
                 </Link>
               </>
             )}

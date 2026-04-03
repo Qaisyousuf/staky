@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Users, Package, Handshake } from "lucide-react";
+import { ArrowRight, Users, Package, Handshake, Shield, Zap, Globe } from "lucide-react";
 import { POPULAR_SWITCHES, MOCK_PARTNERS, TOOLS } from "@/data/mock-data";
 import { ToolIcon } from "@/components/shared/tool-icon";
 import { PartnerCard } from "@/components/shared/partner-card";
@@ -7,145 +7,194 @@ import { prisma } from "@/lib/prisma";
 
 function getInitials(name: string | null | undefined) {
   if (!name) return "?";
-  return name
-    .split(" ")
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+  return name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 }
 
-function Section({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <section className={`py-16 lg:py-20 ${className}`}>
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">{children}</div>
-    </section>
-  );
-}
-
-function SectionHeader({
-  label,
-  title,
-  description,
-  action,
-}: {
-  label?: string;
-  title: string;
-  description?: string;
-  action?: { href: string; text: string };
-}) {
-  return (
-    <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        {label && (
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-[#0F6E56]">
-            {label}
-          </p>
-        )}
-        <h2 className="text-2xl font-bold tracking-tight text-gray-900">{title}</h2>
-        {description && (
-          <p className="mt-1.5 max-w-xl text-sm text-gray-500">{description}</p>
-        )}
-      </div>
-      {action && (
-        <Link
-          href={action.href}
-          className="flex shrink-0 items-center gap-1.5 text-sm font-medium text-[#0F6E56] hover:underline"
-        >
-          {action.text}
-          <ArrowRight className="h-4 w-4" />
-        </Link>
-      )}
-    </div>
-  );
-}
+// ─── Hero ──────────────────────────────────────────────────────────────────────
 
 function Hero() {
   return (
-    <section className="relative overflow-hidden border-b border-gray-100 bg-white">
+    <section className="bg-white">
+      {/* Very soft top glow — no grid, no pattern */}
       <div
-        className="absolute inset-0 opacity-[0.03]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[500px]"
         style={{
-          backgroundImage:
-            "linear-gradient(#0F6E56 1px, transparent 1px), linear-gradient(90deg, #0F6E56 1px, transparent 1px)",
-          backgroundSize: "48px 48px",
+          background:
+            "radial-gradient(ellipse 70% 55% at 50% 0%, rgba(15,110,86,0.055) 0%, transparent 100%)",
         }}
       />
 
-      <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
-        <div className="mx-auto max-w-3xl text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1">
-            <span className="inline-flex h-4 w-6 items-center justify-center rounded bg-[#003399] text-[8px] font-bold tracking-widest text-[#FFCC00] select-none">
-              EU
-            </span>
-            <span className="text-xs font-medium text-[#0F6E56]">
-              Built for European businesses
-            </span>
-          </div>
+      <div className="relative mx-auto max-w-5xl px-4 pb-20 pt-20 text-center sm:px-6 lg:pb-24 lg:pt-24">
 
-          <h1 className="text-4xl font-bold leading-tight tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
-            Switch to <span className="text-[#0F6E56]">European software</span>
-            <br />
-            with confidence.
-          </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-gray-500">
-            Discover EU-based alternatives to your favourite US tools, share
-            migration stories, and connect with certified migration partners.
-          </p>
+        {/* Badge */}
+        <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3.5 py-1 shadow-sm">
+          <span className="flex h-3.5 w-[18px] items-center justify-center rounded-[3px] bg-[#003399] text-[7px] font-black tracking-widest text-[#FFCC00] select-none">
+            EU
+          </span>
+          <span className="text-[11px] font-semibold text-gray-500">
+            Built for European businesses
+          </span>
+        </div>
 
-          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-            <Link
-              href="/signup"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0F6E56] px-6 py-3 font-medium text-white transition-colors hover:bg-[#0d5f4a]"
-            >
-              Start switching
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/discover"
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-6 py-3 font-medium text-gray-700 transition-colors hover:bg-gray-50"
-            >
-              Browse alternatives
-            </Link>
-          </div>
+        {/* Headline */}
+        <h1 className="mx-auto max-w-4xl text-5xl font-extrabold leading-[1.06] tracking-tight text-gray-950 sm:text-6xl lg:text-[76px]">
+          The smarter way to
+          <br />
+          <span
+            className="bg-clip-text text-transparent"
+            style={{
+              backgroundImage: "linear-gradient(135deg, #0d5a47 0%, #0F6E56 45%, #1aaa7a 100%)",
+            }}
+          >
+            switch to EU software.
+          </span>
+        </h1>
 
-          <div className="mx-auto mt-12 grid max-w-lg grid-cols-3 gap-6">
-            {[
-              { icon: Package, value: "2,400+", label: "Alternatives" },
-              { icon: Users, value: "18k+", label: "Switchers" },
-              { icon: Handshake, value: "120+", label: "Partners" },
-            ].map(({ icon: Icon, value, label }) => (
-              <div key={label} className="text-center">
-                <div className="mb-1.5 flex justify-center">
-                  <Icon className="h-4 w-4 text-[#0F6E56]" />
-                </div>
-                <p className="text-xl font-bold text-gray-900">{value}</p>
-                <p className="text-xs text-gray-400">{label}</p>
+        {/* Subtext */}
+        <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-gray-500 sm:text-lg">
+          Discover EU-based alternatives, read honest migration stories,
+          and connect with certified partners — all in one place.
+        </p>
+
+        {/* CTAs */}
+        <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+          <Link
+            href="/signup"
+            className="group inline-flex items-center gap-2 rounded-2xl bg-[#0F6E56] px-6 py-3 text-sm font-semibold text-white shadow-[0_2px_12px_rgba(15,110,86,0.3)] transition-all hover:-translate-y-px hover:bg-[#0a5a45] hover:shadow-[0_4px_20px_rgba(15,110,86,0.4)]"
+          >
+            Start for free
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </Link>
+          <Link
+            href="/discover"
+            className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-6 py-3 text-sm font-semibold text-gray-600 transition-all hover:-translate-y-px hover:border-gray-300 hover:shadow-sm"
+          >
+            Browse alternatives
+          </Link>
+        </div>
+
+        {/* Stats */}
+        <div className="mt-14 flex flex-wrap items-center justify-center gap-x-12 gap-y-6">
+          {[
+            { value: "2,400+", label: "EU alternatives" },
+            { value: "18k+", label: "Companies switched" },
+            { value: "120+", label: "Migration partners" },
+          ].map(({ value, label }, i) => (
+            <div key={label} className="flex items-center gap-x-12">
+              {i > 0 && <div className="hidden h-7 w-px bg-gray-200 sm:block" />}
+              <div className="text-center">
+                <p className="text-[28px] font-black leading-none tracking-tight text-gray-900">{value}</p>
+                <p className="mt-1 text-[11px] font-medium text-gray-400">{label}</p>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </div>
     </section>
   );
 }
 
+// ─── How it works ──────────────────────────────────────────────────────────────
+
+function HowItWorks() {
+  const steps = [
+    {
+      number: "01",
+      icon: Package,
+      color: "bg-green-50",
+      iconColor: "text-[#0F6E56]",
+      title: "Discover EU alternatives",
+      description:
+        "Browse 2,400+ privacy-first European tools by category, use case, or the US product you want to replace.",
+    },
+    {
+      number: "02",
+      icon: Users,
+      color: "bg-blue-50",
+      iconColor: "text-[#2A5FA5]",
+      title: "Learn from real stories",
+      description:
+        "Read honest migration stories from companies who already made the switch — real challenges, real outcomes.",
+    },
+    {
+      number: "03",
+      icon: Handshake,
+      color: "bg-amber-50",
+      iconColor: "text-amber-600",
+      title: "Get expert support",
+      description:
+        "Connect with vetted EU migration partners for guided, end-to-end support from audit to go-live.",
+    },
+  ];
+
+  return (
+    <section className="border-y border-gray-100 bg-gray-50/50 py-20">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-14 text-center">
+          <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-[#0F6E56]">
+            How it works
+          </p>
+          <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+            Your migration, simplified
+          </h2>
+          <p className="mx-auto mt-3 max-w-md text-base text-gray-500">
+            Everything you need for a smooth transition to European software.
+          </p>
+        </div>
+        <div className="grid gap-5 sm:grid-cols-3">
+          {steps.map(({ number, icon: Icon, color, iconColor, title, description }) => (
+            <div
+              key={number}
+              className="group relative rounded-2xl border border-gray-200 bg-white p-7 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
+            >
+              <span className="mb-5 block text-5xl font-black leading-none tracking-tighter text-gray-100 transition-colors group-hover:text-gray-200">
+                {number}
+              </span>
+              <div className={`mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl ${color}`}>
+                <Icon className={`h-5 w-5 ${iconColor}`} />
+              </div>
+              <h3 className="mb-2 text-base font-bold text-gray-900">{title}</h3>
+              <p className="text-sm leading-relaxed text-gray-500">{description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Trust strip ───────────────────────────────────────────────────────────────
+
+function TrustStrip() {
+  const items = [
+    { icon: Shield, text: "GDPR compliant by design" },
+    { icon: Globe, text: "100% EU-hosted data" },
+    { icon: Zap, text: "No vendor lock-in" },
+    { icon: Users, text: "Community verified" },
+  ];
+
+  return (
+    <div className="border-b border-gray-100 bg-white py-5">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
+          {items.map(({ icon: Icon, text }) => (
+            <div key={text} className="flex items-center gap-2">
+              <Icon className="h-3.5 w-3.5 text-[#0F6E56]" />
+              <span className="text-xs font-medium text-gray-500">{text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Switch card ───────────────────────────────────────────────────────────────
+
 function SwitchCard({
-  from,
-  to,
-  category,
-  switcherCount,
+  from, to, category, switcherCount,
 }: {
-  from: string;
-  to: string;
-  category: string;
-  switcherCount: number;
+  from: string; to: string; category: string; switcherCount: number;
 }) {
   const fromTool = TOOLS[from];
   const toTool = TOOLS[to];
@@ -154,146 +203,159 @@ function SwitchCard({
   return (
     <Link
       href={`/discover?category=${encodeURIComponent(category)}`}
-      className="group flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
+      className="group flex flex-col gap-3.5 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-gray-300 hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)]"
     >
-      <div className="flex items-center justify-between">
-        <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600">
-          {category}
-        </span>
-      </div>
+      <span className="inline-flex w-fit items-center rounded-full border border-gray-100 bg-gray-50 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+        {category}
+      </span>
 
-      <div className="flex items-start gap-2.5 py-1">
-        <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5 text-center">
+      <div className="flex items-center gap-2 py-0.5">
+        <div className="flex flex-1 flex-col items-center gap-1.5 text-center">
           <ToolIcon slug={from} size="lg" />
-          <span className="line-clamp-2 text-[10px] leading-tight text-gray-500">{fromTool.name}</span>
+          <span className="line-clamp-2 text-[10px] leading-tight text-gray-400">{fromTool.name}</span>
         </div>
-        <div className="flex flex-col items-center gap-1 pt-2">
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-300 shadow-sm transition-transform duration-200 group-hover:translate-x-0.5">
-            <ArrowRight className="h-3.5 w-3.5" />
-          </span>
-          <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-gray-300">Switch</span>
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-gray-100 bg-white shadow-sm transition-transform duration-200 group-hover:translate-x-0.5">
+          <ArrowRight className="h-3 w-3 text-gray-400" />
         </div>
-        <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5 text-center">
+        <div className="flex flex-1 flex-col items-center gap-1.5 text-center">
           <ToolIcon slug={to} size="lg" />
-          <span className="line-clamp-2 text-[10px] font-medium leading-tight text-[#0F6E56]">{toTool.name}</span>
+          <span className="line-clamp-2 text-[10px] font-semibold leading-tight text-[#0F6E56]">{toTool.name}</span>
         </div>
       </div>
 
       <div className="border-t border-gray-100 pt-3">
-        <p className="text-xs font-medium text-gray-400">
-          {switcherCount.toLocaleString()} switchers
+        <p className="text-[11px] text-gray-400">
+          <span className="font-semibold text-gray-600">{switcherCount.toLocaleString()}</span> companies switched
         </p>
       </div>
     </Link>
   );
 }
 
-function CommunityStoryCard({
+// ─── Story card ────────────────────────────────────────────────────────────────
+
+function StoryCard({
   post,
 }: {
   post: {
     id: string;
     fromTool: string;
     toTool: string;
-    author: {
-      name: string | null;
-      image: string | null;
-      title: string | null;
-      company: string | null;
-    };
+    story: string;
+    author: { name: string | null; image: string | null; title: string | null; company: string | null };
     recommendCount: number;
   };
 }) {
   const fromTool = TOOLS[post.fromTool];
   const toTool = TOOLS[post.toTool];
+  const preview = post.story.length > 140 ? post.story.slice(0, 140).trim() + "…" : post.story;
 
   return (
     <Link
       href={`/feed#post-${post.id}`}
-      className="group block overflow-hidden rounded-[18px] border border-gray-200 bg-white transition-all duration-200 hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-sm"
+      className="group flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-gray-300 hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)]"
     >
-      <div className="bg-white px-3 pb-3 pt-3">
-        <div className="flex items-start gap-2.5 border-b border-gray-100 pb-2.5">
-          <div className="flex min-w-0 items-start gap-2.5">
-            {post.author.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={post.author.image}
-                alt={post.author.name ?? "Profile picture"}
-                className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-gray-100"
-              />
-            ) : (
-              <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0F6E56] text-[10px] font-bold text-white ring-1 ring-gray-100">
-                {getInitials(post.author.name)}
-              </span>
-            )}
-            <div className="min-w-0">
-              <p className="truncate text-xs font-semibold text-gray-900">{post.author.name}</p>
-              <p className="truncate text-[11px] text-gray-600/80">
+      {/* Switch flow */}
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          <ToolIcon slug={post.fromTool} size="sm" />
+          <span className="text-[11px] text-gray-400">{fromTool?.name ?? post.fromTool}</span>
+        </div>
+        <ArrowRight className="h-3 w-3 shrink-0 text-gray-300" />
+        <div className="flex items-center gap-1.5">
+          <ToolIcon slug={post.toTool} size="sm" />
+          <span className="text-[11px] font-semibold text-[#0F6E56]">{toTool?.name ?? post.toTool}</span>
+        </div>
+      </div>
+
+      {/* Preview */}
+      <p className="flex-1 text-sm leading-relaxed text-gray-600">{preview}</p>
+
+      {/* Author */}
+      <div className="flex items-center justify-between border-t border-gray-100 pt-3.5">
+        <div className="flex items-center gap-2">
+          {post.author.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={post.author.image} alt="" className="h-7 w-7 rounded-full object-cover" />
+          ) : (
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#0F6E56] text-[9px] font-bold text-white">
+              {getInitials(post.author.name)}
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="truncate text-[11px] font-semibold leading-none text-gray-800">{post.author.name ?? "Anonymous"}</p>
+            {(post.author.title || post.author.company) && (
+              <p className="mt-0.5 truncate text-[10px] leading-none text-gray-400">
                 {[post.author.title, post.author.company].filter(Boolean).join(" · ")}
               </p>
-            </div>
+            )}
           </div>
         </div>
-
-        <div className="mt-2.5 flex items-center justify-center gap-2">
-          <div className="flex min-w-0 flex-1 flex-col items-center gap-2 text-center">
-            <ToolIcon slug={post.fromTool} size="md" />
-            <span className="line-clamp-2 text-[11px] text-gray-600">{fromTool?.name ?? post.fromTool}</span>
-          </div>
-          <div className="flex flex-col items-center gap-1.5">
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-300 transition-transform duration-200 group-hover:translate-x-0.5">
-              <ArrowRight className="h-3 w-3" />
-            </span>
-            <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-gray-400">Switch</span>
-          </div>
-          <div className="flex min-w-0 flex-1 flex-col items-center gap-2 text-center">
-            <ToolIcon slug={post.toTool} size="md" />
-            <span className="line-clamp-2 text-[11px] font-medium text-[#0F6E56]">{toTool?.name ?? post.toTool}</span>
-          </div>
-        </div>
-
-        <div className="mt-3 flex items-center justify-between gap-2 border-t border-gray-100 pt-2.5">
-          <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-600">
-            {post.recommendCount} recommended
-          </span>
-          <span className="text-[11px] font-medium text-[#0F6E56]">View real post</span>
-        </div>
+        <span className="shrink-0 text-[10px] font-semibold text-[#0F6E56]">
+          {post.recommendCount} recs
+        </span>
       </div>
     </Link>
   );
 }
 
+// ─── CTA banner ────────────────────────────────────────────────────────────────
+
 function CtaBanner() {
   return (
-    <section className="border-t border-gray-100 bg-white">
-      <div className="mx-auto max-w-7xl px-4 py-16 text-center sm:px-6 lg:px-8">
-        <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-          Ready to break free from US Big Tech?
-        </h2>
-        <p className="mx-auto mt-3 max-w-lg text-sm text-gray-500">
-          Join thousands of European businesses discovering privacy-first software
-          alternatives.
-        </p>
-        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-          <Link
-            href="/signup"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0F6E56] px-6 py-3 font-semibold text-white transition-colors hover:bg-[#0d5f4a]"
-          >
-            Create free account
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-          <Link
-            href="/partners"
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-6 py-3 font-medium text-gray-700 transition-colors hover:bg-gray-50"
-          >
-            Find a migration partner
-          </Link>
+    <section className="relative overflow-hidden">
+      <div
+        className="relative py-24 sm:py-32"
+        style={{
+          background: "linear-gradient(135deg, #053d2f 0%, #0F6E56 40%, #1a9a70 75%, #0d5a47 100%)",
+        }}
+      >
+        {/* Decorative glows */}
+        <div
+          className="pointer-events-none absolute -right-32 -top-32 h-[500px] w-[500px] rounded-full opacity-[0.07]"
+          style={{ background: "radial-gradient(circle, white, transparent 65%)" }}
+        />
+        <div
+          className="pointer-events-none absolute -bottom-20 -left-20 h-[350px] w-[350px] rounded-full opacity-[0.05]"
+          style={{ background: "radial-gradient(circle, white, transparent 65%)" }}
+        />
+
+        <div className="relative mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3.5 py-1.5 backdrop-blur-sm">
+            <span className="h-1.5 w-1.5 rounded-full bg-green-300 shadow-[0_0_6px_rgba(134,239,172,0.8)]" />
+            <span className="text-[11px] font-semibold text-white/80">Join 18,000+ European businesses</span>
+          </div>
+
+          <h2 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
+            Ready to break free<br />from US Big Tech?
+          </h2>
+          <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-white/65">
+            Privacy-first EU software is ready. Your migration partner is waiting.
+            Start today — completely free.
+          </p>
+
+          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link
+              href="/signup"
+              className="group inline-flex items-center gap-2 rounded-2xl bg-white px-7 py-3.5 text-sm font-semibold text-[#0F6E56] shadow-xl transition-all hover:-translate-y-px hover:bg-green-50 hover:shadow-2xl"
+            >
+              Create free account
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+            <Link
+              href="/partners"
+              className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-7 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:-translate-y-px hover:bg-white/15"
+            >
+              Find a migration partner
+            </Link>
+          </div>
         </div>
       </div>
     </section>
   );
 }
+
+// ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default async function LandingPage() {
   const rawPosts = await prisma.alternativePost.findMany({
@@ -305,19 +367,9 @@ export default async function LandingPage() {
     take: 4,
     include: {
       author: {
-        select: {
-          id: true,
-          name: true,
-          image: true,
-          title: true,
-          company: true,
-        },
+        select: { id: true, name: true, image: true, title: true, company: true },
       },
-      _count: {
-        select: {
-          recommendations: true,
-        },
-      },
+      _count: { select: { recommendations: true } },
     },
   });
 
@@ -325,6 +377,7 @@ export default async function LandingPage() {
     id: post.id,
     fromTool: post.fromTool,
     toTool: post.toTool,
+    story: post.story,
     author: {
       name: post.author.name,
       image: post.author.image,
@@ -339,72 +392,105 @@ export default async function LandingPage() {
   return (
     <>
       <Hero />
+      <TrustStrip />
+      <HowItWorks />
 
-      <Section>
-        <SectionHeader
-          label="Popular switches"
-          title="The most switched tools in Europe"
-          description="See what companies like yours are replacing and what they’re switching to."
-          action={{ href: "/discover", text: "View all alternatives" }}
-        />
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {POPULAR_SWITCHES.slice(0, 10).map((sw) => (
-            <SwitchCard
-              key={sw.id}
-              from={sw.from}
-              to={sw.to}
-              category={sw.category}
-              switcherCount={sw.switcherCount}
-            />
-          ))}
-        </div>
-      </Section>
-
-      <Section className="border-y border-gray-100 bg-gray-50">
-        <SectionHeader
-          label="From the community"
-          title="Real migration stories"
-          description="Companies sharing their honest experience switching to EU software."
-          action={{ href: "/feed", text: "See all posts" }}
-        />
-        {previewPosts.length > 0 ? (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {previewPosts.map((post) => (
-              <CommunityStoryCard key={post.id} post={post} />
+      {/* ── Popular switches ── */}
+      <section className="py-20">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.15em] text-[#0F6E56]">Popular switches</p>
+              <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+                The most switched tools in Europe
+              </h2>
+              <p className="mt-1.5 max-w-lg text-sm text-gray-500">
+                See what companies are replacing and where they&apos;re going.
+              </p>
+            </div>
+            <Link
+              href="/discover"
+              className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-[#0F6E56] hover:underline"
+            >
+              View all alternatives <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {POPULAR_SWITCHES.slice(0, 10).map((sw) => (
+              <SwitchCard
+                key={sw.id}
+                from={sw.from}
+                to={sw.to}
+                category={sw.category}
+                switcherCount={sw.switcherCount}
+              />
             ))}
           </div>
-        ) : (
-          <div className="rounded-[24px] border border-dashed border-gray-200 bg-white px-6 py-12 text-center">
-            <p className="text-sm font-semibold text-gray-900">No community stories yet</p>
-            <p className="mt-1 text-sm text-gray-500">
-              The homepage will show the latest real migration posts as soon as they are published.
-            </p>
-          </div>
-        )}
-        <div className="mt-8 flex justify-center">
-          <Link
-            href="/feed"
-            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-          >
-            Read all community stories
-            <ArrowRight className="h-4 w-4" />
-          </Link>
         </div>
-      </Section>
+      </section>
 
-      <Section>
-        <SectionHeader
-          label="Migration experts"
-          title="Certified EU migration partners"
-          description="Vetted specialists who handle end-to-end migrations from audit to hypercare."
-          action={{ href: "/partners", text: "All partners" }}
-        />
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {featuredPartners.map((partner) => (
-            <PartnerCard key={partner.id} partner={partner} homepage />
-          ))}
+      {/* ── Community stories ── */}
+      <section className="border-y border-gray-100 bg-gray-50/60 py-20">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.15em] text-[#0F6E56]">From the community</p>
+              <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Real migration stories</h2>
+              <p className="mt-1.5 text-sm text-gray-500">
+                Honest experiences from companies who made the switch.
+              </p>
+            </div>
+            <Link
+              href="/feed"
+              className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-[#0F6E56] hover:underline"
+            >
+              See all posts <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          {previewPosts.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {previewPosts.map((post) => (
+                <StoryCard key={post.id} post={post} />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-gray-200 bg-white py-16 text-center">
+              <p className="text-sm font-semibold text-gray-700">No stories yet</p>
+              <p className="mt-1 text-xs text-gray-400">
+                Real migration posts will appear here as soon as they are published.
+              </p>
+            </div>
+          )}
         </div>
-      </Section>
+      </section>
+
+      {/* ── Partners ── */}
+      <section className="py-20">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.15em] text-[#0F6E56]">Migration experts</p>
+              <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+                Certified EU migration partners
+              </h2>
+              <p className="mt-1.5 text-sm text-gray-500">
+                Vetted specialists for end-to-end migration support.
+              </p>
+            </div>
+            <Link
+              href="/partners"
+              className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-[#0F6E56] hover:underline"
+            >
+              All partners <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {featuredPartners.map((partner) => (
+              <PartnerCard key={partner.id} partner={partner} homepage />
+            ))}
+          </div>
+        </div>
+      </section>
 
       <CtaBanner />
     </>
