@@ -241,7 +241,8 @@ export async function adminManagePartner(
   partnerId: string,
   action: "approve" | "reject" | "feature" | "unfeature" | "delete"
 ) {
-  await requireAdmin();
+  const adminId = await requireAdmin();
+  const { createNotification } = await import("@/lib/notifications");
 
   if (action === "delete") {
     const partner = await prisma.partner.findUnique({ where: { id: partnerId } });
@@ -249,11 +250,16 @@ export async function adminManagePartner(
       await prisma.partner.delete({ where: { id: partnerId } });
       await prisma.user.update({
         where: { id: partner.userId },
-        data: { role: "USER" },
+        data: { role: "USER", activeMode: "user" },
+      });
+      await createNotification({
+        recipientId: partner.userId,
+        senderId: adminId,
+        type: "PARTNER_DELETED",
       });
     }
   } else {
-    await prisma.partner.update({
+    const partner = await prisma.partner.update({
       where: { id: partnerId },
       data:
         action === "approve"
@@ -264,6 +270,24 @@ export async function adminManagePartner(
           ? { featured: true }
           : { featured: false },
     });
+
+    if (action === "approve") {
+      await prisma.user.update({
+        where: { id: partner.userId },
+        data: { role: "PARTNER" },
+      });
+      await createNotification({
+        recipientId: partner.userId,
+        senderId: adminId,
+        type: "PARTNER_APPROVED",
+      });
+    } else if (action === "reject") {
+      await createNotification({
+        recipientId: partner.userId,
+        senderId: adminId,
+        type: "PARTNER_REJECTED",
+      });
+    }
   }
 
   revalidatePath("/app/admin");

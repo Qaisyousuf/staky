@@ -8,7 +8,7 @@ import {
   Menu, Search, Bell, Mail, Settings, X, Plus,
   Heart, MessageCircle, Reply, UserPlus, ThumbsUp,
   Link2, Bookmark, Share2, BriefcaseBusiness, CircleCheckBig, CircleOff, CircleDot, MessageSquare,
-  ArrowLeftRight, Eye,
+  ArrowLeftRight, Eye, Handshake, ShieldCheck, ShieldX, Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { markAllNotificationsRead, markNotificationRead } from "@/actions/social";
@@ -72,6 +72,12 @@ function notifUrl(n: NotificationItem, role?: string): string {
     case "REQUEST_MESSAGE":
       if (!n.requestId) return isPartner ? "/app/leads" : "/app/requests";
       return isPartner ? `/app/leads/${n.requestId}` : `/app/requests/${n.requestId}`;
+    case "PARTNER_APPLICATION":
+      return "/app/admin?tab=partners";
+    case "PARTNER_APPROVED":
+    case "PARTNER_REJECTED":
+    case "PARTNER_DELETED":
+      return "/app/settings?tab=partner";
     default:
       return "/app/notifications";
   }
@@ -121,7 +127,11 @@ const TYPE_CFG: Record<string, { icon: React.ElementType; bg: string; fg: string
   REQUEST_ACTIVE:    { icon: CircleDot,         bg: "bg-amber-100",  fg: "text-amber-600", action: "started work on your migration request" },
   REQUEST_COMPLETED: { icon: CircleCheckBig,    bg: "bg-emerald-100",fg: "text-emerald-600", action: "completed your migration request" },
   REQUEST_MESSAGE:   { icon: MessageSquare,     bg: "bg-blue-100",   fg: "text-blue-600",    action: "sent you a message about your request" },
-  PROFILE_VIEW:      { icon: Eye,              bg: "bg-purple-100", fg: "text-purple-600",  action: "viewed your profile" },
+  PROFILE_VIEW:          { icon: Eye,          bg: "bg-purple-100", fg: "text-purple-600",  action: "viewed your profile" },
+  PARTNER_APPLICATION:   { icon: Handshake,    bg: "bg-blue-100",   fg: "text-blue-600",   action: "submitted a partner application" },
+  PARTNER_APPROVED:      { icon: ShieldCheck,  bg: "bg-green-100",  fg: "text-green-600",  action: "Your partner application was approved" },
+  PARTNER_REJECTED:      { icon: ShieldX,      bg: "bg-rose-100",   fg: "text-rose-600",   action: "Your partner application was rejected" },
+  PARTNER_DELETED:       { icon: Trash2,       bg: "bg-rose-100",   fg: "text-rose-600",   action: "Your partner account was removed" },
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

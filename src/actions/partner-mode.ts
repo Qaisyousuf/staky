@@ -56,6 +56,22 @@ export async function applyAsPartner(data: ApplyAsPartnerData): Promise<PartnerM
     },
   });
 
+  // Notify all admins about the new application
+  const admins = await prisma.user.findMany({
+    where: { role: "ADMIN" },
+    select: { id: true },
+  });
+  const { createNotification } = await import("@/lib/notifications");
+  await Promise.all(
+    admins.map((admin) =>
+      createNotification({
+        recipientId: admin.id,
+        senderId: session.user.id,
+        type: "PARTNER_APPLICATION",
+      })
+    )
+  );
+
   revalidatePath("/app/settings");
   return { status: "success" };
 }

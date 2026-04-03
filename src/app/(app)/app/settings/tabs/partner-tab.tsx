@@ -477,16 +477,17 @@ function ApprovedState({ partner }: { partner: PartnerInfo }) {
 
 export function PartnerTab({ partner }: PartnerTabProps) {
   const [showForm, setShowForm] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  // Track if the user just submitted so we can show PendingState immediately
+  const [justSubmitted, setJustSubmitted] = useState(false);
 
-  // Determine which state to show
   const showApproved = partner?.approved === true;
-  const showPending = partner && !partner.approved && !showForm;
-  const showFormState = !partner || showForm;
+  // Show pending if: DB says pending, OR user just submitted
+  const showPending = (partner && !partner.approved && !showForm) || (justSubmitted && !showForm);
+  const showFormState = !justSubmitted && (!partner || showForm) && !showApproved;
 
   const handleSuccess = () => {
     setShowForm(false);
-    setSubmitted(true);
+    setJustSubmitted(true);
   };
 
   return (
@@ -498,17 +499,9 @@ export function PartnerTab({ partner }: PartnerTabProps) {
         </p>
       </div>
 
-      {submitted && !partner && (
-        <div className="rounded-lg bg-green-50 border border-green-100 px-4 py-3 text-sm text-green-700">
-          Application submitted! We&apos;ll review it within 2&#8211;3 business days.
-        </div>
-      )}
-
       {showApproved && <ApprovedState partner={partner} />}
-      {showPending && !submitted && <PendingState onResubmit={() => setShowForm(true)} />}
-      {showFormState && !submitted && !showApproved && !showPending && (
-        <ApplicationForm onSuccess={handleSuccess} />
-      )}
+      {showPending && <PendingState onResubmit={() => { setJustSubmitted(false); setShowForm(true); }} />}
+      {showFormState && <ApplicationForm onSuccess={handleSuccess} />}
     </div>
   );
 }

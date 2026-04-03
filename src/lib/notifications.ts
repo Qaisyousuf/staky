@@ -17,7 +17,11 @@ export type AppNotificationType =
   | "REQUEST_ACTIVE"
   | "REQUEST_COMPLETED"
   | "REQUEST_MESSAGE"
-  | "PROFILE_VIEW";
+  | "PROFILE_VIEW"
+  | "PARTNER_APPLICATION"
+  | "PARTNER_APPROVED"
+  | "PARTNER_REJECTED"
+  | "PARTNER_DELETED";
 
 export async function createNotification(input: {
   recipientId: string;
