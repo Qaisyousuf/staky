@@ -106,7 +106,7 @@ export async function exportData() {
       savedPosts: { select: { postId: true, createdAt: true } },
       following: { select: { followingId: true, createdAt: true } },
       connections: { select: { targetId: true, createdAt: true } },
-      stack: { include: { items: true } },
+      stacks: { include: { items: true } },
     },
   });
 
@@ -129,7 +129,7 @@ export async function exportData() {
       savedPosts: user?.savedPosts,
       following: user?.following,
       connections: user?.connections,
-      stack: user?.stack,
+      stacks: user?.stacks,
     },
     null,
     2
