@@ -26,10 +26,17 @@ export async function createMigrationRequest(input: {
     throw new Error("Please sign in before sending a request.");
   }
 
+  const userRecord = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { activeMode: true },
+  });
+  const activeMode = userRecord?.activeMode ?? "user";
+
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     include: {
-      stack: {
+      stacks: {
+        where: { mode: activeMode },
         include: {
           items: {
             orderBy: { order: "asc" },
@@ -54,7 +61,7 @@ export async function createMigrationRequest(input: {
   }
 
   const explicitSwitches = normalizeRequestSwitches(input.switches ?? []);
-  const stackSwitches = buildSwitchesFromStack(user.stack?.items.map((item) => item.toolName) ?? []);
+  const stackSwitches = buildSwitchesFromStack(user.stacks[0]?.items.map((item) => item.toolName) ?? []);
   const switches = explicitSwitches.length > 0 ? explicitSwitches : stackSwitches;
 
   if (switches.length === 0) {
