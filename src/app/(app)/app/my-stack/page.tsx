@@ -20,7 +20,7 @@ export default async function MyStackPage() {
       include: { items: { orderBy: { order: "asc" }, select: { id: true, toolName: true, category: true } } },
     }),
     prisma.migrationRequest.findMany({
-      where: { userId },
+      where: { userId, status: { notIn: ["COMPLETED", "CANCELLED"] } },
       select: { partner: { select: { id: true } } },
     }),
     prisma.partner.findMany({

@@ -21,7 +21,7 @@ export default async function AppPartnersPage() {
       include: { items: { select: { toolName: true } } },
     }),
     prisma.migrationRequest.findMany({
-      where: { userId },
+      where: { userId, status: { notIn: ["COMPLETED", "CANCELLED"] } },
       select: { partner: { select: { id: true } } },
     }),
     prisma.partner.findMany({
