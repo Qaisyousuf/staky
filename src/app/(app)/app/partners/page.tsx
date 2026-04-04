@@ -25,7 +25,7 @@ export default async function AppPartnersPage() {
       select: { partner: { select: { id: true } } },
     }),
     prisma.partner.findMany({
-      where: { approved: true },
+      where: { approved: true, userId: { not: userId } },
       include: { user: { select: { id: true, name: true, image: true } } },
       orderBy: [{ featured: "desc" }, { rating: "desc" }],
     }),
