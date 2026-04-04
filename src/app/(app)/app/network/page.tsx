@@ -35,6 +35,7 @@ export default async function NetworkPage({
           company: true,
           location: true,
           role: true,
+          activeMode: true,
           verified: true,
           interests: true,
           partner: {
@@ -79,6 +80,7 @@ export default async function NetworkPage({
         company: user.company ?? null,
         location: user.location ?? null,
         role: user.role,
+        activeMode: user.activeMode,
         verified: user.verified,
         interests: user.interests,
         followerCount,

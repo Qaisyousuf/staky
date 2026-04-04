@@ -19,7 +19,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       select: { approved: true, logoUrl: true, companyName: true },
     }),
     prisma.notification.findMany({
-      where: { recipientId: userId },
+      where: {
+        recipientId: userId,
+        recipientMode: session.user.activeMode ?? "user",
+      },
       orderBy: { createdAt: "desc" },
       take: 20,
       select: {
@@ -30,6 +33,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         postId: true,
         commentId: true,
         requestId: true,
+        recipientMode: true,
         senderMode: true,
         sender: {
           select: {

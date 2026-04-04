@@ -13,9 +13,11 @@ export default async function AppPartnersPage() {
 
   const userId = session.user.id;
 
+  const activeMode = session.user.activeMode ?? "user";
+
   const [stack, requests, dbPartners] = await Promise.all([
     prisma.stack.findUnique({
-      where: { userId },
+      where: { userId_mode: { userId, mode: activeMode } },
       include: { items: { select: { toolName: true } } },
     }),
     prisma.migrationRequest.findMany({

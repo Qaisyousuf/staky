@@ -33,6 +33,7 @@ const PARTNER_TYPES = new Set([
 
 export async function createNotification(input: {
   recipientId: string;
+  recipientMode?: string;
   senderId?: string | null;
   senderMode?: string;
   type: AppNotificationType;
@@ -49,10 +50,11 @@ export async function createNotification(input: {
   if (PARTNER_TYPES.has(input.type)) {
     try {
       await prisma.$executeRawUnsafe(
-        `INSERT INTO notifications (id, "recipientId", "senderId", "senderMode", type, "read", "createdAt")
-         VALUES ($1, $2, $3, $4, $5::"NotificationType", false, NOW())`,
+        `INSERT INTO notifications (id, "recipientId", "recipientMode", "senderId", "senderMode", type, "read", "createdAt")
+         VALUES ($1, $2, $3, $4, $5, $6::"NotificationType", false, NOW())`,
         randomUUID(),
         input.recipientId,
+        input.recipientMode ?? "user",
         input.senderId ?? null,
         input.senderMode ?? "user",
         input.type
@@ -67,6 +69,7 @@ export async function createNotification(input: {
     await prisma.notification.create({
       data: {
         recipientId: input.recipientId,
+        recipientMode: input.recipientMode ?? "user",
         senderId: input.senderId ?? null,
         senderMode: input.senderMode ?? "user",
         type: input.type as never,

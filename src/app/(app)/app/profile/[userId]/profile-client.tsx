@@ -63,6 +63,7 @@ interface SuggestedProfile {
   title: string | null;
   company: string | null;
   role: string;
+  activeMode?: string;
   partner?: { companyName: string; logoUrl: string | null; approved: boolean } | null;
 }
 
@@ -322,7 +323,7 @@ function PeopleAlsoViewed({ profiles }: { profiles: SuggestedProfile[] }) {
       </div>
       <div className="p-3 space-y-1">
         {profiles.slice(0, 3).map((p) => {
-          const pIsPartner = p.role === "PARTNER" && !!p.partner?.approved;
+          const pIsPartner = p.activeMode === "partner" && !!p.partner?.approved;
           const pDisplayName = pIsPartner ? (p.partner!.companyName ?? p.name) : p.name;
           const pDisplayImage = pIsPartner ? (p.partner!.logoUrl ?? null) : p.image;
           return (
@@ -376,8 +377,8 @@ export function ProfileClient({
   suggestedProfiles: SuggestedProfile[];
   backHref?: string;
 }) {
-  const isPartner = user.role === "PARTNER" && !!user.partner?.approved;
-  // Partner identity: show company name + logo as the primary identity
+  // Show partner identity only when the profile user is in partner mode
+  const isPartner = user.activeMode === "partner" && !!user.partner?.approved;
   const displayName = isPartner ? (user.partner!.companyName ?? user.name) : user.name;
   const displayImage = isPartner ? (user.partner!.logoUrl ?? null) : user.image;
 
@@ -593,17 +594,15 @@ export function ProfileClient({
             {/* Partner description or user bio */}
             {isPartner ? (
               <>
-                {(user.partner!.description || bioText) && (
+                {user.partner!.description && (
                   <div className="mb-5">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-2">About</p>
                     <p className="text-sm text-gray-600 leading-relaxed">
-                      {user.partner!.description
-                        ? (user.partner!.description.length > 240 && !bioExpanded
-                            ? user.partner!.description.slice(0, 240) + "…"
-                            : user.partner!.description)
-                        : bioTruncated}
+                      {user.partner!.description.length > 240 && !bioExpanded
+                        ? user.partner!.description.slice(0, 240) + "…"
+                        : user.partner!.description}
                     </p>
-                    {(user.partner!.description ?? bioText).length > 240 && (
+                    {user.partner!.description.length > 240 && (
                       <button
                         onClick={() => setBioExpanded(!bioExpanded)}
                         className="mt-1.5 text-xs font-semibold text-[#2A5FA5] hover:underline"

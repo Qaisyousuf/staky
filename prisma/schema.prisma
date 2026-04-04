@@ -139,7 +139,7 @@ model User {
 
   // Profile
   partner  Partner?
-  stack    Stack?
+  stacks   Stack[]
 
   // Content
   posts           AlternativePost[]
@@ -209,13 +209,15 @@ model Partner {
 
 model Stack {
   id        String      @id @default(cuid())
-  userId    String      @unique
+  userId    String
+  mode      String      @default("user")
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
   user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   items StackItem[]
 
+  @@unique([userId, mode])
   @@map("stacks")
 }
 
@@ -270,14 +272,15 @@ model AlternativePost {
 }
 
 model Comment {
-  id        String   @id @default(cuid())
-  postId    String
-  authorId  String
-  parentId  String?
-  content   String   @db.Text
-  hidden    Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  postId     String
+  authorId   String
+  parentId   String?
+  content    String   @db.Text
+  hidden     Boolean  @default(false)
+  senderMode String   @default("user")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   post    AlternativePost @relation(fields: [postId], references: [id], onDelete: Cascade)
   author  User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
@@ -293,45 +296,48 @@ model Comment {
 // ─── Engagement ───────────────────────────────────────────────────────────────
 
 model Like {
-  id        String   @id @default(cuid())
-  postId    String
-  userId    String
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  postId     String
+  userId     String
+  senderMode String   @default("user")
+  createdAt  DateTime @default(now())
 
   post AlternativePost @relation(fields: [postId], references: [id], onDelete: Cascade)
   user User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([postId, userId])
+  @@unique([postId, userId, senderMode])
   @@index([postId])
   @@index([userId])
   @@map("likes")
 }
 
 model Recommendation {
-  id        String   @id @default(cuid())
-  postId    String
-  userId    String
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  postId     String
+  userId     String
+  senderMode String   @default("user")
+  createdAt  DateTime @default(now())
 
   post AlternativePost @relation(fields: [postId], references: [id], onDelete: Cascade)
   user User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([postId, userId])
+  @@unique([postId, userId, senderMode])
   @@index([postId])
   @@index([userId])
   @@map("recommendations")
 }
 
 model SavedPost {
-  id        String   @id @default(cuid())
-  postId    String
-  userId    String
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  postId     String
+  userId     String
+  senderMode String   @default("user")
+  createdAt  DateTime @default(now())
 
   post AlternativePost @relation(fields: [postId], references: [id], onDelete: Cascade)
   user User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([postId, userId])
+  @@unique([postId, userId, senderMode])
   @@index([userId, createdAt(sort: Desc)])
   @@map("saved_posts")
 }
@@ -418,11 +424,12 @@ model RequestMessage {
 // ─── Notifications ────────────────────────────────────────────────────────────
 
 model Notification {
-  id          String           @id @default(cuid())
-  recipientId String
-  senderId    String?
-  senderMode  String           @default("user")
-  type        NotificationType
+  id            String           @id @default(cuid())
+  recipientId   String
+  recipientMode String           @default("user")
+  senderId      String?
+  senderMode    String           @default("user")
+  type          NotificationType
   postId      String?
   commentId   String?
   requestId   String?

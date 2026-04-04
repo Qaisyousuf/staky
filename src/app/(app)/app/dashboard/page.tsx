@@ -166,15 +166,15 @@ function SectionHeader({ title, action }: { title: string; action?: { href: stri
 
 // ─── User Dashboard ───────────────────────────────────────────────────────────
 
-async function UserDashboard({ userId, userName }: { userId: string; userName: string | null | undefined }) {
+async function UserDashboard({ userId, userName, activeMode }: { userId: string; userName: string | null | undefined; activeMode: string }) {
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
   const [stackCount, followingCount, connectionCount, stackItems, profileViewsCount, recentViewers] =
     await Promise.all([
-      prisma.stackItem.count({ where: { stack: { userId } } }),
+      prisma.stackItem.count({ where: { stack: { userId, mode: activeMode } } }),
       prisma.follow.count({ where: { followerId: userId } }),
       prisma.connection.count({ where: { OR: [{ userId }, { targetId: userId }] } }),
-      prisma.stackItem.findMany({ where: { stack: { userId } }, orderBy: { order: "asc" }, take: 8 }),
+      prisma.stackItem.findMany({ where: { stack: { userId, mode: activeMode } }, orderBy: { order: "asc" }, take: 8 }),
       prisma.profileView.count({ where: { profileId: userId, createdAt: { gte: weekAgo } } }),
       prisma.profileView.findMany({
         where: { profileId: userId, viewerId: { not: null } },
@@ -755,5 +755,5 @@ export default async function DashboardPage() {
   const isPartnerMode = partnerApproved && activeMode === "partner";
   return isPartnerMode
     ? <PartnerDashboard userId={userId} userName={name} />
-    : <UserDashboard userId={userId} userName={name} />;
+    : <UserDashboard userId={userId} userName={name} activeMode={activeMode} />;
 }

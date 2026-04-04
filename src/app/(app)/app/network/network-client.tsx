@@ -31,6 +31,7 @@ interface CurrentUser {
   company: string | null;
   location: string | null;
   role: string;
+  activeMode: string;
   verified: boolean;
   interests: string[];
   followerCount: number;
@@ -64,6 +65,7 @@ interface NetworkUser {
   title: string | null;
   company: string | null;
   role: string;
+  activeMode?: string;
   isFollowingBack?: boolean;
   partner?: { companyName: string; logoUrl?: string | null; rating: number; approved?: boolean } | null;
 }
@@ -75,6 +77,7 @@ interface SuggestedUser {
   title: string | null;
   company: string | null;
   role: string;
+  activeMode?: string;
   partner?: { companyName: string; logoUrl: string | null; approved: boolean } | null;
 }
 
@@ -182,7 +185,7 @@ function FollowToggle({
 // ─── Own profile card ─────────────────────────────────────────────────────────
 
 function ProfileCard({ user }: { user: CurrentUser }) {
-  const isPartner = user.role === "PARTNER" && user.partner?.approved;
+  const isPartner = user.activeMode === "partner" && !!user.partner?.approved;
   const coverGradient = isPartner
     ? "linear-gradient(135deg, #1e3a6e 0%, #2A5FA5 100%)"
     : "linear-gradient(135deg, #0a5a45 0%, #0F6E56 100%)";
@@ -463,7 +466,7 @@ export function NetworkClient({
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {suggestedProfiles.slice(0, 3).map((p) => {
-                  const pIsPartner = p.role === "PARTNER" && !!p.partner?.approved;
+                  const pIsPartner = p.activeMode === "partner" && !!p.partner?.approved;
                   const pDisplayName = pIsPartner ? (p.partner!.companyName ?? p.name) : p.name;
                   const pDisplayImage = pIsPartner ? (p.partner!.logoUrl ?? null) : p.image;
                   return (
@@ -549,7 +552,7 @@ export function NetworkClient({
                 </div>
               ) : (
                 activeUsers.map((user) => {
-                  const isPartnerConnection = activeTab === "connections" && user.partner?.approved;
+                  const isPartnerConnection = user.activeMode === "partner" && !!user.partner?.approved;
                   const displayName = isPartnerConnection ? (user.partner!.companyName ?? user.name) : user.name;
                   const displayImage = isPartnerConnection ? (user.partner!.logoUrl ?? user.image) : user.image;
                   const displayRole = isPartnerConnection ? "PARTNER" : user.role;

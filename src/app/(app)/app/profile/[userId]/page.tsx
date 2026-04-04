@@ -14,10 +14,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const user = await prisma.user.findUnique({
     where: { id: params.userId },
-    select: { name: true, bio: true, partner: { select: { companyName: true, approved: true } } },
+    select: { name: true, bio: true, activeMode: true, partner: { select: { companyName: true, approved: true } } },
   });
   if (!user) return { title: "Profile — Staky" };
-  const displayName = user.partner?.approved ? (user.partner.companyName ?? user.name) : user.name;
+  const showAsPartner = user.activeMode === "partner" && user.partner?.approved;
+  const displayName = showAsPartner ? (user.partner!.companyName ?? user.name) : user.name;
   return {
     title: `${displayName ?? "Anonymous"} — Staky`,
     description: user.bio ?? `View ${displayName ?? "this user"}'s profile on Staky`,

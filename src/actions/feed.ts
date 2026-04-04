@@ -78,11 +78,12 @@ export async function getAppFeedPosts({
 
   const postIds = rawPosts.map((p) => p.id);
   const authorIds = Array.from(new Set(rawPosts.map((p) => p.authorId)));
+  const activeMode = session.user.activeMode ?? "user";
 
   const [likes, saves, recs, follows, connections] = await Promise.all([
-    prisma.like.findMany({ where: { userId, postId: { in: postIds } }, select: { postId: true } }),
-    prisma.savedPost.findMany({ where: { userId, postId: { in: postIds } }, select: { postId: true } }),
-    prisma.recommendation.findMany({ where: { userId, postId: { in: postIds } }, select: { postId: true } }),
+    prisma.like.findMany({ where: { userId, postId: { in: postIds }, senderMode: activeMode }, select: { postId: true } }),
+    prisma.savedPost.findMany({ where: { userId, postId: { in: postIds }, senderMode: activeMode }, select: { postId: true } }),
+    prisma.recommendation.findMany({ where: { userId, postId: { in: postIds }, senderMode: activeMode }, select: { postId: true } }),
     prisma.follow.findMany({ where: { followerId: userId, followingId: { in: authorIds } }, select: { followingId: true } }),
     prisma.connection.findMany({
       where: { OR: [{ userId, targetId: { in: authorIds } }, { userId: { in: authorIds }, targetId: userId }] },

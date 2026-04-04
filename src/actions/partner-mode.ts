@@ -140,18 +140,20 @@ export async function applyAsPartner(data: ApplyAsPartnerData): Promise<PartnerM
   });
   const firstAdminId = admins[0]?.id ?? null;
 
-  // Notify the user — from admin
+  // Notify the user — from admin (always in personal/user inbox)
   await createNotification({
     recipientId: session.user.id,
+    recipientMode: "user",
     senderId: firstAdminId,
     type: "PARTNER_APPROVED",
   });
 
-  // Notify all admins (FYI)
+  // Notify all admins (FYI — always in personal/user inbox)
   await Promise.all(
     admins.map((admin) =>
       createNotification({
         recipientId: admin.id,
+        recipientMode: "user",
         senderId: session.user.id,
         type: "PARTNER_APPLICATION",
       })

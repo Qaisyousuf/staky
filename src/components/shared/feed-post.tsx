@@ -74,8 +74,15 @@ export type SerializedComment = {
   postId: string;
   parentId: string | null;
   content: string;
+  senderMode?: string;
   createdAt: string;
-  author: { id: string; name: string | null; role: string; image?: string | null };
+  author: {
+    id: string;
+    name: string | null;
+    role: string;
+    image?: string | null;
+    partner?: { companyName: string; logoUrl?: string | null } | null;
+  };
   replies: SerializedComment[];
 };
 
@@ -169,13 +176,26 @@ function CommentItem({
     });
   };
 
+  const isPartnerComment = comment.senderMode === "partner" && !!comment.author.partner;
+  const commentDisplayName = isPartnerComment
+    ? (comment.author.partner?.companyName ?? comment.author.name)
+    : comment.author.name;
+  const commentDisplayImage = isPartnerComment
+    ? (comment.author.partner?.logoUrl ?? comment.author.image)
+    : comment.author.image;
+
   return (
     <div id={`comment-${comment.id}`} className={cn("flex gap-2.5", depth > 0 && "ml-8 mt-2")}>
-      <Avatar name={comment.author.name} image={comment.author.image} size={7} />
+      <Avatar
+        name={commentDisplayName}
+        image={commentDisplayImage}
+        size={7}
+        rounded={isPartnerComment ? "xl" : "full"}
+      />
       <div className="min-w-0 flex-1">
         <div className="rounded-xl bg-gray-50 px-3 py-2.5">
           <div className="flex flex-wrap items-baseline gap-1.5">
-            <span className="text-xs font-semibold text-gray-800">{comment.author.name}</span>
+            <span className="text-xs font-semibold text-gray-800">{commentDisplayName}</span>
             <span className="text-[10px] text-gray-400">{timeAgo(comment.createdAt)}</span>
           </div>
           <p className="mt-0.5 text-sm leading-snug text-gray-700">{comment.content}</p>

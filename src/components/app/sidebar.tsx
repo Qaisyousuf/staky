@@ -33,6 +33,8 @@ interface SidebarUser {
   role: UserRole;
   activeMode: string;
   partnerApproved: boolean;
+  partnerLogoUrl?: string | null;
+  partnerName?: string | null;
 }
 
 interface SidebarProps {
@@ -170,6 +172,10 @@ function UserAvatar({ name, image }: { name?: string | null; image?: string | nu
 function UserFooter({ user }: { user: SidebarUser }) {
   const [isPending, startTransition] = useTransition();
 
+  const isPartnerMode = user.partnerApproved && user.activeMode === "partner";
+  const displayName = isPartnerMode ? (user.partnerName ?? user.name) : user.name;
+  const displaySubtitle = isPartnerMode ? user.name : user.email;
+
   const handleSignOut = () => {
     startTransition(async () => {
       await signOutAction();
@@ -180,12 +186,23 @@ function UserFooter({ user }: { user: SidebarUser }) {
     <div className="border-t border-gray-100 p-3 space-y-1">
       {/* User info */}
       <div className="flex items-center gap-3 px-2 py-1.5 rounded-lg">
-        <UserAvatar name={user.name} image={user.image} />
+        {isPartnerMode ? (
+          user.partnerLogoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={user.partnerLogoUrl} alt="" className="h-8 w-8 rounded-xl object-cover shrink-0" />
+          ) : (
+            <div className="h-8 w-8 rounded-xl bg-[#2A5FA5] flex items-center justify-center text-white text-xs font-semibold shrink-0 select-none">
+              {(user.partnerName ?? "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
+            </div>
+          )
+        ) : (
+          <UserAvatar name={user.name} image={user.image} />
+        )}
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-gray-900 truncate leading-tight">
-            {user.name ?? "User"}
+            {displayName ?? "User"}
           </p>
-          <p className="text-xs text-gray-400 truncate leading-tight">{user.email}</p>
+          <p className="text-xs text-gray-400 truncate leading-tight">{displaySubtitle}</p>
         </div>
       </div>
 

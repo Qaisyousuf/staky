@@ -616,6 +616,11 @@ export function TopBar({
   const [localNotifications, setLocalNotifications] = useState(notifications);
   const [, startTransition] = useTransition();
 
+  // Sync notifications when the server re-fetches after a mode switch
+  useEffect(() => {
+    setLocalNotifications(notifications);
+  }, [notifications]);
+
   const unreadCount = localNotifications.filter((n) => !n.read).length;
 
   const notifRef = useRef<HTMLDivElement>(null);

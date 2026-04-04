@@ -8,11 +8,12 @@ export async function addStackItem(toolName: string, category?: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Not authenticated");
   const userId = session.user.id;
+  const mode = session.user.activeMode ?? "user";
 
-  // Get or create the user's stack
-  let stack = await prisma.stack.findUnique({ where: { userId } });
+  // Get or create the user's stack for this mode
+  let stack = await prisma.stack.findUnique({ where: { userId_mode: { userId, mode } } });
   if (!stack) {
-    stack = await prisma.stack.create({ data: { userId } });
+    stack = await prisma.stack.create({ data: { userId, mode } });
   }
 
   // Prevent duplicates (case-insensitive)
@@ -46,10 +47,11 @@ export async function addStackItem(toolName: string, category?: string) {
 export async function removeStackItem(itemId: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Not authenticated");
+  const mode = session.user.activeMode ?? "user";
 
-  // Verify ownership before deleting
+  // Verify ownership before deleting (scoped to active mode)
   const item = await prisma.stackItem.findFirst({
-    where: { id: itemId, stack: { userId: session.user.id } },
+    where: { id: itemId, stack: { userId: session.user.id, mode } },
   });
   if (!item) throw new Error("Stack item not found");
 

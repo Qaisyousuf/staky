@@ -31,6 +31,16 @@ export async function recordProfileView(profileId: string) {
     }
   }
 
+  // Fetch profile owner's active mode so the notification lands in the right inbox
+  const profileOwner = await prisma.user.findUnique({
+    where: { id: profileId },
+    select: { activeMode: true, partner: { select: { approved: true } } },
+  });
+  const recipientMode =
+    profileOwner?.activeMode === "partner" && profileOwner?.partner?.approved
+      ? "partner"
+      : "user";
+
   await prisma.$executeRaw`
     INSERT INTO profile_views (id, "viewerId", "profileId", "viewerMode", "createdAt")
     VALUES (gen_random_uuid()::text, ${viewerId}, ${profileId}, ${viewerMode}, NOW())
@@ -42,15 +52,16 @@ export async function recordProfileView(profileId: string) {
   if (viewerId) {
     try {
       await prisma.$executeRaw`
-        INSERT INTO notifications (id, "recipientId", "senderId", type, read, "createdAt", "senderMode")
+        INSERT INTO notifications (id, "recipientId", "recipientMode", "senderId", type, read, "createdAt", "senderMode")
         VALUES (
           gen_random_uuid()::text,
           ${profileId},
+          ${recipientMode},
           ${viewerId},
           'PROFILE_VIEW'::"NotificationType",
           false,
           NOW(),
-          'user'
+          ${viewerMode}
         )
       `;
     } catch {
@@ -137,6 +148,7 @@ export async function getSuggestedProfiles(excludeIds: string[]) {
       title: true,
       company: true,
       role: true,
+      activeMode: true,
       partner: { select: { companyName: true, logoUrl: true, approved: true } },
     },
     take: 4,
@@ -155,7 +167,9 @@ export async function getNetworkData(userId: string) {
       where: { followerId: userId },
       include: {
         following: {
-          select: { id: true, name: true, image: true, title: true, company: true, role: true },
+          select: { id: true, name: true, image: true, title: true, company: true, role: true, activeMode: true,
+            partner: { select: { companyName: true, logoUrl: true, rating: true, approved: true } },
+          },
         },
       },
     }),
@@ -163,7 +177,9 @@ export async function getNetworkData(userId: string) {
       where: { followingId: userId },
       include: {
         follower: {
-          select: { id: true, name: true, image: true, title: true, company: true, role: true },
+          select: { id: true, name: true, image: true, title: true, company: true, role: true, activeMode: true,
+            partner: { select: { companyName: true, logoUrl: true, rating: true, approved: true } },
+          },
         },
       },
     }),
@@ -172,13 +188,13 @@ export async function getNetworkData(userId: string) {
       include: {
         user: {
           select: {
-            id: true, name: true, image: true, title: true, company: true, role: true,
+            id: true, name: true, image: true, title: true, company: true, role: true, activeMode: true,
             partner: { select: { companyName: true, logoUrl: true, rating: true, approved: true } },
           },
         },
         target: {
           select: {
-            id: true, name: true, image: true, title: true, company: true, role: true,
+            id: true, name: true, image: true, title: true, company: true, role: true, activeMode: true,
             partner: { select: { companyName: true, logoUrl: true, rating: true, approved: true } },
           },
         },

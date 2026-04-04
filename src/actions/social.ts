@@ -26,10 +26,12 @@ async function notify(
   type: AppNotificationType,
   postId?: string,
   commentId?: string,
-  senderMode?: string
+  senderMode?: string,
+  recipientMode?: string
 ) {
   await createNotification({
     recipientId,
+    recipientMode,
     senderId,
     senderMode,
     type,
@@ -44,23 +46,27 @@ export async function toggleLike(postId: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Not authenticated");
   const userId = session.user.id;
+  const senderMode = await getSenderMode(userId);
 
   const existing = await prisma.like.findUnique({
-    where: { postId_userId: { postId, userId } },
+    where: { postId_userId_senderMode: { postId, userId, senderMode } },
   });
 
   if (existing) {
-    await prisma.like.delete({ where: { postId_userId: { postId, userId } } });
+    await prisma.like.delete({ where: { postId_userId_senderMode: { postId, userId, senderMode } } });
     const count = await prisma.like.count({ where: { postId } });
     return { liked: false, count };
   }
 
-  await prisma.like.create({ data: { postId, userId } });
-  const [post, senderMode] = await Promise.all([
-    prisma.alternativePost.findUnique({ where: { id: postId }, select: { authorId: true } }),
-    getSenderMode(userId),
-  ]);
-  if (post) await notify(post.authorId, userId, "LIKE", postId, undefined, senderMode);
+  await prisma.like.create({ data: { postId, userId, senderMode } });
+  const post = await prisma.alternativePost.findUnique({
+    where: { id: postId },
+    select: { authorId: true, postedAsPartner: true },
+  });
+  if (post) {
+    const recipientMode = post.postedAsPartner ? "partner" : "user";
+    await notify(post.authorId, userId, "LIKE", postId, undefined, senderMode, recipientMode);
+  }
   const count = await prisma.like.count({ where: { postId } });
   return { liked: true, count };
 }
@@ -71,23 +77,27 @@ export async function toggleSave(postId: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Not authenticated");
   const userId = session.user.id;
+  const senderMode = await getSenderMode(userId);
 
   const existing = await prisma.savedPost.findUnique({
-    where: { postId_userId: { postId, userId } },
+    where: { postId_userId_senderMode: { postId, userId, senderMode } },
   });
 
   if (existing) {
-    await prisma.savedPost.delete({ where: { postId_userId: { postId, userId } } });
+    await prisma.savedPost.delete({ where: { postId_userId_senderMode: { postId, userId, senderMode } } });
     const count = await prisma.savedPost.count({ where: { postId } });
     return { saved: false, count };
   }
 
-  await prisma.savedPost.create({ data: { postId, userId } });
-  const [post, senderMode] = await Promise.all([
-    prisma.alternativePost.findUnique({ where: { id: postId }, select: { authorId: true } }),
-    getSenderMode(userId),
-  ]);
-  if (post) await notify(post.authorId, userId, "SAVE", postId, undefined, senderMode);
+  await prisma.savedPost.create({ data: { postId, userId, senderMode } });
+  const post = await prisma.alternativePost.findUnique({
+    where: { id: postId },
+    select: { authorId: true, postedAsPartner: true },
+  });
+  if (post) {
+    const recipientMode = post.postedAsPartner ? "partner" : "user";
+    await notify(post.authorId, userId, "SAVE", postId, undefined, senderMode, recipientMode);
+  }
   const count = await prisma.savedPost.count({ where: { postId } });
   return { saved: true, count };
 }
@@ -98,23 +108,27 @@ export async function toggleRecommend(postId: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Not authenticated");
   const userId = session.user.id;
+  const senderMode = await getSenderMode(userId);
 
   const existing = await prisma.recommendation.findUnique({
-    where: { postId_userId: { postId, userId } },
+    where: { postId_userId_senderMode: { postId, userId, senderMode } },
   });
 
   if (existing) {
-    await prisma.recommendation.delete({ where: { postId_userId: { postId, userId } } });
+    await prisma.recommendation.delete({ where: { postId_userId_senderMode: { postId, userId, senderMode } } });
     const count = await prisma.recommendation.count({ where: { postId } });
     return { recommended: false, count };
   }
 
-  await prisma.recommendation.create({ data: { postId, userId } });
-  const [post, senderMode] = await Promise.all([
-    prisma.alternativePost.findUnique({ where: { id: postId }, select: { authorId: true } }),
-    getSenderMode(userId),
-  ]);
-  if (post) await notify(post.authorId, userId, "RECOMMENDATION", postId, undefined, senderMode);
+  await prisma.recommendation.create({ data: { postId, userId, senderMode } });
+  const post = await prisma.alternativePost.findUnique({
+    where: { id: postId },
+    select: { authorId: true, postedAsPartner: true },
+  });
+  if (post) {
+    const recipientMode = post.postedAsPartner ? "partner" : "user";
+    await notify(post.authorId, userId, "RECOMMENDATION", postId, undefined, senderMode, recipientMode);
+  }
   const count = await prisma.recommendation.count({ where: { postId } });
   return { recommended: true, count };
 }
@@ -140,7 +154,7 @@ export async function toggleFollow(targetUserId: string) {
 
   await prisma.follow.create({ data: { followerId, followingId: targetUserId } });
   const senderMode = await getSenderMode(followerId);
-  await notify(targetUserId, followerId, "FOLLOW", undefined, undefined, senderMode);
+  await notify(targetUserId, followerId, "FOLLOW", undefined, undefined, senderMode, "user");
   return { following: true };
 }
 
@@ -168,11 +182,19 @@ export async function toggleConnect(targetUserId: string) {
 
   await prisma.connection.create({ data: { userId, targetId: targetUserId } });
   const senderMode = await getSenderMode(userId);
-  await notify(targetUserId, userId, "CONNECT", undefined, undefined, senderMode);
+  await notify(targetUserId, userId, "CONNECT", undefined, undefined, senderMode, "user");
   return { connected: true };
 }
 
 // ─── Comments ─────────────────────────────────────────────────────────────────
+
+const COMMENT_AUTHOR_SELECT = {
+  id: true,
+  name: true,
+  role: true,
+  image: true,
+  partner: { select: { companyName: true, logoUrl: true } },
+} as const;
 
 export async function addComment(
   postId: string,
@@ -184,21 +206,27 @@ export async function addComment(
   const userId = session.user.id;
   if (!content.trim()) throw new Error("Comment cannot be empty");
 
+  const senderMode = await getSenderMode(userId);
+
   const comment = await prisma.comment.create({
     data: {
       postId,
       authorId: userId,
       content: content.trim(),
       parentId: parentId ?? null,
+      senderMode,
     },
-    include: { author: { select: { id: true, name: true, role: true } } },
+    include: { author: { select: COMMENT_AUTHOR_SELECT } },
   });
 
-  const [post, senderMode] = await Promise.all([
-    prisma.alternativePost.findUnique({ where: { id: postId }, select: { authorId: true } }),
-    getSenderMode(userId),
-  ]);
-  if (post) await notify(post.authorId, userId, "COMMENT", postId, comment.id, senderMode);
+  const post = await prisma.alternativePost.findUnique({
+    where: { id: postId },
+    select: { authorId: true, postedAsPartner: true },
+  });
+  if (post) {
+    const recipientMode = post.postedAsPartner ? "partner" : "user";
+    await notify(post.authorId, userId, "COMMENT", postId, comment.id, senderMode, recipientMode);
+  }
 
   if (parentId) {
     const parent = await prisma.comment.findUnique({
@@ -206,7 +234,8 @@ export async function addComment(
       select: { authorId: true },
     });
     if (parent && parent.authorId !== userId) {
-      await notify(parent.authorId, userId, "REPLY", postId, comment.id, senderMode);
+      const recipientMode = post?.postedAsPartner ? "partner" : "user";
+      await notify(parent.authorId, userId, "REPLY", postId, comment.id, senderMode, recipientMode);
     }
   }
 
@@ -214,6 +243,7 @@ export async function addComment(
   return {
     id: comment.id,
     content: comment.content,
+    senderMode,
     createdAt: comment.createdAt.toISOString(),
     author: comment.author,
     replies: [] as typeof comment[],
@@ -224,9 +254,9 @@ export async function getPostComments(postId: string) {
   const rows = await prisma.comment.findMany({
     where: { postId, parentId: null },
     include: {
-      author: { select: { id: true, name: true, role: true, image: true } },
+      author: { select: COMMENT_AUTHOR_SELECT },
       replies: {
-        include: { author: { select: { id: true, name: true, role: true, image: true } } },
+        include: { author: { select: COMMENT_AUTHOR_SELECT } },
         orderBy: { createdAt: "asc" },
       },
     },
@@ -249,8 +279,9 @@ export async function getPostComments(postId: string) {
 export async function markAllNotificationsRead() {
   const session = await auth();
   if (!session?.user?.id) return;
+  const activeMode = session.user.activeMode ?? "user";
   await prisma.notification.updateMany({
-    where: { recipientId: session.user.id, read: false },
+    where: { recipientId: session.user.id, recipientMode: activeMode, read: false },
     data: { read: true },
   });
   revalidatePath("/app/dashboard");

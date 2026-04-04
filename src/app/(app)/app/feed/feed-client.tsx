@@ -32,6 +32,7 @@ interface SuggestedUser {
   title: string | null;
   company: string | null;
   role: string;
+  activeMode?: string;
   partner?: { companyName: string; logoUrl: string | null; approved: boolean } | null;
 }
 
@@ -141,7 +142,7 @@ function RightSidebar({ suggested, stackSlugs }: { suggested: SuggestedUser[]; s
           </div>
           <div className="p-3 space-y-1">
             {suggested.map((u) => {
-              const uIsPartner = u.role === "PARTNER" && !!u.partner?.approved;
+              const uIsPartner = u.activeMode === "partner" && !!u.partner?.approved;
               const uDisplayName = uIsPartner ? (u.partner!.companyName ?? u.name) : u.name;
               const uDisplayImage = uIsPartner ? (u.partner!.logoUrl ?? null) : u.image;
               return (
