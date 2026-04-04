@@ -102,8 +102,9 @@ export default async function ProfilePage({
 
   if (!user) notFound();
 
+  const showAsPartner = user.activeMode === "partner" && user.partner?.approved;
   const connectionCount =
-    user.role === "PARTNER"
+    showAsPartner
       ? await prisma.connection.count({
           where: { OR: [{ userId: params.userId }, { targetId: params.userId }] },
         })

@@ -41,6 +41,8 @@ interface CurrentUser {
     companyName: string;
     logoUrl: string | null;
     specialty: string[];
+    description: string | null;
+    country: string | null;
     rating: number;
     approved: boolean;
   } | null;
@@ -257,18 +259,26 @@ function ProfileCard({ user }: { user: CurrentUser }) {
           {(user.verified || isPartner) && <BadgeCheck className="h-3.5 w-3.5 text-[#2A5FA5] shrink-0" />}
         </div>
 
-        {(user.title || user.company) && (
+        {!isPartner && (user.title || user.company) && (
           <p className="text-xs text-gray-500 truncate leading-snug mb-0.5">
             {[user.title, user.company].filter(Boolean).join(" · ")}
           </p>
         )}
-        {user.location && (
+        {isPartner && (
+          <p className="text-xs text-gray-500 truncate leading-snug mb-0.5">Migration Partner</p>
+        )}
+        {((isPartner ? (user.partner!.country ?? user.location) : user.location)) && (
           <div className="flex items-center gap-1 mb-1">
             <MapPin className="h-3 w-3 text-gray-400 shrink-0" />
-            <span className="text-[11px] text-gray-400 truncate">{user.location}</span>
+            <span className="text-[11px] text-gray-400 truncate">
+              {isPartner ? (user.partner!.country ?? user.location) : user.location}
+            </span>
           </div>
         )}
-        {user.bio && (
+        {isPartner && user.partner!.description && (
+          <p className="text-[11px] text-gray-400 leading-relaxed line-clamp-2">{user.partner!.description}</p>
+        )}
+        {!isPartner && user.bio && (
           <p className="text-[11px] text-gray-400 leading-relaxed line-clamp-2">{user.bio}</p>
         )}
 

@@ -542,10 +542,10 @@ export function ProfileClient({
                   {user.company}
                 </span>
               )}
-              {(user.location || (isPartner && user.partner!.country)) && (
+              {(isPartner ? user.partner!.country : user.location) && (
                 <span className="flex items-center gap-1">
                   <MapPin className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-                  {user.location ?? user.partner!.country}
+                  {isPartner ? user.partner!.country : user.location}
                 </span>
               )}
               {isPartner && user.partner!.pricing && (
