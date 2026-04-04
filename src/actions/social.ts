@@ -279,7 +279,12 @@ export async function getPostComments(postId: string) {
 export async function markAllNotificationsRead() {
   const session = await auth();
   if (!session?.user?.id) return;
-  const activeMode = session.user.activeMode ?? "user";
+  // Read activeMode from DB (authoritative) rather than the JWT which may lag after a mode switch
+  const userRecord = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { activeMode: true },
+  });
+  const activeMode = userRecord?.activeMode ?? "user";
   await prisma.notification.updateMany({
     where: { recipientId: session.user.id, recipientMode: activeMode, read: false },
     data: { read: true },

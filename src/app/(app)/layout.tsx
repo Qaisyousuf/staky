@@ -9,7 +9,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const userId = session.user.id;
 
-  const [userRecord, partnerRecord, rawNotifications, rawMessages] = await Promise.all([
+  // Resolve userRecord + partner first so we have the authoritative activeMode from DB.
+  // The JWT may lag briefly after a mode switch; always use the DB value to filter notifications.
+  const [userRecord, partnerRecord] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: { image: true, activeMode: true },
@@ -18,10 +20,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       where: { userId },
       select: { approved: true, logoUrl: true, companyName: true },
     }),
+  ]);
+
+  const activeMode = userRecord?.activeMode ?? "user";
+
+  const [rawNotifications, rawMessages] = await Promise.all([
     prisma.notification.findMany({
       where: {
         recipientId: userId,
-        recipientMode: session.user.activeMode ?? "user",
+        recipientMode: activeMode,
       },
       orderBy: { createdAt: "desc" },
       take: 20,
