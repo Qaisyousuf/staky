@@ -352,7 +352,7 @@ export default async function RequestDetailPage({
           requestId={request.id}
           fromToolName={fromTool?.name ?? request.fromTool}
           toToolName={toTool?.name ?? request.toTool}
-          configItems={request.configItems as ConfigItem[]}
+          configItems={request.configItems as unknown as ConfigItem[]}
           configSentAt={request.configSentAt.toISOString()}
         />
       )}
