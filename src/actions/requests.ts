@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { createNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import {
   ACTIVE_REQUEST_STATUSES,
   buildRequestContextKey,
@@ -184,7 +185,7 @@ export async function respondToProposal(requestId: string, accept: boolean) {
     // Decline — revert to MATCHED so partner can revise and send a new proposal
     await prisma.migrationRequest.update({
       where: { id: requestId },
-      data: { status: "MATCHED", proposal: null },
+      data: { status: "MATCHED", proposal: Prisma.DbNull },
     });
     if (request.partner) {
       await createNotification({
