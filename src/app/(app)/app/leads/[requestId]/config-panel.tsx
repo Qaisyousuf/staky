@@ -14,7 +14,6 @@ import {
   RotateCcw,
   Send,
   Trash2,
-  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";

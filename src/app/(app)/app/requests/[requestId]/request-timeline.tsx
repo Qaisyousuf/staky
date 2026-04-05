@@ -143,7 +143,6 @@ export function RequestTimeline({ status }: { status: RequestStatus }) {
           {STAGES.map((stage, idx) => {
             const done = idx < currentIdx || isCompleted;
             const active = idx === currentIdx && !isCompleted;
-            const future = idx > currentIdx && !isCompleted;
             const isProposal = stage.status === "PROPOSAL_SENT";
 
             return (

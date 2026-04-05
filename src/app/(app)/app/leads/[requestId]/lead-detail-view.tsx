@@ -7,7 +7,6 @@ import {
   ArrowRight,
   Building2,
   CalendarDays,
-  CheckCircle2,
   ClipboardList,
   Clock,
   Hash,
