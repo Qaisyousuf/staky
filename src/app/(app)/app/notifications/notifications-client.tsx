@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 // useRouter also used inside NotifRow below
 import {
   Bell, Heart, MessageCircle, MessageSquare, Reply, UserPlus, ThumbsUp,
-  Link2, Bookmark, Share2, CheckCheck, BriefcaseBusiness, CircleCheckBig, CircleOff, CircleDot,
+  Link2, Bookmark, Share2, CheckCheck, BriefcaseBusiness, CircleCheckBig, CircleOff, CircleDot, Receipt, CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { markAllNotificationsRead, markNotificationRead } from "@/actions/social";
@@ -53,6 +53,11 @@ function notifUrl(n: Notification, role?: string): string {
     case "REQUEST_MESSAGE":
       if (!n.requestId) return isPartner ? "/leads" : "/requests";
       return isPartner ? `/leads/${n.requestId}` : `/requests/${n.requestId}`;
+    case "INVOICE_SENT":
+      return n.requestId ? `/requests/${n.requestId}` : "/requests";
+    case "INVOICE_PAID":
+      if (!n.requestId) return isPartner ? "/leads" : "/requests";
+      return isPartner ? `/leads/${n.requestId}` : `/requests/${n.requestId}`;
     default:
       return "/notifications";
   }
@@ -81,6 +86,8 @@ const TYPE_CFG: Record<string, {
   REQUEST_ACTIVE:    { icon: CircleDot,         bg: "bg-amber-100",   fg: "text-amber-600",   action: "started work on your migration request",  category: "Requests" },
   REQUEST_COMPLETED: { icon: CircleCheckBig,    bg: "bg-emerald-100", fg: "text-emerald-600", action: "completed your migration request",        category: "Requests" },
   REQUEST_MESSAGE:   { icon: MessageSquare,     bg: "bg-blue-100",    fg: "text-blue-600",    action: "sent you a message about your request",   category: "Requests" },
+  INVOICE_SENT:      { icon: Receipt,           bg: "bg-amber-100",   fg: "text-amber-600",   action: "sent you an invoice",                     category: "Requests" },
+  INVOICE_PAID:      { icon: CreditCard,        bg: "bg-green-100",   fg: "text-green-600",   action: "confirmed invoice payment",               category: "Requests" },
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

@@ -128,7 +128,9 @@ export async function createMigrationRequest(input: {
   if (partner) {
     await createNotification({
       recipientId: partner.userId,
+      recipientMode: "partner",  // lands in partner's partner inbox
       senderId: user.id,
+      senderMode: "user",        // sent by the switcher
       type: "REQUEST_RECEIVED",
       requestId: request.id,
     });
@@ -150,4 +152,56 @@ export async function createMigrationRequest(input: {
     requestId: request.id,
     status: request.status,
   };
+}
+
+export async function respondToProposal(requestId: string, accept: boolean) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Not authenticated");
+
+  const request = await prisma.migrationRequest.findUnique({
+    where: { id: requestId },
+    include: { partner: { select: { userId: true } } },
+  });
+  if (!request || request.userId !== session.user.id) throw new Error("Not your request");
+  if (request.status !== "PROPOSAL_SENT") throw new Error("No pending proposal");
+
+  if (accept) {
+    await prisma.migrationRequest.update({
+      where: { id: requestId },
+      data: { status: "ACCEPTED" },
+    });
+    if (request.partner) {
+      await createNotification({
+        recipientId: request.partner.userId,
+        recipientMode: "partner",
+        senderId: session.user.id,
+        senderMode: "user",
+        type: "PROPOSAL_ACCEPTED",
+        requestId,
+      });
+    }
+  } else {
+    // Decline — revert to MATCHED so partner can revise and send a new proposal
+    await prisma.migrationRequest.update({
+      where: { id: requestId },
+      data: { status: "MATCHED", proposal: null },
+    });
+    if (request.partner) {
+      await createNotification({
+        recipientId: request.partner.userId,
+        recipientMode: "partner",
+        senderId: session.user.id,
+        senderMode: "user",
+        type: "PROPOSAL_DECLINED",
+        requestId,
+      });
+    }
+  }
+
+  revalidatePath(`/app/requests/${requestId}`);
+  revalidatePath("/app/requests");
+  revalidatePath(`/app/leads/${requestId}`);
+  revalidatePath("/app/leads");
+  revalidatePath("/app/notifications");
+  return { ok: true };
 }

@@ -18,12 +18,18 @@ export type NotificationType =
   | "REQUEST_REJECTED"
   | "REQUEST_ACTIVE"
   | "REQUEST_COMPLETED"
-  | "REQUEST_MESSAGE";
+  | "REQUEST_MESSAGE"
+  | "REQUEST_PROPOSAL"
+  | "PROPOSAL_ACCEPTED"
+  | "PROPOSAL_DECLINED"
+  | "INVOICE_SENT"
+  | "INVOICE_PAID";
 
 export type MigrationRequestStatus =
   | "PENDING"
   | "UNDER_REVIEW"
   | "MATCHED"
+  | "PROPOSAL_SENT"
   | "ACCEPTED"
   | "IN_PROGRESS"
   | "COMPLETED"

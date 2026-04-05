@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { createNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
+import { type MigrationTask } from "@/lib/request-utils";
 
 // ─── Leads ────────────────────────────────────────────────────────────────────
 
@@ -34,7 +35,9 @@ export async function acceptLead(requestId: string) {
 
   await createNotification({
     recipientId: request.userId,
+    recipientMode: "user",
     senderId: session.user.id,
+    senderMode: "partner",
     type: "REQUEST_ACCEPTED",
     requestId,
   });
@@ -71,7 +74,9 @@ export async function rejectLead(requestId: string) {
 
   await createNotification({
     recipientId: request.userId,
+    recipientMode: "user",
     senderId: session.user.id,
+    senderMode: "partner",
     type: "REQUEST_REJECTED",
     requestId,
   });
@@ -108,7 +113,9 @@ export async function updateLeadStatus(
 
   await createNotification({
     recipientId: request.userId,
+    recipientMode: "user",
     senderId: session.user.id,
+    senderMode: "partner",
     type: status === "IN_PROGRESS" ? "REQUEST_ACTIVE" : "REQUEST_COMPLETED",
     requestId,
   });
@@ -118,6 +125,194 @@ export async function updateLeadStatus(
   revalidatePath("/app/requests");
   revalidatePath(`/app/requests/${requestId}`);
   revalidatePath("/app/notifications");
+  return { ok: true };
+}
+
+export async function sendProposal(
+  requestId: string,
+  input: { timeline: string; approach: string; budgetRange: string }
+) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Not authenticated");
+
+  const partner = await prisma.partner.findUnique({ where: { userId: session.user.id } });
+  if (!partner) throw new Error("Not a partner");
+
+  const request = await prisma.migrationRequest.findFirst({
+    where: { id: requestId, partnerId: partner.id },
+  });
+  if (!request) throw new Error("Not your lead");
+  if (!["PENDING", "UNDER_REVIEW", "MATCHED"].includes(request.status)) {
+    throw new Error("Cannot send proposal at this stage");
+  }
+
+  const proposal = {
+    timeline: input.timeline.trim(),
+    approach: input.approach.trim(),
+    budgetRange: input.budgetRange.trim(),
+    sentAt: new Date().toISOString(),
+  };
+
+  await prisma.migrationRequest.update({
+    where: { id: requestId },
+    data: { proposal: proposal as never, status: "PROPOSAL_SENT" },
+  });
+
+  await createNotification({
+    recipientId: request.userId,
+    recipientMode: "user",
+    senderId: session.user.id,
+    senderMode: "partner",
+    type: "REQUEST_PROPOSAL",
+    requestId,
+  });
+
+  revalidatePath("/app/leads");
+  revalidatePath(`/app/leads/${requestId}`);
+  revalidatePath("/app/requests");
+  revalidatePath(`/app/requests/${requestId}`);
+  revalidatePath("/app/notifications");
+  return { ok: true };
+}
+
+export async function startWork(requestId: string, targetDate?: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Not authenticated");
+
+  const partner = await prisma.partner.findUnique({ where: { userId: session.user.id } });
+  if (!partner) throw new Error("Not a partner");
+
+  const request = await prisma.migrationRequest.findFirst({
+    where: { id: requestId, partnerId: partner.id },
+  });
+  if (!request) throw new Error("Not your lead");
+  if (!["ACCEPTED", "PROPOSAL_SENT"].includes(request.status)) {
+    throw new Error("Cannot start work at this stage");
+  }
+
+  await prisma.migrationRequest.update({
+    where: { id: requestId },
+    data: {
+      status: "IN_PROGRESS",
+      ...(targetDate ? { targetDate: new Date(targetDate) } : {}),
+    },
+  });
+
+  await createNotification({
+    recipientId: request.userId,
+    recipientMode: "user",
+    senderId: session.user.id,
+    senderMode: "partner",
+    type: "REQUEST_ACTIVE",
+    requestId,
+  });
+
+  revalidatePath("/app/leads");
+  revalidatePath(`/app/leads/${requestId}`);
+  revalidatePath("/app/requests");
+  revalidatePath(`/app/requests/${requestId}`);
+  revalidatePath("/app/notifications");
+  return { ok: true };
+}
+
+export async function addTask(
+  requestId: string,
+  input: { title: string; description?: string; techNote?: string; priority?: string; estimatedTime?: string }
+) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Not authenticated");
+
+  const partner = await prisma.partner.findUnique({ where: { userId: session.user.id } });
+  if (!partner) throw new Error("Not a partner");
+
+  const request = await prisma.migrationRequest.findFirst({
+    where: { id: requestId, partnerId: partner.id },
+    select: { id: true, phases: true },
+  });
+  if (!request) throw new Error("Not your lead");
+
+  const current = (request.phases as MigrationTask[] | null) ?? [];
+  const newTask: MigrationTask = {
+    id: crypto.randomUUID(),
+    title: input.title.trim(),
+    description: input.description?.trim() || undefined,
+    techNote: input.techNote?.trim() || undefined,
+    priority: (input.priority as MigrationTask["priority"]) || undefined,
+    estimatedTime: input.estimatedTime?.trim() || undefined,
+    status: "todo",
+    createdAt: new Date().toISOString(),
+    completedAt: null,
+  };
+
+  await prisma.migrationRequest.update({
+    where: { id: requestId },
+    data: { phases: [...current, newTask] as never },
+  });
+
+  revalidatePath(`/app/leads/${requestId}`);
+  revalidatePath(`/app/requests/${requestId}`);
+  return { ok: true };
+}
+
+export async function updateTaskStatus(
+  requestId: string,
+  taskId: string,
+  status: "todo" | "in_progress" | "done"
+) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Not authenticated");
+
+  const partner = await prisma.partner.findUnique({ where: { userId: session.user.id } });
+  if (!partner) throw new Error("Not a partner");
+
+  const request = await prisma.migrationRequest.findFirst({
+    where: { id: requestId, partnerId: partner.id },
+    select: { id: true, phases: true },
+  });
+  if (!request) throw new Error("Not your lead");
+
+  const current = (request.phases as MigrationTask[] | null) ?? [];
+  const updated = current.map((t) =>
+    t.id === taskId
+      ? {
+          ...t,
+          status,
+          completedAt: status === "done" ? new Date().toISOString() : null,
+        }
+      : t
+  );
+
+  await prisma.migrationRequest.update({
+    where: { id: requestId },
+    data: { phases: updated as never },
+  });
+
+  revalidatePath(`/app/leads/${requestId}`);
+  revalidatePath(`/app/requests/${requestId}`);
+  return { ok: true };
+}
+
+export async function deleteTask(requestId: string, taskId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Not authenticated");
+
+  const partner = await prisma.partner.findUnique({ where: { userId: session.user.id } });
+  if (!partner) throw new Error("Not a partner");
+
+  const request = await prisma.migrationRequest.findFirst({
+    where: { id: requestId, partnerId: partner.id },
+    select: { id: true, phases: true },
+  });
+  if (!request) throw new Error("Not your lead");
+
+  const current = (request.phases as MigrationTask[] | null) ?? [];
+  await prisma.migrationRequest.update({
+    where: { id: requestId },
+    data: { phases: current.filter((t) => t.id !== taskId) as never },
+  });
+
+  revalidatePath(`/app/leads/${requestId}`);
+  revalidatePath(`/app/requests/${requestId}`);
   return { ok: true };
 }
 

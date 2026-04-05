@@ -8,7 +8,7 @@ import {
   Menu, Search, Bell, Mail, Settings, X, Plus,
   Heart, MessageCircle, Reply, UserPlus, ThumbsUp,
   Link2, Bookmark, Share2, BriefcaseBusiness, CircleCheckBig, CircleOff, CircleDot, MessageSquare,
-  ArrowLeftRight, Eye, Handshake, ShieldCheck, ShieldX, Trash2,
+  ArrowLeftRight, Eye, Handshake, ShieldCheck, ShieldX, Trash2, Receipt, CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { markAllNotificationsRead, markNotificationRead } from "@/actions/social";
@@ -78,6 +78,13 @@ function notifUrl(n: NotificationItem, role?: string): string {
     case "PARTNER_REJECTED":
     case "PARTNER_DELETED":
       return "/app/settings?tab=partner";
+    case "INVOICE_SENT":
+      // Client receives: go to their request
+      return n.requestId ? `/app/requests/${n.requestId}` : "/app/requests";
+    case "INVOICE_PAID":
+      // Partner receives (client confirmed): go to lead; client receives (partner confirmed): go to request
+      if (!n.requestId) return isPartner ? "/app/leads" : "/app/requests";
+      return isPartner ? `/app/leads/${n.requestId}` : `/app/requests/${n.requestId}`;
     default:
       return "/app/notifications";
   }
@@ -132,6 +139,8 @@ const TYPE_CFG: Record<string, { icon: React.ElementType; bg: string; fg: string
   PARTNER_APPROVED:      { icon: ShieldCheck,  bg: "bg-green-100",  fg: "text-green-600",  action: "approved your partner application" },
   PARTNER_REJECTED:      { icon: ShieldX,      bg: "bg-rose-100",   fg: "text-rose-600",   action: "rejected your partner application" },
   PARTNER_DELETED:       { icon: Trash2,       bg: "bg-rose-100",   fg: "text-rose-600",   action: "removed your partner account" },
+  INVOICE_SENT:          { icon: Receipt,      bg: "bg-amber-100",  fg: "text-amber-600",  action: "sent you an invoice" },
+  INVOICE_PAID:          { icon: CreditCard,   bg: "bg-green-100",  fg: "text-green-600",  action: "confirmed invoice payment" },
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

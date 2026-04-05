@@ -1,11 +1,16 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, BriefcaseBusiness, CheckCircle2, ChevronRight, Inbox, Sparkles } from "lucide-react";
+import { ArrowRight, BriefcaseBusiness, CalendarDays, CheckCircle2, ChevronRight, Inbox, Sparkles } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { TOOLS } from "@/data/mock-data";
 import { ToolIcon } from "@/components/shared/tool-icon";
-import { getRequestSourceLabel, getRequestStatusMeta, type RequestSwitch } from "@/lib/request-utils";
+import {
+  getRequestSourceLabel,
+  getRequestStatusMeta,
+  type MigrationTask,
+  type RequestSwitch,
+} from "@/lib/request-utils";
 
 export const metadata = { title: "Requests â€” Staky" };
 
@@ -143,18 +148,58 @@ export default async function RequestsPage() {
                     ) : (
                       <p className="mt-2 text-sm font-medium text-gray-700">Open request</p>
                     )}
-                    {request.partner?.country && <p className="mt-1 text-xs text-gray-500">{request.partner.country}</p>}
+                    {request.partner?.country && (
+                      <p className="mt-1 text-xs text-gray-500">{request.partner.country}</p>
+                    )}
                   </div>
                   <div className="rounded-2xl border border-gray-100 bg-white px-4 py-3">
                     <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Progress</p>
-                    {request.status === "COMPLETED" ? (
-                      <div className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-[#0F6E56]">
-                        <CheckCircle2 className="h-4 w-4" />
-                        Completed
-                      </div>
-                    ) : (
-                      <p className="mt-2 text-sm font-medium text-gray-700">{status.label}</p>
-                    )}
+                    {(() => {
+                      const tasks = (request.phases as MigrationTask[] | null) ?? [];
+                      if (tasks.length > 0) {
+                        const done = tasks.filter((t) => t.status === "done").length;
+                        const inProg = tasks.filter((t) => t.status === "in_progress").length;
+                        const pct = Math.round((done / tasks.length) * 100);
+                        return (
+                          <div className="mt-2 space-y-1.5">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-semibold text-gray-700 tabular-nums">
+                                {done}/{tasks.length} tasks
+                                {inProg > 0 && <span className="ml-1 text-[#2A5FA5]">· {inProg} active</span>}
+                              </span>
+                              <span className="text-gray-400">{pct}%</span>
+                            </div>
+                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                              <div
+                                className="h-full rounded-full bg-[#0F6E56] transition-all"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                            {request.targetDate && (
+                              <p className="flex items-center gap-1 text-[11px] text-gray-400">
+                                <CalendarDays className="h-3 w-3" />
+                                Due{" "}
+                                {new Date(request.targetDate).toLocaleDateString("en-GB", {
+                                  day: "numeric",
+                                  month: "short",
+                                })}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      }
+                      if (request.status === "COMPLETED") {
+                        return (
+                          <div className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-[#0F6E56]">
+                            <CheckCircle2 className="h-4 w-4" />
+                            Completed
+                          </div>
+                        );
+                      }
+                      return (
+                        <p className="mt-2 text-sm font-medium text-gray-700">{status.label}</p>
+                      );
+                    })()}
                   </div>
                 </div>
               </article>

@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   ArrowRight,
   Building2,
+  CalendarDays,
   CheckCircle2,
   CircleDot,
   Clock,
@@ -24,6 +25,7 @@ import { LeadActions } from "./lead-actions";
 import {
   getRequestSourceLabel,
   getRequestStatusMeta,
+  type MigrationPhase,
   type RequestSwitch,
 } from "@/lib/request-utils";
 
@@ -86,13 +88,14 @@ function SwitchStack({ switches }: { switches: RequestSwitch[] }) {
 // ─── Assigned lead card ───────────────────────────────────────────────────────
 
 const STATUS_BORDER: Record<string, string> = {
-  PENDING:      "border-l-amber-400",
-  UNDER_REVIEW: "border-l-orange-400",
-  MATCHED:      "border-l-purple-400",
-  ACCEPTED:     "border-l-[#2A5FA5]",
-  IN_PROGRESS:  "border-l-[#0F6E56]",
-  COMPLETED:    "border-l-gray-300",
-  CANCELLED:    "border-l-red-300",
+  PENDING:       "border-l-amber-400",
+  UNDER_REVIEW:  "border-l-orange-400",
+  MATCHED:       "border-l-purple-400",
+  PROPOSAL_SENT: "border-l-violet-400",
+  ACCEPTED:      "border-l-[#2A5FA5]",
+  IN_PROGRESS:   "border-l-[#0F6E56]",
+  COMPLETED:     "border-l-gray-300",
+  CANCELLED:     "border-l-red-300",
 };
 
 function AssignedLeadCard({
@@ -105,7 +108,9 @@ function AssignedLeadCard({
     description: string | null;
     requestSource: string | null;
     urgency: string | null;
-    status: "PENDING" | "UNDER_REVIEW" | "MATCHED" | "ACCEPTED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+    targetDate: Date | null;
+    phases: MigrationPhase[] | null;
+    status: "PENDING" | "UNDER_REVIEW" | "MATCHED" | "PROPOSAL_SENT" | "ACCEPTED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
     createdAt: Date;
     updatedAt: Date;
     user: { id: string; name: string | null; company: string | null; email: string; location: string | null };
@@ -182,6 +187,41 @@ function AssignedLeadCard({
             <Sparkles className="h-3 w-3" /> Migration scope
           </p>
           <SwitchStack switches={request.switches} />
+        </div>
+      )}
+
+      {/* Phase progress */}
+      {request.phases && request.phases.length > 0 && (
+        <div className="px-5 pb-3">
+          {(() => {
+            const done = request.phases!.filter((p) => p.done).length;
+            const total = request.phases!.length;
+            const pct = Math.round((done / total) * 100);
+            return (
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-1 overflow-hidden rounded-full bg-gray-100">
+                  <div
+                    className="h-full rounded-full bg-[#0F6E56] transition-all"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <span className="shrink-0 text-[11px] font-semibold tabular-nums text-gray-500">
+                  {done}/{total} phases
+                </span>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Target date */}
+      {request.targetDate && (
+        <div className="px-5 pb-2">
+          <span className="inline-flex items-center gap-1 text-[11px] text-[#0F6E56] font-medium">
+            <CalendarDays className="h-3 w-3" />
+            Target:{" "}
+            {request.targetDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+          </span>
         </div>
       )}
 
@@ -364,7 +404,7 @@ export default async function LeadsPage() {
   ]);
 
   const pendingAssigned = assignedRequests.filter((r) =>
-    ["PENDING", "UNDER_REVIEW", "MATCHED"].includes(r.status)
+    ["PENDING", "UNDER_REVIEW", "MATCHED", "PROPOSAL_SENT"].includes(r.status)
   );
   const activeAssigned = assignedRequests.filter((r) =>
     ["ACCEPTED", "IN_PROGRESS"].includes(r.status)
@@ -379,8 +419,10 @@ export default async function LeadsPage() {
   function toAssigned(r: AssignedRequest) {
     return {
       ...r,
-      status: r.status as "PENDING" | "UNDER_REVIEW" | "MATCHED" | "ACCEPTED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED",
+      status: r.status as "PENDING" | "UNDER_REVIEW" | "MATCHED" | "PROPOSAL_SENT" | "ACCEPTED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED",
       switches: (r.switches as RequestSwitch[] | null) ?? [],
+      phases: (r.phases as MigrationPhase[] | null),
+      targetDate: r.targetDate ?? null,
     };
   }
 

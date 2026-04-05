@@ -25,34 +25,36 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const activeMode = userRecord?.activeMode ?? "user";
 
   const [rawNotifications, rawMessages] = await Promise.all([
-    prisma.notification.findMany({
-      where: {
-        recipientId: userId,
-        recipientMode: activeMode,
-      },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-      select: {
-        id: true,
-        type: true,
-        read: true,
-        createdAt: true,
-        postId: true,
-        commentId: true,
-        requestId: true,
-        recipientMode: true,
-        senderMode: true,
-        sender: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-            role: true,
-            partner: { select: { companyName: true, logoUrl: true } },
+    prisma.notification
+      .findMany({
+        where: {
+          recipientId: userId,
+          recipientMode: activeMode,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        select: {
+          id: true,
+          type: true,
+          read: true,
+          createdAt: true,
+          postId: true,
+          commentId: true,
+          requestId: true,
+          recipientMode: true,
+          senderMode: true,
+          sender: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+              role: true,
+              partner: { select: { companyName: true, logoUrl: true } },
+            },
           },
         },
-      },
-    }),
+      })
+      .catch(() => [] as never[]),
     // Last 20 received messages, dedupe by sender below
     prisma.message.findMany({
       where: { recipientId: userId },

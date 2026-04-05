@@ -1,8 +1,8 @@
 "use client";
 
 import { useTransition } from "react";
-import { CheckCircle2, Loader2, PlayCircle, UserCheck, XCircle } from "lucide-react";
-import { acceptLead, rejectLead, updateLeadStatus } from "@/actions/partner";
+import { CheckCircle2, Loader2, PlayCircle, Send, UserCheck, XCircle } from "lucide-react";
+import { acceptLead, rejectLead, startWork, updateLeadStatus } from "@/actions/partner";
 
 interface LeadActionsProps {
   requestId: string;
@@ -56,13 +56,26 @@ export function LeadActions({ requestId, status, isOwned }: LeadActionsProps) {
     );
   }
 
+  // Proposal sent — accept or reject from list card
+  if (status === "PROPOSAL_SENT" && isOwned) {
+    return (
+      <div className="flex items-center gap-2 justify-end pt-1">
+        <span className="flex items-center gap-1 text-[11px] font-medium text-violet-600 mr-auto">
+          <Send className="h-3 w-3" /> Proposal sent
+        </span>
+        {rejectBtn}
+        {acceptBtn("Accept")}
+      </div>
+    );
+  }
+
   // Accepted — Reject or Start work
   if (status === "ACCEPTED" && isOwned) {
     return (
       <div className="flex items-center gap-2 justify-end pt-1">
         {rejectBtn}
         <button
-          onClick={() => run(() => updateLeadStatus(requestId, "IN_PROGRESS"))}
+          onClick={() => run(() => startWork(requestId))}
           disabled={isPending}
           className="flex items-center gap-1.5 rounded-xl bg-[#2A5FA5] hover:bg-[#244d8a] disabled:opacity-50 px-4 py-2 text-xs font-semibold text-white transition-colors"
         >

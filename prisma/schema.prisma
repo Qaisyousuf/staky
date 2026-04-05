@@ -29,6 +29,7 @@ enum MigrationRequestStatus {
   PENDING
   UNDER_REVIEW
   MATCHED
+  PROPOSAL_SENT
   ACCEPTED
   IN_PROGRESS
   COMPLETED
@@ -50,11 +51,24 @@ enum NotificationType {
   REQUEST_ACTIVE
   REQUEST_COMPLETED
   REQUEST_MESSAGE
+  REQUEST_PROPOSAL
+  PROPOSAL_ACCEPTED
+  PROPOSAL_DECLINED
   PROFILE_VIEW
   PARTNER_APPLICATION
   PARTNER_APPROVED
   PARTNER_REJECTED
   PARTNER_DELETED
+  INVOICE_SENT
+  INVOICE_PAID
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  VIEWED
+  PAID
+  CANCELLED
 }
 
 enum EmailDigestFrequency {
@@ -168,6 +182,8 @@ model User {
 
   reports Report[]
 
+  clientInvoices Invoice[] @relation("ClientInvoices")
+
   profileViews   ProfileView[] @relation("ProfileViewed")
   viewedProfiles ProfileView[] @relation("ProfileViewer")
 
@@ -196,8 +212,9 @@ model Partner {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  user  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  leads MigrationRequest[]
+  user     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leads    MigrationRequest[]
+  invoices Invoice[]
 
   @@index([approved])
   @@index([featured])
@@ -390,6 +407,9 @@ model MigrationRequest {
   requestSource String?
   contextKey    String?
   switches      Json?
+  phases        Json?
+  proposal      Json?
+  targetDate    DateTime?
   status        MigrationRequestStatus @default(PENDING)
   createdAt     DateTime               @default(now())
   updatedAt     DateTime               @updatedAt
@@ -397,6 +417,7 @@ model MigrationRequest {
   user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   partner  Partner?         @relation(fields: [partnerId], references: [id])
   messages RequestMessage[]
+  invoices Invoice[]
 
   @@index([userId])
   @@index([partnerId])
@@ -419,6 +440,37 @@ model RequestMessage {
   @@index([requestId, createdAt(sort: Asc)])
   @@index([senderId])
   @@map("request_messages")
+}
+
+// ─── Invoices ─────────────────────────────────────────────────────────────────
+
+model Invoice {
+  id            String        @id @default(cuid())
+  invoiceNumber String        @unique
+  requestId     String
+  partnerId     String
+  clientId      String
+  lineItems     Json
+  subtotal      Float
+  taxPercent    Float         @default(0)
+  total         Float
+  currency      String        @default("EUR")
+  status        InvoiceStatus @default(DRAFT)
+  dueDate       DateTime?
+  notes         String?       @db.Text
+  sentAt        DateTime?
+  paidAt        DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  request MigrationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  partner Partner          @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  client  User             @relation("ClientInvoices", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@index([partnerId])
+  @@index([clientId])
+  @@map("invoices")
 }
 
 // ─── Notifications ────────────────────────────────────────────────────────────

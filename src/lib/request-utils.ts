@@ -18,9 +18,31 @@ export const ACTIVE_REQUEST_STATUSES: MigrationRequestStatus[] = [
   "PENDING",
   "UNDER_REVIEW",
   "MATCHED",
+  "PROPOSAL_SENT",
   "ACCEPTED",
   "IN_PROGRESS",
 ];
+
+export type TaskPriority = "low" | "medium" | "high" | "urgent";
+
+export interface MigrationTask {
+  id: string;
+  title: string;
+  description?: string;
+  techNote?: string;
+  priority?: TaskPriority;
+  estimatedTime?: string;
+  status: "todo" | "in_progress" | "done";
+  createdAt: string;
+  completedAt?: string | null;
+}
+
+export interface MigrationProposal {
+  timeline: string;
+  approach: string;
+  budgetRange: string;
+  sentAt: string;
+}
 
 export function getRequestStatusMeta(status: MigrationRequestStatus) {
   switch (status) {
@@ -30,6 +52,8 @@ export function getRequestStatusMeta(status: MigrationRequestStatus) {
       return { label: "Under Review", cls: "bg-orange-50 text-orange-700 border-orange-200" };
     case "MATCHED":
       return { label: "Partner Assigned", cls: "bg-blue-50 text-[#2A5FA5] border-blue-200" };
+    case "PROPOSAL_SENT":
+      return { label: "Proposal Sent", cls: "bg-violet-50 text-violet-700 border-violet-200" };
     case "ACCEPTED":
       return { label: "Accepted", cls: "bg-indigo-50 text-indigo-700 border-indigo-200" };
     case "IN_PROGRESS":

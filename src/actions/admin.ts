@@ -214,6 +214,7 @@ export async function adminMatchPartner(requestId: string, partnerUserId: string
   const { createNotification } = await import("@/lib/notifications");
   await createNotification({
     recipientId: partnerUserId,
+    recipientMode: "partner",
     type: "REQUEST_RECEIVED",
     requestId,
   });

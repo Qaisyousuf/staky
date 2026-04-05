@@ -39,7 +39,9 @@ export async function sendRequestMessage(requestId: string, content: string) {
   if (recipientId) {
     await createNotification({
       recipientId,
+      recipientMode: isUser ? "partner" : "user",
       senderId: session.user.id,
+      senderMode: isUser ? "user" : "partner",
       type: "REQUEST_MESSAGE",
       requestId,
     });
