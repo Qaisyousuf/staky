@@ -37,6 +37,14 @@ export interface MigrationTask {
   completedAt?: string | null;
 }
 
+export interface MigrationPhase {
+  id: string;
+  label: string;
+  done: boolean;
+  completedAt?: string | null;
+  notes?: string | null;
+}
+
 export interface MigrationProposal {
   timeline: string;
   approach: string;

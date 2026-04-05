@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { createNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
-import { type MigrationTask } from "@/lib/request-utils";
+import { type MigrationTask, type MigrationPhase } from "@/lib/request-utils";
 
 // ─── Leads ────────────────────────────────────────────────────────────────────
 
@@ -355,5 +355,42 @@ export async function updateCompanyProfile(data: {
   revalidatePath("/app/company-profile");
   revalidatePath("/app/partners");
   revalidatePath("/app/dashboard");
+  return { ok: true };
+}
+
+// ─── Migration phases ─────────────────────────────────────────────────────────
+
+export async function togglePhase(
+  requestId: string,
+  phaseId: string,
+  done: boolean,
+  notes?: string
+) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Not authenticated");
+
+  const partner = await prisma.partner.findUnique({ where: { userId: session.user.id } });
+  if (!partner) throw new Error("Not a partner");
+
+  const request = await prisma.migrationRequest.findFirst({
+    where: { id: requestId, partnerId: partner.id },
+    select: { id: true, phases: true },
+  });
+  if (!request) throw new Error("Not your lead");
+
+  const current = (request.phases as MigrationPhase[] | null) ?? [];
+  const updated = current.map((p) =>
+    p.id === phaseId
+      ? { ...p, done, completedAt: done ? new Date().toISOString() : null, notes: done ? (notes ?? p.notes) : null }
+      : p
+  );
+
+  await prisma.migrationRequest.update({
+    where: { id: requestId },
+    data: { phases: updated as never },
+  });
+
+  revalidatePath(`/app/leads/${requestId}`);
+  revalidatePath(`/app/requests/${requestId}`);
   return { ok: true };
 }
