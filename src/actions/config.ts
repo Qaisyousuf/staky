@@ -84,7 +84,7 @@ export async function submitConfigAnswers(
   if (!request) throw new Error("Not your request");
   if (!request.configItems) throw new Error("No configuration request found");
 
-  const items = request.configItems as ConfigItem[];
+  const items = request.configItems as unknown as ConfigItem[];
   const answersMap = new Map(answers.map((a) => [a.id, a]));
 
   const updated = items.map((item) => {
@@ -137,7 +137,7 @@ export async function resubmitConfigItem(
   });
   if (!request?.configItems) throw new Error("Not found");
 
-  const items = request.configItems as ConfigItem[];
+  const items = request.configItems as unknown as ConfigItem[];
   const updated = items.map((item) =>
     item.id === itemId
       ? {
@@ -180,7 +180,7 @@ export async function reviewConfigItem(
   });
   if (!request?.configItems) throw new Error("Not found");
 
-  const items = request.configItems as ConfigItem[];
+  const items = request.configItems as unknown as ConfigItem[];
   const updated = items.map((item) =>
     item.id === itemId
       ? {
@@ -217,7 +217,7 @@ export async function revealSecretAnswer(requestId: string, itemId: string) {
   });
   if (!request?.configItems) throw new Error("Not found");
 
-  const item = (request.configItems as ConfigItem[]).find((i) => i.id === itemId);
+  const item = (request.configItems as unknown as ConfigItem[]).find((i) => i.id === itemId);
   if (!item) throw new Error("Item not found");
   if (item.type !== "secret") throw new Error("Not a secret item");
   if (!item.answer) throw new Error("No answer submitted yet");
