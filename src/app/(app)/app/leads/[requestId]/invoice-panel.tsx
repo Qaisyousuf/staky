@@ -197,7 +197,6 @@ export function InvoicePanel({
     });
   }
 
-  const canEdit = !invoice || invoice.status === "DRAFT";
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">

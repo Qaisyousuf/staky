@@ -5,7 +5,6 @@ import {
   ArrowRight,
   Building2,
   CalendarDays,
-  CheckCircle2,
   Clock,
   Mail,
   MapPin,
@@ -84,7 +83,6 @@ export default async function LeadDetailPage({
   const showProposal = isOwned && proposal && ["PROPOSAL_SENT", "ACCEPTED", "IN_PROGRESS", "COMPLETED"].includes(request.status);
 
   const doneTasks = tasks.filter((t) => t.status === "done").length;
-  const inProgressTasks = tasks.filter((t) => t.status === "in_progress").length;
   const daysSince = Math.floor((Date.now() - request.createdAt.getTime()) / 86400000);
   const etaInfo = request.targetDate ? daysUntil(request.targetDate) : null;
 
