@@ -21,6 +21,7 @@ const PRIORITY_BADGE: Record<TaskPriority, string> = {
 import { RequestConversation } from "./request-conversation";
 import { RequestTimeline } from "./request-timeline";
 import { ProposalActions } from "./proposal-actions";
+import { ShareExperienceTrigger } from "@/components/shared/share-experience-trigger";
 import { InvoiceView } from "./invoice-view";
 import { markInvoiceViewed } from "@/actions/invoice";
 import type { InvoiceLineItem } from "@/lib/invoice-utils";
@@ -411,6 +412,19 @@ export default async function RequestDetailPage({
             Your request is open and will be matched with a qualified partner shortly.
           </p>
         </div>
+      )}
+
+      {/* Share experience — only when completed */}
+      {request.status === "COMPLETED" && request.partner && (
+        <ShareExperienceTrigger
+          fromTool={request.fromTool}
+          toTool={request.toTool}
+          fromToolName={fromTool?.name ?? request.fromTool}
+          toToolName={toTool?.name ?? request.toTool}
+          partnerName={request.partner.companyName}
+          context={request.userGoals ?? request.description ?? null}
+          isPartnerMode={false}
+        />
       )}
 
       {/* Cancel button (only if not yet assigned) */}

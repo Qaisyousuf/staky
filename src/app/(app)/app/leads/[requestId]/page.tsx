@@ -28,6 +28,7 @@ import { LeadDetailActions } from "./lead-detail-actions";
 import { TaskBoard } from "./task-board";
 import { ProjectActivity } from "./project-activity";
 import { InvoicePanel } from "./invoice-panel";
+import { ShareExperienceTrigger } from "@/components/shared/share-experience-trigger";
 import type { InvoiceLineItem } from "@/lib/invoice-utils";
 
 function daysUntil(date: Date) {
@@ -371,6 +372,18 @@ export default async function LeadDetailPage({
                 }
               : null
           }
+        />
+      )}
+
+      {/* ── Share experience ── */}
+      {isOwned && request.status === "COMPLETED" && (
+        <ShareExperienceTrigger
+          fromTool={request.fromTool}
+          toTool={request.toTool}
+          fromToolName={fromTool?.name ?? request.fromTool}
+          toToolName={toTool?.name ?? request.toTool}
+          context={request.description ?? request.userGoals ?? null}
+          isPartnerMode
         />
       )}
 
