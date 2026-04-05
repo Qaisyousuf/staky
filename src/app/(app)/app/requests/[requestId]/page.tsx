@@ -23,9 +23,11 @@ import { RequestTimeline } from "./request-timeline";
 import { ProposalActions } from "./proposal-actions";
 import { ShareExperienceTrigger } from "@/components/shared/share-experience-trigger";
 import { InvoiceView } from "./invoice-view";
+import { ConfigForm } from "./config-form";
 import { markInvoiceViewed } from "@/actions/invoice";
 import type { InvoiceLineItem } from "@/lib/invoice-utils";
 import type { InvoiceStatusType } from "@/lib/invoice-utils";
+import type { ConfigItem } from "@/lib/config-templates";
 
 export default async function RequestDetailPage({
   params,
@@ -342,6 +344,17 @@ export default async function RequestDetailPage({
             })}
           </div>
         </div>
+      )}
+
+      {/* Config form — only when partner has sent a config request */}
+      {request.configSentAt && request.configItems && (
+        <ConfigForm
+          requestId={request.id}
+          fromToolName={fromTool?.name ?? request.fromTool}
+          toToolName={toTool?.name ?? request.toTool}
+          configItems={request.configItems as ConfigItem[]}
+          configSentAt={request.configSentAt.toISOString()}
+        />
       )}
 
       {/* Invoice — only show if sent/viewed/paid (not draft) */}

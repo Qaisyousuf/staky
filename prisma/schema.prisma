@@ -61,6 +61,8 @@ enum NotificationType {
   PARTNER_DELETED
   INVOICE_SENT
   INVOICE_PAID
+  CONFIG_REQUEST_SENT
+  CONFIG_SUBMITTED
 }
 
 enum InvoiceStatus {
@@ -410,6 +412,8 @@ model MigrationRequest {
   phases        Json?
   proposal      Json?
   targetDate    DateTime?
+  configItems   Json?
+  configSentAt  DateTime?
   status        MigrationRequestStatus @default(PENDING)
   createdAt     DateTime               @default(now())
   updatedAt     DateTime               @updatedAt

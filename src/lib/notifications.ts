@@ -23,6 +23,8 @@ export type AppNotificationType =
   | "PROPOSAL_DECLINED"
   | "INVOICE_SENT"
   | "INVOICE_PAID"
+  | "CONFIG_REQUEST_SENT"
+  | "CONFIG_SUBMITTED"
   | "PROFILE_VIEW"
   | "PARTNER_APPLICATION"
   | "PARTNER_APPROVED"
@@ -39,6 +41,8 @@ const PARTNER_TYPES = new Set([
   "PROPOSAL_DECLINED",
   "INVOICE_SENT",
   "INVOICE_PAID",
+  "CONFIG_REQUEST_SENT",
+  "CONFIG_SUBMITTED",
 ]);
 
 export async function createNotification(input: {
