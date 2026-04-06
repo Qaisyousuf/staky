@@ -19,7 +19,13 @@ function Hero() {
   const euDoubled = [...euTools, ...euTools];
 
   return (
-    <section className="overflow-hidden bg-white">
+    <section
+      className="overflow-hidden bg-[#f6f4ee]"
+      style={{
+        backgroundImage: "radial-gradient(circle at top, rgba(22,163,74,0.10), transparent 35%)",
+        fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      }}
+    >
       <style>{`
         @keyframes marquee-fwd {
           from { transform: translateX(0); }
@@ -32,48 +38,37 @@ function Hero() {
       `}</style>
 
       {/* Soft top glow */}
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[480px]"
-        style={{
-          background:
-            "radial-gradient(ellipse 65% 50% at 50% 0%, rgba(15,110,86,0.06) 0%, transparent 100%)",
-        }}
-      />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[480px]" />
 
       {/* Centered content */}
-      <div className="relative mx-auto max-w-5xl px-4 pb-14 pt-20 text-center sm:px-6 lg:pt-24">
+      <div className="relative mx-auto max-w-5xl px-4 pb-12 pt-16 text-center sm:px-6 sm:pb-14 sm:pt-20 lg:pt-24">
 
         {/* Headline */}
-        <h1 className="mx-auto max-w-4xl text-5xl font-semibold leading-[1.06] tracking-tight text-gray-950 sm:text-6xl lg:text-[76px]">
+        <h1 className="mx-auto max-w-4xl text-[2.75rem] font-semibold leading-[1] tracking-[-0.02em] text-[#151a16] sm:text-6xl lg:text-[76px]">
           The platform for{" "}
-          <span
-            className="bg-clip-text text-transparent"
-            style={{
-              backgroundImage: "linear-gradient(135deg, #0d5a47 0%, #0F6E56 45%, #1aaa7a 100%)",
-            }}
-          >
+          <span className="text-[#0f3d2e]">
             European software migration.
           </span>
         </h1>
 
         {/* Subtext */}
-        <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-gray-500 sm:text-lg">
+        <p className="mx-auto mt-5 max-w-[34rem] text-[15px] leading-[1.7] text-[rgba(0,0,0,0.6)] sm:mt-6 sm:text-lg sm:leading-[1.75]">
           Explore EU tools, understand the migration effort, share experiences with the community,
           and get expert help from trusted EU IT partners.
         </p>
 
         {/* CTAs */}
-        <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+        <div className="mt-8 flex flex-col items-stretch justify-center gap-2.5 sm:mt-9 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
           <Link
             href="/signup"
-            className="group inline-flex items-center gap-2 rounded-2xl bg-[#0F6E56] px-6 py-3 text-sm font-semibold text-white shadow-[0_2px_12px_rgba(15,110,86,0.3)] transition-all hover:-translate-y-px hover:bg-[#0a5a45] hover:shadow-[0_4px_20px_rgba(15,110,86,0.4)]"
+            className="group inline-flex items-center justify-center gap-2 rounded-full bg-[#0f3d2e] px-8 py-[14px] text-base font-medium text-white transition-all duration-200 ease-in-out hover:-translate-y-px hover:bg-[#14503d]"
           >
             Start for free
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
           <Link
             href="/discover"
-            className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-6 py-3 text-sm font-semibold text-gray-600 transition-all hover:-translate-y-px hover:border-gray-300 hover:shadow-sm"
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-[rgba(0,0,0,0.15)] bg-transparent px-8 py-[14px] text-base font-medium text-[#4f584f] transition-all duration-200 ease-in-out hover:-translate-y-px hover:bg-[rgba(0,0,0,0.04)]"
           >
             Browse alternatives
           </Link>
@@ -82,26 +77,26 @@ function Hero() {
 
       {/* Full-width marquee — intentionally breaks out of centered container */}
       {/* Marquee — clipped to title width, overflows hidden on both sides */}
-      <div className="relative mx-auto max-w-5xl overflow-hidden pb-20 pt-2">
+      <div className="relative mx-auto max-w-5xl overflow-hidden pb-14 pt-1 sm:pb-20 sm:pt-2">
         {/* Edge fades */}
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-20 bg-gradient-to-r from-white to-transparent" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-20 bg-gradient-to-l from-white to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-[#f6f4ee] to-transparent sm:w-20" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-[#f6f4ee] to-transparent sm:w-20" />
 
-        <div className="space-y-3">
+        <div className="space-y-2.5 sm:space-y-3">
           {/* Row 1 — US tools → left */}
-          <div className="flex w-max gap-3" style={{ animation: "marquee-fwd 50s linear infinite" }}>
+          <div className="flex w-max gap-2.5 sm:gap-3" style={{ animation: "marquee-fwd 50s linear infinite" }}>
             {usDoubled.map((tool, i) => (
               <div
                 key={i}
-                className="flex items-center gap-2.5 rounded-full border border-gray-100 bg-white px-4 py-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.07)] select-none"
+                className="flex items-center gap-2 rounded-full border border-[#e3ded1] bg-[#fbfaf6] px-3.5 py-2 shadow-[0_1px_2px_rgba(17,24,39,0.04)] select-none sm:gap-2.5 sm:px-4 sm:py-2.5"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={`/logos/tools/${tool.slug}.svg`}
                   alt={tool.name}
-                  className="h-5 w-5 shrink-0 object-contain"
+                  className="h-4.5 w-4.5 shrink-0 object-contain sm:h-5 sm:w-5"
                 />
-                <span className="text-[13.5px] font-medium text-gray-600 whitespace-nowrap">
+                <span className="whitespace-nowrap text-[12.5px] font-medium text-[#5a635a] sm:text-[13.5px]">
                   {tool.name}
                 </span>
               </div>
@@ -109,19 +104,19 @@ function Hero() {
           </div>
 
           {/* Row 2 — EU tools → right */}
-          <div className="flex w-max gap-3" style={{ animation: "marquee-rev 50s linear infinite" }}>
+          <div className="flex w-max gap-2.5 sm:gap-3" style={{ animation: "marquee-rev 50s linear infinite" }}>
             {euDoubled.map((tool, i) => (
               <div
                 key={i}
-                className="flex items-center gap-2.5 rounded-full border border-gray-100 bg-white px-4 py-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.07)] select-none"
+                className="flex items-center gap-2 rounded-full border border-[#e3ded1] bg-[#fbfaf6] px-3.5 py-2 shadow-[0_1px_2px_rgba(17,24,39,0.04)] select-none sm:gap-2.5 sm:px-4 sm:py-2.5"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={`/logos/tools/${tool.slug}.svg`}
                   alt={tool.name}
-                  className="h-5 w-5 shrink-0 object-contain"
+                  className="h-4.5 w-4.5 shrink-0 object-contain sm:h-5 sm:w-5"
                 />
-                <span className="text-[13.5px] font-medium text-gray-600 whitespace-nowrap">
+                <span className="whitespace-nowrap text-[12.5px] font-medium text-[#5a635a] sm:text-[13.5px]">
                   {tool.name}
                 </span>
                 {tool.country && (
@@ -159,42 +154,43 @@ function SwitchCard({
   return (
     <Link
       href={`/discover?category=${encodeURIComponent(category)}`}
-      className="group flex flex-col rounded-2xl border border-gray-100 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-1 hover:border-gray-200 hover:shadow-[0_16px_48px_rgba(0,0,0,0.09)]"
+      className="group flex flex-col rounded-2xl border border-[#e4ddcf] bg-white p-5 shadow-[0_1px_2px_rgba(17,24,39,0.05)] transition-all duration-300 hover:-translate-y-1 hover:border-[#d6cebf] hover:shadow-[0_14px_36px_rgba(17,24,39,0.08)]"
+      style={{ fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
     >
       {/* Header */}
       <div className="mb-5 flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">
+        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#8c9388]">
           {category}
         </span>
-        <ArrowRight className="h-3.5 w-3.5 text-gray-200 transition-colors duration-200 group-hover:text-[#0F6E56]" />
+        <ArrowRight className="h-3.5 w-3.5 text-[#cfc8bb] transition-colors duration-200 group-hover:text-[#0f3d2e]" />
       </div>
 
       {/* Tools */}
       <div className="flex flex-1 flex-col gap-2.5">
         {/* From */}
-        <div className="flex items-center gap-3 rounded-xl bg-gray-50 px-3 py-2.5">
+        <div className="flex items-center gap-3 rounded-xl border border-[#ece6da] bg-[#faf8f2] px-3 py-2.5">
           <ToolIcon slug={from} size="lg" />
           <div>
-            <p className="text-[10px] font-medium text-gray-400">Switching from</p>
-            <p className="text-[12px] font-semibold text-gray-700">{fromTool.name}</p>
+            <p className="text-[10px] font-medium text-[#8c9388]">Switching from</p>
+            <p className="text-[12px] font-semibold text-[#2c332d]">{fromTool.name}</p>
           </div>
         </div>
 
         {/* Divider with arrow */}
         <div className="flex items-center gap-2 px-1">
-          <div className="h-px flex-1 bg-gray-100" />
-          <div className="flex h-5 w-5 items-center justify-center rounded-full border border-gray-100 bg-white shadow-sm">
-            <ArrowRight className="h-2.5 w-2.5 rotate-90 text-gray-300" />
+          <div className="h-px flex-1 bg-[#e8e2d7]" />
+          <div className="flex h-5 w-5 items-center justify-center rounded-full border border-[#e8e2d7] bg-white shadow-[0_1px_2px_rgba(17,24,39,0.04)]">
+            <ArrowRight className="h-2.5 w-2.5 rotate-90 text-[#b9b2a5]" />
           </div>
-          <div className="h-px flex-1 bg-gray-100" />
+          <div className="h-px flex-1 bg-[#e8e2d7]" />
         </div>
 
         {/* To */}
-        <div className="flex items-center gap-3 rounded-xl bg-green-50/60 px-3 py-2.5 ring-1 ring-green-100">
+        <div className="flex items-center gap-3 rounded-xl border border-[#d8e4db] bg-[#f4f7f2] px-3 py-2.5">
           <ToolIcon slug={to} size="lg" />
           <div>
             <div className="flex items-center gap-1.5">
-              <p className="text-[10px] font-medium text-[#0F6E56]">EU alternative</p>
+              <p className="text-[10px] font-medium text-[#0f3d2e]">EU alternative</p>
               {toTool.country && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -206,15 +202,15 @@ function SwitchCard({
                 />
               )}
             </div>
-            <p className="text-[12px] font-semibold text-gray-800">{toTool.name}</p>
+            <p className="text-[12px] font-semibold text-[#1f2923]">{toTool.name}</p>
           </div>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="mt-5 border-t border-gray-100 pt-4">
-        <p className="text-[11px] text-gray-400">
-          <span className="font-semibold text-gray-700">{switcherCount.toLocaleString()}</span> companies switched
+      <div className="mt-5 border-t border-[#ece6da] pt-4">
+        <p className="text-[11px] text-[#8c9388]">
+          <span className="font-semibold text-[#374039]">{switcherCount.toLocaleString()}</span> companies switched
         </p>
       </div>
     </Link>
@@ -226,26 +222,24 @@ function SwitchCard({
 
 function CtaBanner() {
   return (
-    <section className="border-t border-gray-100 bg-white py-24 sm:py-32">
+    <section
+      className="border-t border-[#e7e0d4] bg-[#f6f4ee] py-24 sm:py-32"
+      style={{ fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
+    >
       <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
-        <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.15em] text-[#0F6E56]">
+        <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.15em] text-[#0f3d2e]">
           Join 18,000+ European businesses
         </p>
 
-        <h2 className="text-4xl font-semibold tracking-tight text-gray-950 sm:text-5xl">
+        <h2 className="text-4xl font-bold tracking-[-0.03em] text-[#151a16] sm:text-5xl">
           Ready to break free
           <br />
-          <span
-            className="bg-clip-text text-transparent"
-            style={{
-              backgroundImage: "linear-gradient(135deg, #0d5a47 0%, #0F6E56 45%, #1aaa7a 100%)",
-            }}
-          >
+          <span className="text-[#0f3d2e]">
             from US Big Tech?
           </span>
         </h2>
 
-        <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-gray-500">
+        <p className="mx-auto mt-5 max-w-lg text-base leading-[1.75] text-[#5a635a]">
           Privacy-first EU software is ready. Your migration partner is waiting.
           Start today — completely free.
         </p>
@@ -253,14 +247,14 @@ function CtaBanner() {
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
             href="/signup"
-            className="group inline-flex items-center gap-2 rounded-2xl bg-[#0F6E56] px-7 py-3.5 text-sm font-semibold text-white shadow-[0_2px_12px_rgba(15,110,86,0.3)] transition-all hover:-translate-y-px hover:bg-[#0a5a45] hover:shadow-[0_4px_20px_rgba(15,110,86,0.4)]"
+            className="group inline-flex items-center gap-2 rounded-full bg-[#0f3d2e] px-7 py-3.5 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(15,61,46,0.10)] transition-colors hover:bg-[#14513d]"
           >
             Create free account
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
           <Link
             href="/partners"
-            className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-7 py-3.5 text-sm font-semibold text-gray-600 transition-all hover:-translate-y-px hover:border-gray-300 hover:shadow-sm"
+            className="inline-flex items-center gap-2 rounded-full border border-[#d7d1c3] bg-[#f6f4ee] px-7 py-3.5 text-sm font-semibold text-[#4f584f] transition-colors hover:border-[#c5bcab] hover:bg-[#f2efe7]"
           >
             Find a migration partner
           </Link>
@@ -288,20 +282,23 @@ export default async function LandingPage() {
       <Hero />
 
       {/* ── Popular switches ── */}
-      <section className="py-24">
+      <section
+        className="bg-[#f6f4ee] py-24"
+        style={{ fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
+      >
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h2 className="text-3xl font-semibold tracking-tight text-gray-950 sm:text-4xl">
+              <h2 className="text-3xl font-bold tracking-[-0.03em] text-[#151a16] sm:text-4xl">
                 The most switched tools in Europe
               </h2>
-              <p className="mt-2 text-base text-gray-500">
+              <p className="mt-2 text-base text-[#5a635a]">
                 See what companies are replacing — and where they&apos;re going.
               </p>
             </div>
             <Link
               href="/discover"
-              className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-[#0F6E56] hover:underline"
+              className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-[#0f3d2e] hover:underline"
             >
               View all EU alternatives <ArrowRight className="h-3.5 w-3.5" />
             </Link>
@@ -334,20 +331,23 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Community members ── */}
-      <section className="border-y border-gray-100 bg-gray-50/40 py-24">
+      <section
+        className="border-y border-[#e7e0d4] bg-[#fbfaf6] py-24"
+        style={{ fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
+      >
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h2 className="text-3xl font-semibold tracking-tight text-gray-950 sm:text-4xl">
+              <h2 className="text-3xl font-bold tracking-[-0.03em] text-[#151a16] sm:text-4xl">
                 Join a growing community
               </h2>
-              <p className="mt-2 text-base text-gray-500">
+              <p className="mt-2 text-base text-[#5a635a]">
                 Thousands of European businesses already making the switch.
               </p>
             </div>
             <Link
               href="/signup"
-              className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-[#0F6E56] hover:underline"
+              className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-[#0f3d2e] hover:underline"
             >
               Join the community <ArrowRight className="h-3.5 w-3.5" />
             </Link>
@@ -369,7 +369,7 @@ export default async function LandingPage() {
               return (
                 <div
                   key={member.id}
-                  className="group flex flex-col rounded-2xl border border-gray-100 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-1 hover:border-gray-200 hover:shadow-[0_16px_48px_rgba(0,0,0,0.1)]"
+                  className="group flex flex-col rounded-2xl border border-[#e4ddcf] bg-white shadow-[0_1px_2px_rgba(17,24,39,0.05)] transition-all duration-300 hover:-translate-y-1 hover:border-[#d6cebf] hover:shadow-[0_14px_36px_rgba(17,24,39,0.08)]"
                 >
                   {/* Cover + avatar — relative wrapper so avatar can overlap */}
                   <div className="relative">
@@ -433,7 +433,7 @@ export default async function LandingPage() {
 
                     {/* Name + badge */}
                     <div className="flex items-center gap-1.5 mb-0.5">
-                      <p className="text-[16px] font-semibold leading-tight text-gray-900">
+                      <p className="text-[16px] font-semibold leading-tight text-[#1e2520]">
                         {member.name}
                       </p>
                       <BadgeCheck
@@ -453,7 +453,7 @@ export default async function LandingPage() {
                           href={href}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="mb-1 inline-flex items-center gap-1 text-[10.5px] font-medium text-[#0F6E56]"
+                          className="mb-1 inline-flex items-center gap-1 text-[10.5px] font-medium text-[#0f3d2e]"
                         >
                           <Globe className="h-2.5 w-2.5 shrink-0" />
                           Visit my website
@@ -465,7 +465,7 @@ export default async function LandingPage() {
                     {member.title && (
                       <div className="mt-1 flex items-center gap-1.5 truncate">
                         <Briefcase className="h-3 w-3 shrink-0 text-gray-300" />
-                        <p className="text-[12.5px] text-gray-500 truncate">{member.title}</p>
+                        <p className="text-[12.5px] text-[#646d64] truncate">{member.title}</p>
                       </div>
                     )}
 
@@ -473,7 +473,7 @@ export default async function LandingPage() {
                     {member.company && (
                       <div className="mt-0.5 flex items-center gap-1.5 truncate">
                         <Building2 className="h-3 w-3 shrink-0 text-gray-300" />
-                        <p className="text-[12.5px] text-gray-500 truncate">
+                        <p className="text-[12.5px] text-[#646d64] truncate">
                           Founder at {member.company}
                         </p>
                       </div>
@@ -483,7 +483,7 @@ export default async function LandingPage() {
                     {member.location && (
                       <div className="mt-1 flex items-center gap-1.5">
                         <MapPin className="h-3 w-3 shrink-0 text-gray-300" />
-                        <span className="text-[12.5px] text-gray-500 truncate">{member.location}</span>
+                        <span className="text-[12.5px] text-[#646d64] truncate">{member.location}</span>
                       </div>
                     )}
 
@@ -493,7 +493,7 @@ export default async function LandingPage() {
                         {member.interests.slice(0, 3).map((tag) => (
                           <span
                             key={tag}
-                            className="rounded-full border border-gray-100 bg-gray-50 px-2.5 py-1 text-[10px] font-medium text-gray-500"
+                            className="rounded-full border border-[#e7e0d4] bg-[#faf8f2] px-2.5 py-1 text-[10px] font-medium text-[#646d64]"
                           >
                             {tag}
                           </span>
@@ -504,18 +504,18 @@ export default async function LandingPage() {
                     {/* Bio */}
                     <div className="mt-3 flex-1">
                       {member.bio ? (
-                        <p className="text-[13px] leading-relaxed text-gray-400 line-clamp-3">
+                        <p className="text-[13px] leading-relaxed text-[#70786f] line-clamp-3">
                           {member.bio}
                         </p>
                       ) : (
-                        <p className="text-[13px] italic text-gray-300">No bio yet.</p>
+                        <p className="text-[13px] italic text-[#9ba29a]">No bio yet.</p>
                       )}
                     </div>
 
                     {/* View profile */}
                     <Link
                       href={`/profile/${member.id}`}
-                      className="mt-5 flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 py-2.5 text-[12.5px] font-semibold text-gray-600 transition-all hover:border-gray-900 hover:text-gray-900"
+                      className="mt-5 flex items-center justify-center gap-1.5 rounded-full border border-[#d7d1c3] py-2.5 text-[12.5px] font-semibold text-[#4f584f] transition-colors hover:border-[#c5bcab] hover:bg-[#f7f4ec] hover:text-[#263029]"
                     >
                       View profile
                       <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -529,20 +529,23 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Partners ── */}
-      <section className="border-t border-gray-100 py-24">
+      <section
+        className="border-t border-[#e7e0d4] bg-[#f6f4ee] py-24"
+        style={{ fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
+      >
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h2 className="text-3xl font-semibold tracking-tight text-gray-950 sm:text-4xl">
+              <h2 className="text-3xl font-bold tracking-[-0.03em] text-[#151a16] sm:text-4xl">
                 Certified EU migration partners
               </h2>
-              <p className="mt-2 text-base text-gray-500">
+              <p className="mt-2 text-base text-[#5a635a]">
                 Vetted specialists ready to guide your migration from start to finish.
               </p>
             </div>
             <Link
               href="/partners"
-              className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-[#0F6E56] hover:underline"
+              className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-[#0f3d2e] hover:underline"
             >
               View all partners <ArrowRight className="h-3.5 w-3.5" />
             </Link>

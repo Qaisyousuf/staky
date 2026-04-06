@@ -44,11 +44,12 @@ export function PartnerCard({ partner, compact = false, homepage = false }: Part
   return (
     <article
       className={cn(
-        "group flex flex-col overflow-hidden border border-gray-200 bg-white transition-all duration-200 hover:-translate-y-0.5 hover:border-gray-300",
+        "group flex flex-col overflow-hidden border bg-white transition-all duration-200 hover:-translate-y-0.5",
         homepage
-          ? "rounded-[26px] hover:shadow-[0_20px_45px_rgba(15,23,42,0.08)]"
+          ? "rounded-[26px] border-[#e4ddcf] hover:border-[#d6cebf] hover:shadow-[0_18px_36px_rgba(17,24,39,0.08)]"
           : "rounded-2xl hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
       )}
+      style={homepage ? { fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" } : undefined}
     >
       <div className={cn("flex flex-1 flex-col", homepage ? "p-4" : "p-5")}>
         <div className={cn("flex items-start gap-3", homepage ? "mb-3.5" : "mb-4")}>
@@ -56,7 +57,7 @@ export function PartnerCard({ partner, compact = false, homepage = false }: Part
             <span
               className={cn(
                 "inline-flex shrink-0 items-center justify-center border border-gray-200 bg-white",
-                homepage ? "h-11 w-11 rounded-[18px]" : "h-12 w-12 rounded-2xl"
+                homepage ? "h-11 w-11 rounded-[18px] border-[#e4ddcf] bg-[#fbfaf6]" : "h-12 w-12 rounded-2xl"
               )}
             >
               <Image
@@ -77,7 +78,7 @@ export function PartnerCard({ partner, compact = false, homepage = false }: Part
           )}
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-1.5">
-              <h3 className={cn("font-semibold leading-tight text-gray-900", homepage ? "text-[15px]" : "text-sm")}>
+              <h3 className={cn("font-semibold leading-tight", homepage ? "text-[15px] text-[#1e2520]" : "text-sm text-gray-900")}>
                 {partner.name}
               </h3>
               {partner.verified && (
@@ -89,7 +90,7 @@ export function PartnerCard({ partner, compact = false, homepage = false }: Part
                 </span>
               )}
             </div>
-            <p className="mt-0.5 text-[11px] text-gray-400">
+            <p className="mt-0.5 text-[11px] text-[#8c9388]">
               {partner.country}
             </p>
           </div>
@@ -97,11 +98,11 @@ export function PartnerCard({ partner, compact = false, homepage = false }: Part
 
         {homepage ? (
           <div className="mb-4 flex items-center gap-3">
-            <div className="flex items-center gap-1.5 rounded-full border border-gray-100 bg-gray-50 px-3 py-1.5">
-              <Briefcase className="h-3 w-3 text-gray-400" />
-              <span className="text-[11px] font-medium text-gray-600">{partner.projects} projects</span>
+            <div className="flex items-center gap-1.5 rounded-full border border-[#e7e0d4] bg-[#faf8f2] px-3 py-1.5">
+              <Briefcase className="h-3 w-3 text-[#8c9388]" />
+              <span className="text-[11px] font-medium text-[#5f685f]">{partner.projects} projects</span>
             </div>
-            <div className="flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5">
+            <div className="flex items-center gap-1.5 rounded-full border border-[#dce4de] bg-[#f4f7f2] px-3 py-1.5">
               <BadgeCheck className="h-3 w-3 text-[#2A5FA5]" />
               <span className="text-[11px] font-medium text-[#2A5FA5]">Verified</span>
             </div>
@@ -147,7 +148,7 @@ export function PartnerCard({ partner, compact = false, homepage = false }: Part
               className={cn(
                 "inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-medium",
                 homepage
-                  ? "border border-gray-200 bg-[#fafafa] text-gray-600"
+                  ? "border border-[#e7e0d4] bg-[#faf8f2] text-[#5f685f]"
                   : "border border-blue-100 bg-blue-50 text-[#2A5FA5]"
               )}
             >
@@ -167,7 +168,7 @@ export function PartnerCard({ partner, compact = false, homepage = false }: Part
           </p>
         )}
 
-        <div className={cn("mt-auto flex items-center justify-between border-t border-gray-100", homepage ? "pt-3.5" : "pt-3.5")}>
+        <div className={cn("mt-auto flex items-center justify-between border-t", homepage ? "border-[#ece6da] pt-3.5" : "border-gray-100 pt-3.5")}>
           {!homepage ? (
             <div>
               <p className="text-[10px] uppercase tracking-wide text-gray-400">Pricing</p>
@@ -181,7 +182,7 @@ export function PartnerCard({ partner, compact = false, homepage = false }: Part
             className={cn(
               "flex items-center gap-1.5 text-xs font-medium transition-colors",
               homepage
-                ? "rounded-xl bg-[#2A5FA5] px-3.5 py-2 text-white hover:bg-[#244d8a]"
+                ? "rounded-full bg-[#0f3d2e] px-3.5 py-2 text-white hover:bg-[#14513d]"
                 : "rounded-xl bg-[#2A5FA5] px-3.5 py-2 text-white hover:bg-[#244d8a]"
             )}
           >

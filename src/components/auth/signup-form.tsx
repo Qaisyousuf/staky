@@ -52,39 +52,39 @@ export function SignupForm() {
   };
 
   const inputClass = (hasError: boolean) =>
-    `w-full py-2.5 text-sm rounded-lg border bg-white outline-none transition-colors ${
+    `w-full rounded-2xl border bg-[#fffdfa] py-3 text-sm outline-none transition-colors ${
       hasError
         ? "border-red-300 focus:border-red-400"
-        : "border-gray-200 focus:border-[#0F6E56]"
+        : "border-[#ddd6c8] focus:border-[#0f3d2e]"
     }`;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">
+    <div
+      className="w-full rounded-[32px] border border-[#ddd4c3] bg-[linear-gradient(180deg,#fffdf8_0%,#f7f1e6_100%)] p-8 shadow-[0_20px_45px_rgba(17,24,39,0.07)] sm:p-10"
+      style={{ fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
+    >
+      <div className="mb-6 border-b border-[#ece2d3] pb-6">
+        <h1 className="text-[30px] font-semibold leading-[1.05] tracking-[-0.03em] text-[#151a16]">
           Join Staky
         </h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-2 text-sm leading-6 text-[rgba(0,0,0,0.6)]">
           Start your journey to EU software today.
         </p>
       </div>
 
-      {/* Server error */}
       {serverError && (
-        <div className="mb-5 rounded-lg bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-700">
+        <div className="mb-5 rounded-2xl border border-red-100 bg-[#fdf1ee] px-4 py-3.5 text-sm text-red-700">
           {serverError}
         </div>
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {/* Name */}
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-[#374039]">
             Full name
           </label>
           <div className="relative">
-            <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
               <User className="h-4 w-4 text-gray-400" />
             </span>
             <input
@@ -96,18 +96,15 @@ export function SignupForm() {
               className={`${inputClass(!!errors.name)} pl-10 pr-4`}
             />
           </div>
-          {errors.name && (
-            <p className="mt-1.5 text-xs text-red-600">{errors.name.message}</p>
-          )}
+          {errors.name && <p className="mt-1.5 text-xs text-red-600">{errors.name.message}</p>}
         </div>
 
-        {/* Email */}
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-[#374039]">
             Work email
           </label>
           <div className="relative">
-            <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
               <Mail className="h-4 w-4 text-gray-400" />
             </span>
             <input
@@ -119,18 +116,15 @@ export function SignupForm() {
               className={`${inputClass(!!errors.email)} pl-10 pr-4`}
             />
           </div>
-          {errors.email && (
-            <p className="mt-1.5 text-xs text-red-600">{errors.email.message}</p>
-          )}
+          {errors.email && <p className="mt-1.5 text-xs text-red-600">{errors.email.message}</p>}
         </div>
 
-        {/* Password */}
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-[#374039]">
             Password
           </label>
           <div className="relative">
-            <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
               <Lock className="h-4 w-4 text-gray-400" />
             </span>
             <input
@@ -151,18 +145,15 @@ export function SignupForm() {
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
-          {errors.password && (
-            <p className="mt-1.5 text-xs text-red-600">{errors.password.message}</p>
-          )}
+          {errors.password && <p className="mt-1.5 text-xs text-red-600">{errors.password.message}</p>}
         </div>
 
-        {/* Confirm password */}
         <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label htmlFor="confirmPassword" className="mb-1.5 block text-sm font-medium text-[#374039]">
             Confirm password
           </label>
           <div className="relative">
-            <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
               <Lock className="h-4 w-4 text-gray-400" />
             </span>
             <input
@@ -183,16 +174,13 @@ export function SignupForm() {
               {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
-          {errors.confirmPassword && (
-            <p className="mt-1.5 text-xs text-red-600">{errors.confirmPassword.message}</p>
-          )}
+          {errors.confirmPassword && <p className="mt-1.5 text-xs text-red-600">{errors.confirmPassword.message}</p>}
         </div>
 
-        {/* Submit */}
         <button
           type="submit"
           disabled={isPending}
-          className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#0F6E56] hover:bg-[#0d5f4a] text-white text-sm font-medium py-2.5 transition-colors disabled:opacity-60 disabled:cursor-not-allowed mt-2"
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-full bg-[#0f3d2e] py-[14px] text-base font-medium text-white transition-all duration-200 ease-in-out hover:-translate-y-px hover:bg-[#14503d] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isPending ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -203,14 +191,14 @@ export function SignupForm() {
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-gray-500">
+      <p className="mt-6 text-center text-sm text-[rgba(0,0,0,0.6)]">
         Already have an account?{" "}
-        <Link href="/login" className="text-[#0F6E56] font-medium hover:underline">
+        <Link href="/login" className="font-medium text-[#0f3d2e] hover:underline">
           Sign in
         </Link>
       </p>
 
-      <p className="mt-3 text-center text-xs text-gray-400">
+      <p className="mt-3 text-center text-xs text-[#8c9388]">
         By signing up you agree to our{" "}
         <Link href="/terms" className="hover:underline">
           Terms
