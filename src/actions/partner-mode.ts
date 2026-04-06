@@ -197,6 +197,6 @@ export async function setActiveMode(mode: "user" | "partner"): Promise<PartnerMo
     data: { activeMode: mode },
   });
 
-  revalidatePath("/app/dashboard");
+  revalidatePath("/app", "layout");
   return { status: "success" };
 }

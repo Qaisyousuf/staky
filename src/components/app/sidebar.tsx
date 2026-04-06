@@ -221,7 +221,6 @@ function UserFooter({ user }: { user: SidebarUser }) {
 
 export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 

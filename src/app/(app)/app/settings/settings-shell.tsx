@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { User, CreditCard, Bell, ShieldCheck, Trash2, Handshake, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProfileTab } from "./tabs/profile-tab";
@@ -94,19 +95,26 @@ type TabId        = UserTabId | PartnerTabId;
 export function SettingsShell({
   user,
   notifSettings,
-  activeMode,
+  activeMode: serverActiveMode,
 }: {
   user: SettingsUser;
   notifSettings: NotifSettings | null;
   activeMode: "user" | "partner";
 }) {
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
+  // Use client session so the tabs update immediately after mode switch
+  const activeMode = (session?.user?.activeMode ?? serverActiveMode) as "user" | "partner";
   const isPartner = activeMode === "partner";
   const tabs = isPartner ? PARTNER_TABS : USER_TABS;
 
   const initialTab = searchParams.get("tab") as TabId | null;
   const validInitial = tabs.some((t) => t.id === initialTab) ? initialTab! : tabs[0].id;
   const [activeTab, setActiveTab] = useState<TabId>(validInitial);
+
+  // Reset to first tab when mode changes so stale tab IDs don't persist
+  const currentTabValid = tabs.some((t) => t.id === activeTab);
+  const resolvedTab = currentTabValid ? activeTab : tabs[0].id;
 
   const defaultNotifSettings: NotifSettings = {
     inAppLikes: true, inAppComments: true, inAppReplies: true,
@@ -140,7 +148,7 @@ export function SettingsShell({
               onClick={() => setActiveTab(id)}
               className={cn(
                 "flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium transition-colors rounded-lg mx-1.5 text-left",
-                activeTab === id
+                resolvedTab === id
                   ? isPartner
                     ? "bg-blue-50 text-[#2A5FA5]"
                     : "bg-green-50 text-[#0F6E56]"
@@ -149,7 +157,7 @@ export function SettingsShell({
             >
               <Icon className={cn(
                 "h-4 w-4 shrink-0",
-                activeTab === id
+                resolvedTab === id
                   ? isPartner ? "text-[#2A5FA5]" : "text-[#0F6E56]"
                   : "text-gray-400"
               )} />
@@ -167,7 +175,7 @@ export function SettingsShell({
                 onClick={() => setActiveTab(id)}
                 className={cn(
                   "flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-colors shrink-0",
-                  activeTab === id
+                  resolvedTab === id
                     ? isPartner
                       ? "bg-blue-50 text-[#2A5FA5]"
                       : "bg-green-50 text-[#0F6E56]"
@@ -184,7 +192,7 @@ export function SettingsShell({
         {/* Tab content */}
         <div className="flex-1 min-w-0">
           {/* Partner mode tabs */}
-          {isPartner && activeTab === "company" && user.partner && (
+          {isPartner && resolvedTab === "company" && user.partner && (
             <ProfileEditor
               partner={{
                 id: user.partner.id,
@@ -205,20 +213,20 @@ export function SettingsShell({
           )}
 
           {/* Shared tabs */}
-          {activeTab === "notifications" && (
+          {resolvedTab === "notifications" && (
             <NotificationsTab settings={notifSettings ?? defaultNotifSettings} />
           )}
-          {activeTab === "privacy" && (
+          {resolvedTab === "privacy" && (
             <PrivacyTab profileVisibility={user.profileVisibility} />
           )}
-          {activeTab === "account" && (
+          {resolvedTab === "account" && (
             <AccountTab email={user.email} createdAt={user.createdAt} />
           )}
 
           {/* Switcher-only tabs */}
-          {!isPartner && activeTab === "profile" && <ProfileTab user={user} />}
-          {!isPartner && activeTab === "partner" && <PartnerTab partner={user.partner} />}
-          {!isPartner && activeTab === "billing" && <BillingTab plan={user.plan} />}
+          {!isPartner && resolvedTab === "profile" && <ProfileTab user={user} />}
+          {!isPartner && resolvedTab === "partner" && <PartnerTab partner={user.partner} />}
+          {!isPartner && resolvedTab === "billing" && <BillingTab plan={user.plan} />}
         </div>
       </div>
     </div>
