@@ -41,10 +41,10 @@ function Hero() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[480px]" />
 
       {/* Centered content */}
-      <div className="relative mx-auto max-w-5xl px-4 pb-12 pt-16 text-center sm:px-6 sm:pb-14 sm:pt-20 lg:pt-24">
+      <div className="relative mx-auto max-w-5xl px-4 pb-14 pt-20 text-center sm:px-6 lg:pt-24">
 
         {/* Headline */}
-        <h1 className="mx-auto max-w-4xl text-[2.75rem] font-semibold leading-[1] tracking-[-0.02em] text-[#151a16] sm:text-6xl lg:text-[76px]">
+        <h1 className="mx-auto max-w-4xl text-5xl font-semibold leading-[1] tracking-[-0.02em] text-[#151a16] sm:text-6xl lg:text-[76px]">
           The platform for{" "}
           <span className="text-[#0f3d2e]">
             European software migration.
@@ -52,23 +52,23 @@ function Hero() {
         </h1>
 
         {/* Subtext */}
-        <p className="mx-auto mt-5 max-w-[34rem] text-[15px] leading-[1.7] text-[rgba(0,0,0,0.6)] sm:mt-6 sm:text-lg sm:leading-[1.75]">
+        <p className="mx-auto mt-6 max-w-2xl text-base leading-[1.75] text-[rgba(0,0,0,0.6)] sm:text-lg">
           Explore EU tools, understand the migration effort, share experiences with the community,
           and get expert help from trusted EU IT partners.
         </p>
 
         {/* CTAs */}
-        <div className="mt-8 flex flex-col items-stretch justify-center gap-2.5 sm:mt-9 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+        <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
           <Link
             href="/signup"
-            className="group inline-flex items-center justify-center gap-2 rounded-full bg-[#0f3d2e] px-8 py-[14px] text-base font-medium text-white transition-all duration-200 ease-in-out hover:-translate-y-px hover:bg-[#14503d]"
+            className="group inline-flex items-center gap-2 rounded-full bg-[#0f3d2e] px-8 py-[14px] text-base font-medium text-white transition-all duration-200 ease-in-out hover:-translate-y-px hover:bg-[#14503d]"
           >
             Start for free
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
           <Link
             href="/discover"
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-[rgba(0,0,0,0.15)] bg-transparent px-8 py-[14px] text-base font-medium text-[#4f584f] transition-all duration-200 ease-in-out hover:-translate-y-px hover:bg-[rgba(0,0,0,0.04)]"
+            className="inline-flex items-center gap-2 rounded-full border border-[rgba(0,0,0,0.15)] bg-transparent px-8 py-[14px] text-base font-medium text-[#4f584f] transition-all duration-200 ease-in-out hover:-translate-y-px hover:bg-[rgba(0,0,0,0.04)]"
           >
             Browse alternatives
           </Link>
@@ -77,26 +77,26 @@ function Hero() {
 
       {/* Full-width marquee — intentionally breaks out of centered container */}
       {/* Marquee — clipped to title width, overflows hidden on both sides */}
-      <div className="relative mx-auto max-w-5xl overflow-hidden pb-14 pt-1 sm:pb-20 sm:pt-2">
+      <div className="relative mx-auto max-w-5xl overflow-hidden pb-20 pt-2">
         {/* Edge fades */}
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-[#f6f4ee] to-transparent sm:w-20" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-[#f6f4ee] to-transparent sm:w-20" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-20 bg-gradient-to-r from-[#f6f4ee] to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-20 bg-gradient-to-l from-[#f6f4ee] to-transparent" />
 
-        <div className="space-y-2.5 sm:space-y-3">
+        <div className="space-y-3">
           {/* Row 1 — US tools → left */}
-          <div className="flex w-max gap-2.5 sm:gap-3" style={{ animation: "marquee-fwd 50s linear infinite" }}>
+          <div className="flex w-max gap-3" style={{ animation: "marquee-fwd 50s linear infinite" }}>
             {usDoubled.map((tool, i) => (
               <div
                 key={i}
-                className="flex items-center gap-2 rounded-full border border-[#e3ded1] bg-[#fbfaf6] px-3.5 py-2 shadow-[0_1px_2px_rgba(17,24,39,0.04)] select-none sm:gap-2.5 sm:px-4 sm:py-2.5"
+                className="flex items-center gap-2.5 rounded-full border border-[#e3ded1] bg-[#fbfaf6] px-4 py-2.5 shadow-[0_1px_2px_rgba(17,24,39,0.04)] select-none"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={`/logos/tools/${tool.slug}.svg`}
                   alt={tool.name}
-                  className="h-4.5 w-4.5 shrink-0 object-contain sm:h-5 sm:w-5"
+                  className="h-5 w-5 shrink-0 object-contain"
                 />
-                <span className="whitespace-nowrap text-[12.5px] font-medium text-[#5a635a] sm:text-[13.5px]">
+                <span className="text-[13.5px] font-medium text-[#5a635a] whitespace-nowrap">
                   {tool.name}
                 </span>
               </div>
@@ -104,19 +104,19 @@ function Hero() {
           </div>
 
           {/* Row 2 — EU tools → right */}
-          <div className="flex w-max gap-2.5 sm:gap-3" style={{ animation: "marquee-rev 50s linear infinite" }}>
+          <div className="flex w-max gap-3" style={{ animation: "marquee-rev 50s linear infinite" }}>
             {euDoubled.map((tool, i) => (
               <div
                 key={i}
-                className="flex items-center gap-2 rounded-full border border-[#e3ded1] bg-[#fbfaf6] px-3.5 py-2 shadow-[0_1px_2px_rgba(17,24,39,0.04)] select-none sm:gap-2.5 sm:px-4 sm:py-2.5"
+                className="flex items-center gap-2.5 rounded-full border border-[#e3ded1] bg-[#fbfaf6] px-4 py-2.5 shadow-[0_1px_2px_rgba(17,24,39,0.04)] select-none"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={`/logos/tools/${tool.slug}.svg`}
                   alt={tool.name}
-                  className="h-4.5 w-4.5 shrink-0 object-contain sm:h-5 sm:w-5"
+                  className="h-5 w-5 shrink-0 object-contain"
                 />
-                <span className="whitespace-nowrap text-[12.5px] font-medium text-[#5a635a] sm:text-[13.5px]">
+                <span className="text-[13.5px] font-medium text-[#5a635a] whitespace-nowrap">
                   {tool.name}
                 </span>
                 {tool.country && (
