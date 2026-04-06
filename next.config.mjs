@@ -9,7 +9,5 @@ export default withPWA({
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
   disable: process.env.NODE_ENV === "development",
-  workboxOptions: {
-    disableDevLogs: true,
-  },
+  workboxOptions: { disableDevLogs: true },
 })(nextConfig);

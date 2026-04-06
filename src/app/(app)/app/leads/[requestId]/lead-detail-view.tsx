@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import Image from "next/image";
 import {
   AlertTriangle,
+  ArrowLeft,
   ArrowRight,
   Building2,
   CalendarDays,
@@ -172,6 +174,15 @@ export function LeadDetailView(props: LeadDetailViewProps) {
 
   return (
     <div className="mx-auto max-w-6xl">
+
+      {/* Back link */}
+      <Link
+        href="/app/leads"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition-colors hover:text-gray-800"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Leads
+      </Link>
 
       {/* ══ Project header ══ */}
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">

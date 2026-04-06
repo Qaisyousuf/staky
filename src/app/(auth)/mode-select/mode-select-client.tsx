@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Zap, Handshake, ArrowRight, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { setActiveMode } from "@/actions/partner-mode";
 
 interface ModeSelectClientProps {
@@ -29,75 +30,100 @@ export function ModeSelectClient({ userName }: ModeSelectClientProps) {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 w-full">
-      <div className="text-center mb-8">
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <span className="inline-flex items-center justify-center h-5 w-7 rounded bg-[#003399] text-[#FFCC00] text-[9px] font-bold tracking-widest select-none">
-            EU
-          </span>
-          <span className="font-bold text-[17px] text-gray-900 tracking-tight leading-none">
-            Staky<span className="text-[#0F6E56]">.</span>
-          </span>
-        </div>
-        <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">
+    <div
+      className="flex min-h-screen flex-col items-center justify-center px-4"
+      style={{
+        backgroundColor: "#f6f4ee",
+        backgroundImage: "radial-gradient(circle at top, rgba(22,163,74,0.10), transparent 40%)",
+      }}
+    >
+      {/* Logo */}
+      <p className="mb-10 text-2xl font-bold tracking-[-0.04em] text-[#1a201b]">
+        Staky<span className="text-[#0F6E56]">.</span>
+      </p>
+
+      {/* Greeting */}
+      <div className="mb-6 text-center">
+        <h1 className="text-[1.6rem] font-semibold tracking-[-0.02em] text-[#151a16]">
           Welcome back, {firstName}
         </h1>
-        <p className="mt-1.5 text-sm text-gray-500">
-          Which account would you like to use?
+        <p className="mt-1.5 text-sm text-[rgba(0,0,0,0.45)]">
+          Choose how you want to continue
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        {/* Switcher card */}
+      {/* Mode cards */}
+      <div className="flex w-full max-w-sm flex-col gap-3">
+
+        {/* Switcher */}
         <button
           type="button"
           onClick={() => handleSelect("user")}
           disabled={isPending}
-          className="flex flex-col items-start gap-3 rounded-xl border-2 border-gray-200 p-5 text-left transition-all hover:border-[#0F6E56] hover:bg-green-50 disabled:opacity-60 disabled:cursor-not-allowed group"
+          className={cn(
+            "group relative flex items-center gap-4 rounded-2xl border bg-white px-5 py-4 text-left shadow-sm transition-all",
+            "hover:border-[#0F6E56]/40 hover:shadow-md",
+            selecting === "user" && isPending
+              ? "border-[#0F6E56]/40 shadow-md"
+              : "border-[#e4ddcf]",
+            "disabled:cursor-not-allowed disabled:opacity-60"
+          )}
         >
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 group-hover:bg-[#0F6E56] transition-colors">
-            {selecting === "user" && isPending ? (
-              <Loader2 className="h-5 w-5 text-gray-500 group-hover:text-white animate-spin" />
-            ) : (
-              <Zap className="h-5 w-5 text-gray-500 group-hover:text-white transition-colors" />
-            )}
+          <span className={cn(
+            "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors",
+            selecting === "user" && isPending ? "bg-[#0F6E56]" : "bg-[#eef6f2] group-hover:bg-[#0F6E56]"
+          )}>
+            {selecting === "user" && isPending
+              ? <Loader2 className="h-5 w-5 animate-spin text-white" />
+              : <Zap className="h-5 w-5 text-[#0F6E56] group-hover:text-white transition-colors" />
+            }
           </span>
-          <div>
-            <p className="text-sm font-semibold text-gray-900 group-hover:text-[#0F6E56] transition-colors">
-              Switcher
-            </p>
-            <p className="text-xs text-gray-400 mt-0.5 leading-snug">
-              Browse EU tools and share your journey
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-[#151a16]">Switcher</p>
+            <p className="mt-0.5 text-xs text-[rgba(0,0,0,0.4)] leading-snug">
+              Discover EU alternatives and track your migration
             </p>
           </div>
-          <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-[#0F6E56] transition-colors mt-auto self-end" />
+          <ArrowRight className="h-4 w-4 shrink-0 text-gray-300 transition-all group-hover:translate-x-0.5 group-hover:text-[#0F6E56]" />
         </button>
 
-        {/* Partner card */}
+        {/* Partner */}
         <button
           type="button"
           onClick={() => handleSelect("partner")}
           disabled={isPending}
-          className="flex flex-col items-start gap-3 rounded-xl border-2 border-gray-200 p-5 text-left transition-all hover:border-[#2A5FA5] hover:bg-blue-50 disabled:opacity-60 disabled:cursor-not-allowed group"
+          className={cn(
+            "group relative flex items-center gap-4 rounded-2xl border bg-white px-5 py-4 text-left shadow-sm transition-all",
+            "hover:border-[#2A5FA5]/40 hover:shadow-md",
+            selecting === "partner" && isPending
+              ? "border-[#2A5FA5]/40 shadow-md"
+              : "border-[#e4ddcf]",
+            "disabled:cursor-not-allowed disabled:opacity-60"
+          )}
         >
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 group-hover:bg-[#2A5FA5] transition-colors">
-            {selecting === "partner" && isPending ? (
-              <Loader2 className="h-5 w-5 text-gray-500 group-hover:text-white animate-spin" />
-            ) : (
-              <Handshake className="h-5 w-5 text-gray-500 group-hover:text-white transition-colors" />
-            )}
+          <span className={cn(
+            "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors",
+            selecting === "partner" && isPending ? "bg-[#2A5FA5]" : "bg-[#eef3fb] group-hover:bg-[#2A5FA5]"
+          )}>
+            {selecting === "partner" && isPending
+              ? <Loader2 className="h-5 w-5 animate-spin text-white" />
+              : <Handshake className="h-5 w-5 text-[#2A5FA5] group-hover:text-white transition-colors" />
+            }
           </span>
-          <div>
-            <p className="text-sm font-semibold text-gray-900 group-hover:text-[#2A5FA5] transition-colors">
-              Partner
-            </p>
-            <p className="text-xs text-gray-400 mt-0.5 leading-snug">
-              Manage leads and help businesses migrate
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-[#151a16]">Partner</p>
+            <p className="mt-0.5 text-xs text-[rgba(0,0,0,0.4)] leading-snug">
+              Manage leads and help businesses switch to EU software
             </p>
           </div>
-          <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-[#2A5FA5] transition-colors mt-auto self-end" />
+          <ArrowRight className="h-4 w-4 shrink-0 text-gray-300 transition-all group-hover:translate-x-0.5 group-hover:text-[#2A5FA5]" />
         </button>
       </div>
+
+      {/* Footer note */}
+      <p className="mt-8 text-[11px] text-[rgba(0,0,0,0.3)]">
+        You can switch between accounts anytime from the menu
+      </p>
     </div>
   );
 }

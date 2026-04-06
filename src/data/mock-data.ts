@@ -28,6 +28,7 @@ export const TOOLS: Record<string, Tool> = {
   nextcloud:    { slug: "nextcloud",    name: "Nextcloud",    color: "#0082C9", abbr: "Nc", origin: "eu", country: "de" },
   jitsi:        { slug: "jitsi",        name: "Jitsi Meet",   color: "#0769BC", abbr: "Ji", origin: "eu", country: "fr" },
   gitea:        { slug: "gitea",        name: "Gitea",        color: "#609926", abbr: "Gt", origin: "eu", country: "de" },
+  forgejo:      { slug: "forgejo",      name: "Forgejo",      color: "#E24329", abbr: "Fo", origin: "eu", country: "de" },
   suitecrm:     { slug: "suitecrm",     name: "SuiteCRM",     color: "#5A2D82", abbr: "SC", origin: "eu", country: "gb" },
   brevo:        { slug: "brevo",        name: "Brevo",        color: "#0A2C6E", abbr: "Br", origin: "eu", country: "fr" },
   plane:        { slug: "plane",        name: "Plane",        color: "#2563EB", abbr: "Pl", origin: "eu", country: "de" },

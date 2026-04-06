@@ -6,55 +6,42 @@ interface ToolIconProps {
   slug: string;
   size?: "sm" | "md" | "lg" | "xl";
   className?: string;
+  plain?: boolean; // renders just the image/badge with no card wrapper
 }
 
 const SIZE_CLASSES = {
-  sm: {
-    shell: "h-7 w-7 rounded-lg",
-    fallback: "text-[10px]",
-    image: 18,
-  },
-  md: {
-    shell: "h-9 w-9 rounded-xl",
-    fallback: "text-xs",
-    image: 22,
-  },
-  lg: {
-    shell: "h-11 w-11 rounded-xl",
-    fallback: "text-sm",
-    image: 28,
-  },
-  xl: {
-    shell: "h-14 w-14 rounded-2xl",
-    fallback: "text-base",
-    image: 34,
-  },
+  sm: { shell: "h-7 w-7 rounded-lg",    fallback: "text-[10px]", image: 28  },
+  md: { shell: "h-9 w-9 rounded-xl",    fallback: "text-xs",     image: 36  },
+  lg: { shell: "h-11 w-11 rounded-xl",  fallback: "text-sm",     image: 44  },
+  xl: { shell: "h-14 w-14 rounded-2xl", fallback: "text-base",   image: 56  },
 };
 
+// Local SVG logos from public/logos/tools/
 const TOOL_LOGOS: Partial<Record<string, string>> = {
-  slack: "/logos/tools/slack.svg",
+  slack:      "/logos/tools/slack.svg",
   mattermost: "/logos/tools/mattermost.svg",
-  notion: "/logos/tools/notion.svg",
-  appflowy: "/logos/tools/appflowy.svg",
-  figma: "/logos/tools/figma.svg",
-  penpot: "/logos/tools/penpot.svg",
-  gdrive: "/logos/tools/gdrive.svg",
-  nextcloud: "/logos/tools/nextcloud.svg",
-  zoom: "/logos/tools/zoom.svg",
-  jitsi: "/logos/tools/jitsi.svg",
-  github: "/logos/tools/github.svg",
-  gitea: "/logos/tools/gitea.svg",
-  mailchimp: "/logos/tools/mailchimp.svg",
-  brevo: "/logos/tools/brevo.svg",
-  asana: "/logos/tools/asana.svg",
-  plane: "/logos/tools/plane.svg",
+  notion:     "/logos/tools/notion.svg",
+  appflowy:   "/logos/tools/appflowy.svg",
+  figma:      "/logos/tools/figma.svg",
+  penpot:     "/logos/tools/penpot.svg",
+  gdrive:     "/logos/tools/gdrive.svg",
+  nextcloud:  "/logos/tools/nextcloud.svg",
+  zoom:       "/logos/tools/zoom.svg",
+  jitsi:      "/logos/tools/jitsi.svg",
+  github:     "/logos/tools/github.svg",
+  gitea:      "/logos/tools/gitea.svg",
+  mailchimp:  "/logos/tools/mailchimp.svg",
+  brevo:      "/logos/tools/brevo.svg",
+  asana:      "/logos/tools/asana.svg",
+  plane:      "/logos/tools/plane.svg",
   salesforce: "/logos/tools/salesforce.svg",
-  suitecrm: "/logos/tools/suitecrm.svg",
-  hubspot: "/logos/tools/hubspot.svg",
-  twentycrm: "/logos/tools/twentycrm.svg",
+  suitecrm:   "/logos/tools/suitecrm.svg",
+  hubspot:    "/logos/tools/hubspot.svg",
+  twentycrm:  "/logos/tools/twentycrm.svg",
+  forgejo:    "/logos/tools/forgejo.svg",
 };
 
-export function ToolIcon({ slug, size = "md", className }: ToolIconProps) {
+export function ToolIcon({ slug, size = "md", className, plain = false }: ToolIconProps) {
   const tool = TOOLS[slug];
   if (!tool) return null;
 
@@ -62,6 +49,17 @@ export function ToolIcon({ slug, size = "md", className }: ToolIconProps) {
   const logoSrc = TOOL_LOGOS[slug];
 
   if (logoSrc) {
+    if (plain) {
+      return (
+        <Image
+          src={logoSrc}
+          alt={`${tool.name} logo`}
+          width={config.image}
+          height={config.image}
+          className={cn("object-contain", className)}
+        />
+      );
+    }
     return (
       <span
         className={cn(
@@ -82,11 +80,12 @@ export function ToolIcon({ slug, size = "md", className }: ToolIconProps) {
     );
   }
 
+  // Fallback: colored badge
   return (
     <span
       className={cn(
         "inline-flex shrink-0 select-none items-center justify-center font-bold text-white",
-        config.shell,
+        plain ? "rounded-xl" : config.shell,
         config.fallback,
         className
       )}
@@ -125,13 +124,7 @@ export function SwitchBadge({
       <div className={cn("flex flex-col leading-tight", textSize)}>
         <span className="font-medium text-gray-700">{fromTool.name}</span>
       </div>
-      <svg
-        className="h-4 w-4 shrink-0 text-gray-300"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={2}
-      >
+      <svg className="h-4 w-4 shrink-0 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
       </svg>
       <ToolIcon slug={to} size={iconSize} />
