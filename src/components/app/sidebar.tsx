@@ -12,7 +12,6 @@ import {
   ClipboardList,
   Inbox,
   FileText,
-  Building2,
   Settings,
   ShieldCheck,
   LogOut,
@@ -58,7 +57,6 @@ const MAIN_NAV = [
 const PARTNER_NAV = [
   { href: "/app/leads", label: "Leads", icon: Inbox },
   { href: "/app/my-posts", label: "My Posts", icon: FileText },
-  { href: "/app/company-profile", label: "Company Profile", icon: Building2 },
 ];
 
 const BOTTOM_NAV = [
@@ -223,6 +221,7 @@ function UserFooter({ user }: { user: SidebarUser }) {
 
 export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 

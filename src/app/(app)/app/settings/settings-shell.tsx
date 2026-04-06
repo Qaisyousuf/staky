@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { User, CreditCard, Bell, ShieldCheck, Trash2, Handshake } from "lucide-react";
+import { User, CreditCard, Bell, ShieldCheck, Trash2, Handshake, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProfileTab } from "./tabs/profile-tab";
 import { BillingTab } from "./tabs/billing-tab";
@@ -10,6 +10,7 @@ import { NotificationsTab } from "./tabs/notifications-tab";
 import { PrivacyTab } from "./tabs/privacy-tab";
 import { AccountTab } from "./tabs/account-tab";
 import { PartnerTab } from "./tabs/partner-tab";
+import { ProfileEditor } from "../company-profile/profile-editor";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -30,12 +31,19 @@ export interface SettingsUser {
   profileVisibility: string;
   createdAt: string;
   partner: {
+    id: string;
     companyName: string;
     country: string;
+    description: string;
+    pricing: string;
+    website: string;
     approved: boolean;
     rating: number;
     projectCount: number;
     logoUrl: string | null;
+    specialty: string[];
+    services: string[];
+    certifications: string[];
   } | null;
 }
 
@@ -59,9 +67,9 @@ export interface NotifSettings {
   emailDigest: "REAL_TIME" | "DAILY" | "WEEKLY" | "OFF";
 }
 
-// ─── Tab config ───────────────────────────────────────────────────────────────
+// ─── Tab configs ──────────────────────────────────────────────────────────────
 
-const TABS = [
+const USER_TABS = [
   { id: "profile",       label: "Profile",        icon: User },
   { id: "partner",       label: "Partner",        icon: Handshake },
   { id: "billing",       label: "Plan & Billing",  icon: CreditCard },
@@ -70,22 +78,35 @@ const TABS = [
   { id: "account",       label: "Account",         icon: Trash2 },
 ] as const;
 
-type TabId = typeof TABS[number]["id"];
+const PARTNER_TABS = [
+  { id: "company",       label: "Company Profile", icon: Building2 },
+  { id: "notifications", label: "Notifications",   icon: Bell },
+  { id: "privacy",       label: "Privacy",         icon: ShieldCheck },
+  { id: "account",       label: "Account",         icon: Trash2 },
+] as const;
+
+type UserTabId    = typeof USER_TABS[number]["id"];
+type PartnerTabId = typeof PARTNER_TABS[number]["id"];
+type TabId        = UserTabId | PartnerTabId;
 
 // ─── Shell ────────────────────────────────────────────────────────────────────
 
 export function SettingsShell({
   user,
   notifSettings,
+  activeMode,
 }: {
   user: SettingsUser;
   notifSettings: NotifSettings | null;
+  activeMode: "user" | "partner";
 }) {
   const searchParams = useSearchParams();
-  const initialTab = (searchParams.get("tab") ?? "profile") as TabId;
-  const [activeTab, setActiveTab] = useState<TabId>(
-    TABS.some((t) => t.id === initialTab) ? initialTab : "profile"
-  );
+  const isPartner = activeMode === "partner";
+  const tabs = isPartner ? PARTNER_TABS : USER_TABS;
+
+  const initialTab = searchParams.get("tab") as TabId | null;
+  const validInitial = tabs.some((t) => t.id === initialTab) ? initialTab! : tabs[0].id;
+  const [activeTab, setActiveTab] = useState<TabId>(validInitial);
 
   const defaultNotifSettings: NotifSettings = {
     inAppLikes: true, inAppComments: true, inAppReplies: true,
@@ -97,29 +118,41 @@ export function SettingsShell({
     emailDigest: "DAILY",
   };
 
+  const heading = isPartner ? "Partner Settings" : "Settings";
+  const subtitle = isPartner
+    ? "Manage your company profile and partner preferences"
+    : "Manage your account preferences";
+
   return (
     <div className="max-w-4xl mx-auto">
       {/* Page title */}
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Settings</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Manage your account preferences</p>
+        <h1 className="text-xl font-bold text-gray-900">{heading}</h1>
+        <p className="text-sm text-gray-500 mt-0.5">{subtitle}</p>
       </div>
 
       <div className="flex gap-6 items-start">
         {/* Tab sidebar */}
         <nav className="hidden md:flex flex-col w-48 shrink-0 bg-white rounded-xl border border-gray-200 py-2 sticky top-6">
-          {TABS.map(({ id, label, icon: Icon }) => (
+          {tabs.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setActiveTab(id)}
               className={cn(
                 "flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium transition-colors rounded-lg mx-1.5 text-left",
                 activeTab === id
-                  ? "bg-green-50 text-[#0F6E56]"
+                  ? isPartner
+                    ? "bg-blue-50 text-[#2A5FA5]"
+                    : "bg-green-50 text-[#0F6E56]"
                   : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
               )}
             >
-              <Icon className={cn("h-4 w-4 shrink-0", activeTab === id ? "text-[#0F6E56]" : "text-gray-400")} />
+              <Icon className={cn(
+                "h-4 w-4 shrink-0",
+                activeTab === id
+                  ? isPartner ? "text-[#2A5FA5]" : "text-[#0F6E56]"
+                  : "text-gray-400"
+              )} />
               {label}
             </button>
           ))}
@@ -128,14 +161,16 @@ export function SettingsShell({
         {/* Mobile tab bar */}
         <div className="md:hidden w-full mb-4">
           <div className="flex overflow-x-auto gap-1 bg-white rounded-xl border border-gray-200 p-1.5 scrollbar-hide">
-            {TABS.map(({ id, label, icon: Icon }) => (
+            {tabs.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => setActiveTab(id)}
                 className={cn(
                   "flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-colors shrink-0",
                   activeTab === id
-                    ? "bg-green-50 text-[#0F6E56]"
+                    ? isPartner
+                      ? "bg-blue-50 text-[#2A5FA5]"
+                      : "bg-green-50 text-[#0F6E56]"
                     : "text-gray-500 hover:bg-gray-50"
                 )}
               >
@@ -148,9 +183,28 @@ export function SettingsShell({
 
         {/* Tab content */}
         <div className="flex-1 min-w-0">
-          {activeTab === "profile" && <ProfileTab user={user} />}
-          {activeTab === "partner" && <PartnerTab partner={user.partner} />}
-          {activeTab === "billing" && <BillingTab plan={user.plan} />}
+          {/* Partner mode tabs */}
+          {isPartner && activeTab === "company" && user.partner && (
+            <ProfileEditor
+              partner={{
+                id: user.partner.id,
+                companyName: user.partner.companyName,
+                country: user.partner.country,
+                description: user.partner.description,
+                pricing: user.partner.pricing,
+                website: user.partner.website,
+                logoUrl: user.partner.logoUrl ?? "",
+                specialty: user.partner.specialty,
+                services: user.partner.services,
+                certifications: user.partner.certifications,
+                approved: user.partner.approved,
+                rating: user.partner.rating,
+                projectCount: user.partner.projectCount,
+              }}
+            />
+          )}
+
+          {/* Shared tabs */}
           {activeTab === "notifications" && (
             <NotificationsTab settings={notifSettings ?? defaultNotifSettings} />
           )}
@@ -160,6 +214,11 @@ export function SettingsShell({
           {activeTab === "account" && (
             <AccountTab email={user.email} createdAt={user.createdAt} />
           )}
+
+          {/* Switcher-only tabs */}
+          {!isPartner && activeTab === "profile" && <ProfileTab user={user} />}
+          {!isPartner && activeTab === "partner" && <PartnerTab partner={user.partner} />}
+          {!isPartner && activeTab === "billing" && <BillingTab plan={user.plan} />}
         </div>
       </div>
     </div>

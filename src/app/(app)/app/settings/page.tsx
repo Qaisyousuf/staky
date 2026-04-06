@@ -30,12 +30,19 @@ export default async function SettingsPage() {
         createdAt: true,
         partner: {
           select: {
+            id: true,
             companyName: true,
             country: true,
+            description: true,
+            pricing: true,
+            website: true,
             approved: true,
             rating: true,
             projectCount: true,
             logoUrl: true,
+            specialty: true,
+            services: true,
+            certifications: true,
           },
         },
       },
@@ -56,6 +63,7 @@ export default async function SettingsPage() {
 
   return (
     <SettingsShell
+      activeMode={(session.user.activeMode as "user" | "partner") ?? "user"}
       user={{
         id: user.id,
         name: user.name ?? "",
@@ -79,12 +87,19 @@ export default async function SettingsPage() {
         createdAt: user.createdAt.toISOString(),
         partner: user.partner
           ? {
+              id: user.partner.id,
               companyName: user.partner.companyName,
               country: user.partner.country,
+              description: user.partner.description ?? "",
+              pricing: user.partner.pricing ?? "",
+              website: user.partner.website ?? "",
               approved: user.partner.approved,
               rating: user.partner.rating,
               projectCount: user.partner.projectCount,
               logoUrl: user.partner.logoUrl ?? null,
+              specialty: (user.partner.specialty as string[]) ?? [],
+              services: (user.partner.services as string[]) ?? [],
+              certifications: (user.partner.certifications as string[]) ?? [],
             }
           : null,
       }}
