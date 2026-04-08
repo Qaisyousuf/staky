@@ -42,6 +42,7 @@ export default async function NetworkPage({
             select: {
               companyName: true,
               logoUrl: true,
+              coverImage: true,
               specialty: true,
               description: true,
               country: true,
@@ -92,6 +93,7 @@ export default async function NetworkPage({
           ? {
               companyName: user.partner.companyName,
               logoUrl: user.partner.logoUrl ?? null,
+              coverImage: user.partner.coverImage ?? null,
               specialty: user.partner.specialty ?? [],
               description: user.partner.description ?? null,
               country: user.partner.country ?? null,

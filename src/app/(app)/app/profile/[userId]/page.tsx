@@ -71,6 +71,7 @@ export default async function ProfilePage({
               approved: true,
               featured: true,
               logoUrl: true,
+              coverImage: true,
               website: true,
             },
           },
