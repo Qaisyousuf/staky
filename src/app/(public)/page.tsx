@@ -81,7 +81,7 @@ function Hero({ usTools, euTools }: { usTools: PublishedTool[]; euTools: Publish
       `}</style>
 
       {/* Content */}
-      <div className="mx-auto max-w-3xl px-4 pt-[100px] pb-4 text-center sm:px-6">
+      <div className="mx-auto max-w-3xl px-4 pt-[56px] sm:pt-[100px] pb-4 text-center sm:px-6">
         <h1
           className="h1 mx-auto mt-0 max-w-[680px] font-bold text-[#1B2B1F]"
           style={{ fontSize: "clamp(42px, 6.5vw, 64px)", letterSpacing: "-0.03em", lineHeight: 1.1 }}
@@ -105,7 +105,7 @@ function Hero({ usTools, euTools }: { usTools: PublishedTool[]; euTools: Publish
           <Link
             href="/discover"
             className="inline-flex items-center rounded-[10px] bg-transparent px-8 py-3.5 text-[15px] font-semibold text-[#1B2B1F] transition-all duration-200 hover:-translate-y-px hover:bg-[#EFF0EB]"
-            style={{ border: "1.5px solid #DDD9D0", boxShadow: "0 1px 2px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04)" }}
+            style={{ border: "1.5px solid rgba(0,0,0,0.04)", boxShadow: "0 1px 2px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04)" }}
           >
             Explore alternatives
           </Link>
@@ -117,13 +117,13 @@ function Hero({ usTools, euTools }: { usTools: PublishedTool[]; euTools: Publish
       {(usDoubled.length > 0 || euDoubled.length > 0) && (
         <div className="h5 mx-auto mt-14 max-w-5xl pb-[80px]">
           {usDoubled.length > 0 && (
-            <div className="marquee-row relative overflow-hidden">
+            <div className="marquee-row relative overflow-x-hidden py-3">
               <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-[120px] bg-gradient-to-r from-[#FAF8F5] to-transparent" />
               <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-[120px] bg-gradient-to-l from-[#FAF8F5] to-transparent" />
               <div className="marquee-track flex w-max gap-3" style={{ animation: "marquee-fwd 28s linear infinite" }}>
                 {usDoubled.map((tool, i) => (
                   <div key={i} className="flex shrink-0 select-none items-center gap-2.5 rounded-2xl bg-white px-4 py-2.5 transition-all duration-200 hover:-translate-y-0.5"
-                    style={{ boxShadow: "0 1px 3px rgba(27,43,31,0.06), 0 4px 12px rgba(27,43,31,0.06)" }}>
+                    style={{ border: "1.5px solid rgba(0,0,0,0.04)", boxShadow: "0 1px 2px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04)" }}>
                     <InlineLogo tool={tool} className="h-7 w-7 shrink-0 object-contain" />
                     <span className="whitespace-nowrap text-[13px] font-medium text-[#3D4D41]">{tool.name}</span>
                   </div>
@@ -133,13 +133,13 @@ function Hero({ usTools, euTools }: { usTools: PublishedTool[]; euTools: Publish
           )}
 
           {euDoubled.length > 0 && (
-            <div className="marquee-row relative overflow-hidden mt-5">
+            <div className="marquee-row relative overflow-x-hidden py-3 mt-3">
               <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-[120px] bg-gradient-to-r from-[#FAF8F5] to-transparent" />
               <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-[120px] bg-gradient-to-l from-[#FAF8F5] to-transparent" />
               <div className="marquee-track flex w-max gap-3" style={{ animation: "marquee-rev 28s linear infinite" }}>
                 {euDoubled.map((tool, i) => (
                   <div key={i} className="flex shrink-0 select-none items-center gap-2.5 rounded-2xl bg-white px-4 py-2.5 transition-all duration-200 hover:-translate-y-0.5"
-                    style={{ boxShadow: "0 1px 3px rgba(27,43,31,0.06), 0 4px 12px rgba(27,43,31,0.06)" }}>
+                    style={{ border: "1.5px solid rgba(0,0,0,0.04)", boxShadow: "0 1px 2px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04)" }}>
                     <InlineLogo tool={tool} className="h-7 w-7 shrink-0 object-contain" />
                     <span className="whitespace-nowrap text-[13px] font-medium text-[#3D4D41]">{tool.name}</span>
                     {tool.country && (
