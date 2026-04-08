@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Option A: Shifting Layers -->
+  <!-- Three horizontal rounded bars, each shifted right — suggests stack migration -->
+  <rect x="10" y="26" width="62" height="18" rx="9" fill="#0F6E56" opacity="0.28"/>
+  <rect x="28" y="52" width="62" height="18" rx="9" fill="#0F6E56" opacity="0.64"/>
+  <rect x="46" y="78" width="62" height="18" rx="9" fill="#0F6E56"/>
+</svg>

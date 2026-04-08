@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { ArrowRight, Check } from "lucide-react";
 import { SignupForm } from "@/components/auth/signup-form";
+import { Logo } from "@/components/shared/logo";
 
 export const metadata = { title: "Create account — Staky" };
 
@@ -19,9 +19,7 @@ export default function SignupPage() {
         <div className="flex flex-1 flex-col items-center justify-center py-16 text-center">
 
           {/* Logo */}
-          <Link href="/" className="text-2xl font-bold tracking-[-0.04em] text-white transition-opacity hover:opacity-70">
-            Staky<span className="text-[#4ade80]">.</span>
-          </Link>
+          <Logo href="/" variant="white" size="lg" />
 
           {/* Headline */}
           <h1 className="mt-10 max-w-xs text-[2.4rem] font-semibold leading-[1.1] tracking-[-0.03em] text-white">

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { Menu, X, LayoutDashboard, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/components/shared/logo";
 
 const NAV_LINKS = [
   { href: "/", label: "Home", exact: true },
@@ -24,17 +25,8 @@ function getInitials(name: string | null | undefined) {
     .toUpperCase();
 }
 
-function Logo() {
-  return (
-    <Link href="/" className="flex items-center gap-2 shrink-0">
-      <span className="inline-flex items-center justify-center rounded-[4px] bg-[#EDF5F0] px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.05em] text-[#0F6E56] select-none">
-        EU
-      </span>
-      <span className="font-bold text-[17px] text-gray-900 tracking-tight leading-none">
-        Staky<span className="text-[#0F6E56]">.</span>
-      </span>
-    </Link>
-  );
+function LogoLink() {
+  return <Logo href="/" />;
 }
 
 function UserAvatar({ name, image }: { name?: string | null; image?: string | null }) {
@@ -123,7 +115,7 @@ export function TopNav({ userImage }: { userImage?: string | null }) {
       <header className="sticky top-0 z-40 w-full border-b border-[#DDD9D0] bg-[#FAF8F5]/95 backdrop-blur-md" style={{ fontFamily: "var(--font-jakarta, 'Plus Jakarta Sans'), -apple-system, BlinkMacSystemFont, sans-serif" }}>
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-14 items-center justify-between gap-8">
-            <Logo />
+            <LogoLink />
 
             {/* Desktop nav */}
             <nav className="hidden md:flex items-center gap-0.5">
@@ -199,7 +191,7 @@ export function TopNav({ userImage }: { userImage?: string | null }) {
         >
           {/* Drawer header */}
           <div className="flex h-14 items-center justify-between border-b border-[#E8E6E1] px-5 shrink-0">
-            <Logo />
+            <LogoLink />
             <button
               onClick={() => setOpen(false)}
               className="flex items-center justify-center h-8 w-8 rounded-lg text-[#A8A49C] hover:bg-[#F5F3EF] hover:text-[#1C1C1C] transition-colors"

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "@/actions/auth";
+import { Logo } from "@/components/shared/logo";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -65,17 +66,10 @@ const BOTTOM_NAV = [
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function Logo({ onClose }: { onClose: () => void }) {
+function SidebarLogo({ onClose }: { onClose: () => void }) {
   return (
     <div className="flex h-14 items-center justify-between px-4 border-b border-gray-100">
-      <Link href="/app/dashboard" className="flex items-center gap-2">
-        <span className="inline-flex items-center justify-center h-5 w-7 rounded bg-[#003399] text-[#FFCC00] text-[9px] font-bold tracking-widest select-none">
-          EU
-        </span>
-        <span className="font-bold text-[17px] text-gray-900 tracking-tight leading-none">
-          Staky<span className="text-[#0F6E56]">.</span>
-        </span>
-      </Link>
+      <Logo href="/app/dashboard" />
       <button
         className="lg:hidden flex items-center justify-center h-8 w-8 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
         onClick={onClose}
@@ -238,7 +232,7 @@ export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        <Logo onClose={onClose} />
+        <SidebarLogo onClose={onClose} />
 
         {/* Nav items */}
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-4">

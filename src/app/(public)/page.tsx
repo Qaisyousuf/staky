@@ -81,7 +81,7 @@ function Hero({ usTools, euTools }: { usTools: PublishedTool[]; euTools: Publish
       `}</style>
 
       {/* Content */}
-      <div className="mx-auto max-w-3xl px-4 pt-[56px] sm:pt-[100px] pb-4 text-center sm:px-6">
+      <div className="mx-auto max-w-3xl px-4 pt-[50px] sm:pt-[100px] pb-4 text-center sm:px-6">
         <h1
           className="h1 mx-auto mt-0 max-w-[680px] font-bold text-[#1B2B1F]"
           style={{ fontSize: "clamp(42px, 6.5vw, 64px)", letterSpacing: "-0.03em", lineHeight: 1.1 }}

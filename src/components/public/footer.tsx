@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/shared/logo";
 
 const F = "var(--font-jakarta, 'Plus Jakarta Sans'), -apple-system, BlinkMacSystemFont, sans-serif";
 
@@ -35,14 +36,7 @@ export function Footer() {
           {/* Brand */}
           <div>
             {/* Logo */}
-            <Link href="/" className="inline-flex items-center gap-2">
-              <span className="inline-flex items-center justify-center rounded-[4px] bg-[#E4F0EA] px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.05em] text-[#0F6E56] select-none">
-                EU
-              </span>
-              <span className="font-bold text-[17px] text-white tracking-tight leading-none">
-                Staky<span className="text-[#0F6E56]">.</span>
-              </span>
-            </Link>
+            <Logo href="/" variant="white" />
 
             <p className="mt-4 max-w-[220px] text-sm leading-relaxed text-white/45">
               The platform for European software migration. Discover, switch, and grow — privately.

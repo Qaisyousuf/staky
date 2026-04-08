@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Option C: Transforming Blocks -->
+  <!-- Left column: gray (US stack, fading out) -->
+  <!-- Right column: green (EU stack, solidifying) -->
+
+  <!-- Left column (gray, top=solid → bottom=faded) -->
+  <rect x="12" y="22" width="38" height="22" rx="6" fill="#94A3B8" opacity="0.9"/>
+  <rect x="12" y="50" width="38" height="22" rx="6" fill="#94A3B8" opacity="0.5"/>
+  <rect x="12" y="78" width="38" height="22" rx="6" fill="#94A3B8" opacity="0.2"/>
+
+  <!-- Right column (green, top=faded → bottom=solid) -->
+  <rect x="58" y="22" width="50" height="22" rx="6" fill="#0F6E56" opacity="0.25"/>
+  <rect x="58" y="50" width="50" height="22" rx="6" fill="#0F6E56" opacity="0.6"/>
+  <rect x="58" y="78" width="50" height="22" rx="6" fill="#0F6E56"/>
+</svg>
