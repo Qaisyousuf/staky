@@ -79,7 +79,7 @@ export function IosInstallBanner() {
       <p className="text-[13px] text-[#6B6860] mt-3 flex items-center gap-1 flex-wrap">
         Tap{" "}
         <ShareIcon />{" "}
-        then <strong className="font-semibold text-gray-800">'Add to Home Screen'</strong>
+        then <strong className="font-semibold text-gray-800">&apos;Add to Home Screen&apos;</strong>
       </p>
     </div>
   );
