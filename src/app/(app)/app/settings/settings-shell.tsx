@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { useSession } from "next-auth/react";
+
 import { User, CreditCard, Bell, ShieldCheck, Trash2, Handshake, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProfileTab } from "./tabs/profile-tab";
@@ -42,6 +42,7 @@ export interface SettingsUser {
     rating: number;
     projectCount: number;
     logoUrl: string | null;
+    coverImage: string | null;
     specialty: string[];
     services: string[];
     certifications: string[];
@@ -81,6 +82,7 @@ const USER_TABS = [
 
 const PARTNER_TABS = [
   { id: "company",       label: "Company Profile", icon: Building2 },
+  { id: "billing",       label: "Plan & Billing",  icon: CreditCard },
   { id: "notifications", label: "Notifications",   icon: Bell },
   { id: "privacy",       label: "Privacy",         icon: ShieldCheck },
   { id: "account",       label: "Account",         icon: Trash2 },
@@ -95,16 +97,13 @@ type TabId        = UserTabId | PartnerTabId;
 export function SettingsShell({
   user,
   notifSettings,
-  activeMode: serverActiveMode,
+  activeMode,
 }: {
   user: SettingsUser;
   notifSettings: NotifSettings | null;
   activeMode: "user" | "partner";
 }) {
   const searchParams = useSearchParams();
-  const { data: session } = useSession();
-  // Use client session so the tabs update immediately after mode switch
-  const activeMode = (session?.user?.activeMode ?? serverActiveMode) as "user" | "partner";
   const isPartner = activeMode === "partner";
   const tabs = isPartner ? PARTNER_TABS : USER_TABS;
 
@@ -202,6 +201,7 @@ export function SettingsShell({
                 pricing: user.partner.pricing,
                 website: user.partner.website,
                 logoUrl: user.partner.logoUrl ?? "",
+                coverImage: user.partner.coverImage ?? "",
                 specialty: user.partner.specialty,
                 services: user.partner.services,
                 certifications: user.partner.certifications,
@@ -211,6 +211,7 @@ export function SettingsShell({
               }}
             />
           )}
+          {isPartner && resolvedTab === "billing" && <BillingTab plan={user.plan} />}
 
           {/* Shared tabs */}
           {resolvedTab === "notifications" && (

@@ -1,3 +1,4 @@
+import { getPublishedAlternatives } from "@/actions/tools";
 import { DiscoverClient } from "./discover-client";
 
 export const metadata = {
@@ -5,13 +6,16 @@ export const metadata = {
   description: "Find European software alternatives to popular US tools.",
 };
 
-export default function DiscoverPage({
+export default async function DiscoverPage({
   searchParams,
 }: {
   searchParams: { category?: string; q?: string };
 }) {
+  const alternatives = await getPublishedAlternatives();
+
   return (
     <DiscoverClient
+      alternatives={alternatives}
       initialCategory={searchParams.category ?? "All"}
       initialQuery={searchParams.q ?? ""}
     />

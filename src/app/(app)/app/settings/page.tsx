@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SettingsShell } from "./settings-shell";
 
+export const dynamic = "force-dynamic";
 export const metadata = { title: "Settings — Staky" };
 
 export default async function SettingsPage() {
@@ -25,6 +26,7 @@ export default async function SettingsPage() {
         socialLinks: true,
         interests: true,
         role: true,
+        activeMode: true,
         plan: true,
         profileVisibility: true,
         createdAt: true,
@@ -40,6 +42,7 @@ export default async function SettingsPage() {
             rating: true,
             projectCount: true,
             logoUrl: true,
+            coverImage: true,
             specialty: true,
             services: true,
             certifications: true,
@@ -63,7 +66,7 @@ export default async function SettingsPage() {
 
   return (
     <SettingsShell
-      activeMode={(session.user.activeMode as "user" | "partner") ?? "user"}
+      activeMode={(user.activeMode as "user" | "partner") ?? "user"}
       user={{
         id: user.id,
         name: user.name ?? "",
@@ -97,6 +100,7 @@ export default async function SettingsPage() {
               rating: user.partner.rating,
               projectCount: user.partner.projectCount,
               logoUrl: user.partner.logoUrl ?? null,
+              coverImage: user.partner.coverImage ?? null,
               specialty: (user.partner.specialty as string[]) ?? [],
               services: (user.partner.services as string[]) ?? [],
               certifications: (user.partner.certifications as string[]) ?? [],

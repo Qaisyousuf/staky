@@ -206,6 +206,7 @@ model Partner {
   description    String?
   pricing        String?
   logoUrl        String?
+  coverImage     String?
   website        String?
   rating         Float    @default(0)
   projectCount   Int      @default(0)
@@ -568,6 +569,54 @@ model Report {
   @@index([resolved])
   @@index([targetType, targetId])
   @@map("reports")
+}
+
+// ─── Software Tools & Alternatives ───────────────────────────────────────────
+
+model SoftwareTool {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  logoUrl     String?
+  origin      String   // "us" | "eu"
+  country     String?  // ISO 2-letter for EU tools (e.g. "de", "fr")
+  color       String   @default("#888888")
+  abbr        String   // 2-letter abbreviation shown when no logo
+  category    String?
+  description String?  @db.Text
+  website     String?
+  published   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  asFromTool SoftwareAlternative[] @relation("FromTool")
+  asToTool   SoftwareAlternative[] @relation("ToTool")
+
+  @@index([origin])
+  @@index([published])
+  @@map("software_tools")
+}
+
+model SoftwareAlternative {
+  id            String   @id @default(cuid())
+  fromToolId    String
+  toToolId      String
+  category      String
+  description   String?  @db.Text
+  license       String?
+  switcherCount Int      @default(0)
+  rating        Float    @default(0)
+  published     Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  fromTool SoftwareTool @relation("FromTool", fields: [fromToolId], references: [id], onDelete: Cascade)
+  toTool   SoftwareTool @relation("ToTool", fields: [toToolId], references: [id], onDelete: Cascade)
+
+  @@unique([fromToolId, toToolId])
+  @@index([category])
+  @@index([published])
+  @@map("software_alternatives")
 }
 
 // ─── Profile Views ────────────────────────────────────────────────────────────

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   Menu, Search, Bell, Mail, Settings, X, Plus,
@@ -524,6 +524,7 @@ function MessageDropdown({
 
 function UserMenuDropdown({ user, onClose }: { user: TopBarUser; onClose: () => void }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { update } = useSession();
   const [isSwitching, startSwitching] = useTransition();
 
@@ -549,7 +550,7 @@ function UserMenuDropdown({ user, onClose }: { user: TopBarUser; onClose: () => 
       await setActiveMode(nextMode);
       await update();
       onClose();
-      router.refresh();
+      window.location.href = pathname;
     });
   };
 

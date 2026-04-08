@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef, useCallback } from "react";
+import Link from "next/link";
 import {
   Building2,
   Globe,
@@ -15,6 +16,9 @@ import {
   X,
   BadgeCheck,
   Camera,
+  ImageIcon,
+  Trash2,
+  ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { updateCompanyProfile } from "@/actions/partner";
@@ -29,6 +33,7 @@ interface PartnerData {
   pricing: string;
   website: string;
   logoUrl: string;
+  coverImage: string;
   specialty: string[];
   services: string[];
   certifications: string[];
@@ -203,6 +208,34 @@ function TagInput({
 
 // ─── Image compression ────────────────────────────────────────────────────────
 
+function compressImage(file: File, width: number, height: number, quality = 0.85): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { reject(new Error("Canvas unavailable")); return; }
+        // Fill cover proportionally
+        const scale = Math.max(width / img.width, height / img.height);
+        const sw = img.width * scale;
+        const sh = img.height * scale;
+        const sx = (width - sw) / 2;
+        const sy = (height - sh) / 2;
+        ctx.drawImage(img, sx, sy, sw, sh);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = e.target!.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function compressLogo(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -327,6 +360,80 @@ function LogoUploader({
   );
 }
 
+// ─── Cover uploader ───────────────────────────────────────────────────────────
+
+function CoverUploader({
+  coverImage,
+  onChange,
+}: {
+  coverImage: string;
+  onChange: (val: string) => void;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [processing, setProcessing] = useState(false);
+  const [fileError, setFileError] = useState("");
+
+  const processFile = useCallback(async (file: File) => {
+    setFileError("");
+    if (!file.type.startsWith("image/")) { setFileError("Please select an image file."); return; }
+    if (file.size > 8 * 1024 * 1024) { setFileError("Image must be under 8 MB."); return; }
+    setProcessing(true);
+    try {
+      const dataUrl = await compressImage(file, 1200, 300, 0.85);
+      onChange(dataUrl);
+    } catch {
+      setFileError("Failed to process image. Please try another file.");
+    } finally {
+      setProcessing(false);
+    }
+  }, [onChange]);
+
+  return (
+    <div className="space-y-2">
+      {/* Preview */}
+      <div className="relative h-24 w-full rounded-xl overflow-hidden border border-gray-200">
+        {coverImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={coverImage} alt="Cover" className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-r from-[#2A5FA5] to-[#1a4a8a] flex items-center justify-center">
+            <ImageIcon className="h-6 w-6 text-white/40" />
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={processing}
+          className="absolute bottom-2 right-2 inline-flex items-center gap-1.5 rounded-lg bg-black/50 hover:bg-black/70 text-white px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50"
+        >
+          {processing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+          {processing ? "Processing…" : "Upload cover"}
+        </button>
+      </div>
+      <div className="flex items-center gap-3">
+        <p className="text-[11px] text-gray-400 flex-1">JPG, PNG or WebP · max 8 MB · 1200×300px recommended</p>
+        {coverImage && (
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            className="inline-flex items-center gap-1 text-[11px] text-gray-400 hover:text-red-500 transition-colors"
+          >
+            <Trash2 className="h-3 w-3" /> Remove
+          </button>
+        )}
+      </div>
+      {fileError && <p className="text-[11px] text-red-500">{fileError}</p>}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) processFile(f); e.target.value = ""; }}
+      />
+    </div>
+  );
+}
+
 // ─── Main editor ──────────────────────────────────────────────────────────────
 
 export function ProfileEditor({ partner }: { partner: PartnerData }) {
@@ -337,6 +444,7 @@ export function ProfileEditor({ partner }: { partner: PartnerData }) {
     pricing: partner.pricing,
     website: partner.website,
     logoUrl: partner.logoUrl,
+    coverImage: partner.coverImage,
     specialty: partner.specialty,
     services: partner.services,
     certifications: partner.certifications,
@@ -382,6 +490,13 @@ export function ProfileEditor({ partner }: { partner: PartnerData }) {
           <p className="text-sm text-gray-500 mt-0.5">Visible to clients on the Partners directory</p>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href="/app/partners"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors"
+          >
+            <ExternalLink className="h-3.5 w-3.5 text-gray-400" />
+            View Profile
+          </Link>
           {partner.approved ? (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 border border-green-200 px-2.5 py-1 text-xs font-medium text-[#0F6E56]">
               <BadgeCheck className="h-3.5 w-3.5" /> Approved
@@ -424,6 +539,15 @@ export function ProfileEditor({ partner }: { partner: PartnerData }) {
         {/* Identity */}
         <div className="p-6">
           <SectionHeader icon={Building2} title="Identity" description="Core company information shown in the directory" />
+
+          {/* Cover image */}
+          <div className="mb-5">
+            <p className="text-xs font-medium text-gray-700 mb-2">Cover image</p>
+            <CoverUploader
+              coverImage={form.coverImage}
+              onChange={set("coverImage") as (v: string) => void}
+            />
+          </div>
 
           {/* Logo upload */}
           <div className="mb-5">

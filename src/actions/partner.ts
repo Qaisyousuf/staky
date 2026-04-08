@@ -325,6 +325,7 @@ export async function updateCompanyProfile(data: {
   pricing: string;
   website: string;
   logoUrl: string;
+  coverImage: string;
   specialty: string[];
   services: string[];
   certifications: string[];
@@ -346,15 +347,15 @@ export async function updateCompanyProfile(data: {
       pricing: data.pricing.trim() || null,
       website: data.website.trim() || null,
       logoUrl: data.logoUrl.trim() || null,
+      coverImage: data.coverImage.trim() || null,
       specialty: data.specialty,
       services: data.services,
       certifications: data.certifications,
     },
   });
 
-  revalidatePath("/app/company-profile");
+  revalidatePath("/app", "layout");
   revalidatePath("/app/partners");
-  revalidatePath("/app/dashboard");
   return { ok: true };
 }
 

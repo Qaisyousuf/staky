@@ -4,10 +4,34 @@ import Link from "next/link";
 import { useDeferredValue, useEffect, useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search, ArrowRight, Star, Globe } from "lucide-react";
-import { CATEGORIES, POPULAR_SWITCHES, TOOLS } from "@/data/mock-data";
-import type { Switch } from "@/data/mock-data";
 import { ToolIcon } from "@/components/shared/tool-icon";
 import { cn } from "@/lib/utils";
+
+// ─── Types ─────────────────────────────────────────────────────────────────────
+
+type DbTool = {
+  id: string;
+  slug: string;
+  name: string;
+  logoUrl: string | null;
+  color: string;
+  abbr: string;
+  country: string | null;
+  category: string | null;
+};
+
+type DbAlternative = {
+  id: string;
+  category: string;
+  description: string | null;
+  license: string | null;
+  switcherCount: number;
+  rating: number;
+  fromTool: DbTool;
+  toTool: DbTool;
+};
+
+// ─── Category filter ───────────────────────────────────────────────────────────
 
 function CategoryFilter({
   categories,
@@ -42,18 +66,18 @@ function CategoryFilter({
   );
 }
 
-function AlternativeCard({ sw }: { sw: Switch }) {
-  const fromTool = TOOLS[sw.from];
-  const toTool = TOOLS[sw.to];
-  if (!fromTool || !toTool) return null;
+// ─── Alternative card ──────────────────────────────────────────────────────────
 
-  const stars = Math.round(sw.rating);
+function AlternativeCard({ alt }: { alt: DbAlternative }) {
+  const { fromTool, toTool } = alt;
+  const stars = Math.round(alt.rating);
+  const euCountry = toTool.country ?? "";
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white transition-all duration-200 hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
       <div className="flex items-center justify-between border-b border-gray-100 px-4 pt-4 pb-3">
         <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600">
-          {sw.category}
+          {alt.category}
         </span>
         <div className="flex items-center gap-0.5 rounded-full bg-amber-50 px-2 py-1">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -65,7 +89,7 @@ function AlternativeCard({ sw }: { sw: Switch }) {
               )}
             />
           ))}
-          <span className="ml-1 text-[10px] font-semibold text-amber-700">{sw.rating.toFixed(1)}</span>
+          <span className="ml-1 text-[10px] font-semibold text-amber-700">{alt.rating.toFixed(1)}</span>
         </div>
       </div>
 
@@ -73,7 +97,7 @@ function AlternativeCard({ sw }: { sw: Switch }) {
         <div className="mb-4 rounded-2xl border border-gray-100 bg-[linear-gradient(180deg,#fbfdfc_0%,#f7faf9_100%)] p-3.5">
           <div className="mb-2 flex items-start gap-3">
             <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5 text-center">
-              <ToolIcon slug={sw.from} size="lg" />
+              <ToolIcon toolData={fromTool} size="lg" />
               <span className="line-clamp-2 text-[10px] leading-tight text-gray-500">{fromTool.name}</span>
             </div>
             <div className="flex flex-col items-center gap-1 pt-2">
@@ -83,32 +107,36 @@ function AlternativeCard({ sw }: { sw: Switch }) {
               <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-gray-300">Switch</span>
             </div>
             <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5 text-center">
-              <ToolIcon slug={sw.to} size="lg" />
+              <ToolIcon toolData={toTool} size="lg" />
               <span className="line-clamp-2 text-[10px] font-medium leading-tight text-[#0F6E56]">{toTool.name}</span>
             </div>
           </div>
           <div className="flex items-center justify-between rounded-xl border border-dashed border-green-200 bg-green-50/70 px-3 py-2">
-            <span className="text-[10px] font-medium text-green-700">{sw.license}</span>
-            <span className="text-[10px] text-green-600">{sw.euCountry}</span>
+            <span className="text-[10px] font-medium text-green-700">{alt.license ?? "EU Alternative"}</span>
+            <span className="text-[10px] text-green-600">{euCountry.toUpperCase()}</span>
           </div>
         </div>
 
-        <p className="mb-4 flex-1 text-xs leading-relaxed text-gray-600">{sw.description}</p>
+        {alt.description && (
+          <p className="mb-4 flex-1 text-xs leading-relaxed text-gray-600">{alt.description}</p>
+        )}
 
         <div className="mb-4 grid grid-cols-1 gap-2 text-xs text-gray-500">
-          <div className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2">
-            <span className="flex items-center gap-1.5">
-              <Globe className="h-3.5 w-3.5 text-gray-400" />
-              EU base
-            </span>
-            {sw.euCountry}
-          </div>
+          {euCountry && (
+            <div className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2">
+              <span className="flex items-center gap-1.5">
+                <Globe className="h-3.5 w-3.5 text-gray-400" />
+                EU base
+              </span>
+              <span>{euCountry.toUpperCase()}</span>
+            </div>
+          )}
           <div className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2">
             <span className="flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
               Adoption
             </span>
-            <span className="font-medium text-gray-700">{sw.switcherCount.toLocaleString()} switched</span>
+            <span className="font-medium text-gray-700">{alt.switcherCount.toLocaleString()} switched</span>
           </div>
         </div>
 
@@ -120,7 +148,7 @@ function AlternativeCard({ sw }: { sw: Switch }) {
             Add to stack
           </Link>
           <Link
-            href={`/discover/${sw.to}`}
+            href={`/discover/${toTool.slug}`}
             className="flex items-center justify-center rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
           >
             <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
@@ -131,10 +159,14 @@ function AlternativeCard({ sw }: { sw: Switch }) {
   );
 }
 
+// ─── Main client component ─────────────────────────────────────────────────────
+
 export function DiscoverClient({
+  alternatives,
   initialCategory,
   initialQuery,
 }: {
+  alternatives: DbAlternative[];
   initialCategory: string;
   initialQuery: string;
 }) {
@@ -148,18 +180,22 @@ export function DiscoverClient({
   const deferredQuery = useDeferredValue(query);
   const normalizedQuery = deferredQuery.trim().toLowerCase();
 
+  // Derive categories from actual DB data
+  const categories = useMemo(() => {
+    const cats = Array.from(new Set(alternatives.map((a) => a.category))).sort();
+    return ["All", ...cats];
+  }, [alternatives]);
+
   const filtered = useMemo(() => {
-    return POPULAR_SWITCHES.filter((sw) => {
-      const matchesCategory = activeCategory === "All" || sw.category === activeCategory;
+    return alternatives.filter((alt) => {
+      const matchesCategory = activeCategory === "All" || alt.category === activeCategory;
       const searchableText = [
-        TOOLS[sw.from]?.name,
-        TOOLS[sw.to]?.name,
-        sw.category,
-        sw.description,
-        sw.euCountry,
-        sw.license,
-        `${TOOLS[sw.from]?.name} ${TOOLS[sw.to]?.name}`,
-        `${sw.from} ${sw.to}`,
+        alt.fromTool.name,
+        alt.toTool.name,
+        alt.category,
+        alt.description,
+        alt.toTool.country,
+        alt.license,
       ]
         .filter(Boolean)
         .join(" ")
@@ -168,7 +204,7 @@ export function DiscoverClient({
       const matchesQuery = !normalizedQuery || searchableText.includes(normalizedQuery);
       return matchesCategory && matchesQuery;
     });
-  }, [activeCategory, normalizedQuery]);
+  }, [alternatives, activeCategory, normalizedQuery]);
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
@@ -189,14 +225,12 @@ export function DiscoverClient({
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="mb-8">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-[#0F6E56]">
-          Discover
-        </p>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-[#0F6E56]">Discover</p>
         <h1 className="text-3xl font-bold tracking-tight text-gray-900">
           EU alternatives to popular software
         </h1>
         <p className="mt-2 text-sm text-gray-500">
-          {POPULAR_SWITCHES.length} alternatives across {CATEGORIES.length - 1} categories.
+          {alternatives.length} alternative{alternatives.length !== 1 ? "s" : ""} across {categories.length - 1} categor{categories.length - 1 !== 1 ? "ies" : "y"}.
         </p>
       </div>
 
@@ -204,20 +238,18 @@ export function DiscoverClient({
         <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
         <input
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(e) => setQuery(e.target.value)}
           type="search"
           placeholder="Search for Slack, Notion, Figma…"
           className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-11 pr-10 text-sm outline-none transition-colors placeholder:text-gray-400 focus:border-[#0F6E56]"
         />
-        {isPending && <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] text-gray-300">Updating…</span>}
+        {isPending && (
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] text-gray-300">Updating…</span>
+        )}
       </div>
 
       <div className="mb-8">
-        <CategoryFilter
-          categories={CATEGORIES}
-          active={activeCategory}
-          onChange={setActiveCategory}
-        />
+        <CategoryFilter categories={categories} active={activeCategory} onChange={setActiveCategory} />
       </div>
 
       {filtered.length > 0 ? (
@@ -227,8 +259,8 @@ export function DiscoverClient({
             {activeCategory !== "All" && ` in ${activeCategory}`}
           </p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filtered.map((sw) => (
-              <AlternativeCard key={sw.id} sw={sw} />
+            {filtered.map((alt) => (
+              <AlternativeCard key={alt.id} alt={alt} />
             ))}
           </div>
         </>
@@ -237,18 +269,23 @@ export function DiscoverClient({
           <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
             <Search className="h-6 w-6 text-gray-400" />
           </div>
-          <h3 className="text-sm font-semibold text-gray-700">No results found</h3>
-          <p className="mt-1 text-xs text-gray-400">Try a different search term or category.</p>
-          <button
-            type="button"
-            onClick={() => {
-              setQuery("");
-              setActiveCategory("All");
-            }}
-            className="mt-4 text-xs font-medium text-[#0F6E56] hover:underline"
-          >
-            Clear filters
-          </button>
+          <h3 className="text-sm font-semibold text-gray-700">
+            {alternatives.length === 0 ? "No alternatives added yet" : "No results found"}
+          </h3>
+          <p className="mt-1 text-xs text-gray-400">
+            {alternatives.length === 0
+              ? "Check back soon — alternatives are being added."
+              : "Try a different search term or category."}
+          </p>
+          {alternatives.length > 0 && (
+            <button
+              type="button"
+              onClick={() => { setQuery(""); setActiveCategory("All"); }}
+              className="mt-4 text-xs font-medium text-[#0F6E56] hover:underline"
+            >
+              Clear filters
+            </button>
+          )}
         </div>
       )}
     </div>

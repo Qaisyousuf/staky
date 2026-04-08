@@ -8,6 +8,7 @@ import { RequestsTab } from "./tabs/requests-tab";
 import { PartnersTab } from "./tabs/partners-tab";
 import { UsersTab } from "./tabs/users-tab";
 import { ReportsTab } from "./tabs/reports-tab";
+import { ToolsTab } from "./tabs/tools-tab";
 import {
   getAdminStats,
   getPendingPosts,
@@ -19,9 +20,10 @@ import {
   adminGetUsers,
   adminGetReports,
 } from "@/actions/admin";
+import { adminGetTools, adminGetAlternatives } from "@/actions/tools";
 
 const VALID_TABS: AdminTab[] = [
-  "overview", "posts", "comments", "requests", "partners", "users", "reports",
+  "overview", "posts", "comments", "requests", "partners", "users", "reports", "tools",
 ];
 
 export default async function AdminPage({
@@ -46,6 +48,7 @@ export default async function AdminPage({
       {tab === "partners" && <PartnersTabLoader />}
       {tab === "users" && <UsersTabLoader userId={session.user.id} />}
       {tab === "reports" && <ReportsTabLoader />}
+      {tab === "tools" && <ToolsTabLoader />}
     </AdminShell>
   );
 }
@@ -95,4 +98,12 @@ async function UsersTabLoader({ userId }: { userId: string }) {
 async function ReportsTabLoader() {
   const data = await adminGetReports();
   return <ReportsTab data={data} />;
+}
+
+async function ToolsTabLoader() {
+  const [tools, alternatives] = await Promise.all([
+    adminGetTools(),
+    adminGetAlternatives(),
+  ]);
+  return <ToolsTab initialTools={tools} initialAlternatives={alternatives} />;
 }

@@ -2,11 +2,24 @@ import Image from "next/image";
 import { TOOLS } from "@/data/mock-data";
 import { cn } from "@/lib/utils";
 
+// ─── Types ─────────────────────────────────────────────────────────────────────
+
+export interface DbTool {
+  name: string;
+  logoUrl?: string | null;
+  color: string;
+  abbr: string;
+  country?: string | null;
+}
+
 interface ToolIconProps {
-  slug: string;
+  /** Legacy: look up tool from mock-data by slug */
+  slug?: string;
+  /** New: pass a DB tool object directly (logoUrl takes priority over local SVGs) */
+  toolData?: DbTool;
   size?: "sm" | "md" | "lg" | "xl";
   className?: string;
-  plain?: boolean; // renders just the image/badge with no card wrapper
+  plain?: boolean;
 }
 
 const SIZE_CLASSES = {
@@ -41,12 +54,69 @@ const TOOL_LOGOS: Partial<Record<string, string>> = {
   forgejo:    "/logos/tools/forgejo.svg",
 };
 
-export function ToolIcon({ slug, size = "md", className, plain = false }: ToolIconProps) {
-  const tool = TOOLS[slug];
+export function ToolIcon({ slug, toolData, size = "md", className, plain = false }: ToolIconProps) {
+  const config = SIZE_CLASSES[size];
+
+  // ── DB tool path ─────────────────────────────────────────────────────────────
+  if (toolData) {
+    const { name, logoUrl, color, abbr } = toolData;
+
+    if (logoUrl) {
+      if (plain) {
+        return (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={logoUrl}
+            alt={`${name} logo`}
+            width={config.image}
+            height={config.image}
+            className={cn("object-contain", className)}
+          />
+        );
+      }
+      return (
+        <span
+          className={cn(
+            "inline-flex shrink-0 items-center justify-center border border-gray-200 bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]",
+            config.shell,
+            className
+          )}
+          title={name}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={logoUrl}
+            alt={`${name} logo`}
+            width={config.image}
+            height={config.image}
+            className="h-auto w-auto max-h-[70%] max-w-[70%] object-contain"
+          />
+        </span>
+      );
+    }
+
+    // Fallback: colored abbr badge
+    return (
+      <span
+        className={cn(
+          "inline-flex shrink-0 select-none items-center justify-center font-bold text-white",
+          plain ? "rounded-xl" : config.shell,
+          config.fallback,
+          className
+        )}
+        style={{ backgroundColor: color }}
+        title={name}
+      >
+        {abbr}
+      </span>
+    );
+  }
+
+  // ── Legacy slug path ──────────────────────────────────────────────────────────
+  const tool = slug ? TOOLS[slug] : undefined;
   if (!tool) return null;
 
-  const config = SIZE_CLASSES[size];
-  const logoSrc = TOOL_LOGOS[slug];
+  const logoSrc = slug ? TOOL_LOGOS[slug] : undefined;
 
   if (logoSrc) {
     if (plain) {
