@@ -115,7 +115,7 @@ function Hero({ usTools, euTools }: { usTools: PublishedTool[]; euTools: Publish
 
       {/* Marquee — only rendered when tools exist */}
       {(usDoubled.length > 0 || euDoubled.length > 0) && (
-        <div className="h5 mx-auto mt-14 max-w-5xl pb-[80px]">
+        <div className="h5 mx-auto mt-6 sm:mt-14 max-w-5xl pb-[80px]">
           {usDoubled.length > 0 && (
             <div className="marquee-row relative overflow-x-hidden py-3">
               <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-[120px] bg-gradient-to-r from-[#FAF8F5] to-transparent" />
