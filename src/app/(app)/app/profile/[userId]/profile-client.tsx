@@ -7,7 +7,7 @@ import {
   UserPlus, UserCheck, Link2, CalendarDays,
   Globe, ExternalLink, Handshake,
   Tag, MessageSquare, CheckCircle2, Eye, Network, ArrowRight, ArrowLeft,
-  Award, ShieldCheck, DollarSign,
+  Award, ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toggleFollow, toggleConnect } from "@/actions/social";
