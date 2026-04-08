@@ -514,7 +514,7 @@ function ToolForm({
               }
             </button>
           </div>
-          <p className="mt-1 text-xs text-gray-400">Paste the tool website and click "Fetch info" to auto-fill the fields below.</p>
+          <p className="mt-1 text-xs text-gray-400">Paste the tool website and click &quot;Fetch info&quot; to auto-fill the fields below.</p>
         </div>
 
         {/* ── Core fields ──────────────────────────────────────────────── */}

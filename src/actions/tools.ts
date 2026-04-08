@@ -158,7 +158,6 @@ export async function fetchToolMeta(rawUrl: string) {
 
   const url = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
 
-  let finalUrl = url;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8000);
 

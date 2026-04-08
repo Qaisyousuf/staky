@@ -523,7 +523,6 @@ function MessageDropdown({
 // ─── User menu dropdown ───────────────────────────────────────────────────────
 
 function UserMenuDropdown({ user, onClose }: { user: TopBarUser; onClose: () => void }) {
-  const router = useRouter();
   const pathname = usePathname();
   const { update } = useSession();
   const [isSwitching, startSwitching] = useTransition();
