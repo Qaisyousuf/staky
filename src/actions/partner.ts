@@ -322,7 +322,6 @@ export async function updateCompanyProfile(data: {
   companyName: string;
   country: string;
   description: string;
-  pricing: string;
   website: string;
   logoUrl: string;
   coverImage: string;
@@ -344,7 +343,6 @@ export async function updateCompanyProfile(data: {
       companyName: data.companyName.trim(),
       country: data.country.trim(),
       description: data.description.trim() || null,
-      pricing: data.pricing.trim() || null,
       website: data.website.trim() || null,
       logoUrl: data.logoUrl.trim() || null,
       coverImage: data.coverImage.trim() || null,

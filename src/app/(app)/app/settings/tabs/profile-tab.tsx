@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Camera, Link2, Globe, MapPin,
-  CheckCircle2, AlertCircle, Save, Loader2, Building2, X, Trash2, ImageIcon,
+  CheckCircle2, AlertCircle, Save, Loader2, Building2, X, Plus, Trash2, ImageIcon,
 } from "lucide-react";
 import { updateProfile } from "@/actions/settings";
 import type { SettingsUser } from "../settings-shell";
@@ -36,8 +36,18 @@ function TextInput({
   );
 }
 
-function TagInput({ tags, onChange, placeholder }: {
-  tags: string[]; onChange: (t: string[]) => void; placeholder?: string;
+const INTEREST_SUGGESTIONS = [
+  "GDPR", "Data privacy", "Open source", "Self-hosting", "EU sovereignty",
+  "Digital sovereignty", "End-to-end encryption", "DevOps", "SaaS alternatives",
+  "Cloud migration", "Sustainability", "Privacy-first", "Linux", "Docker",
+  "Kubernetes", "Decentralization", "Federated services", "Small business",
+  "Startup", "Remote work", "Security", "Data portability", "No-code",
+  "Green tech", "EU tech", "AI privacy", "Zero-knowledge", "Open standards",
+  "Nextcloud", "Self-managed", "FOSS",
+];
+
+function TagInput({ tags, onChange, placeholder, suggestions = [] }: {
+  tags: string[]; onChange: (t: string[]) => void; placeholder?: string; suggestions?: string[];
 }) {
   const [input, setInput] = useState("");
   const ref = useRef<HTMLInputElement>(null);
@@ -47,31 +57,49 @@ function TagInput({ tags, onChange, placeholder }: {
     onChange([...tags, t]); setInput("");
   };
   const remove = (t: string) => onChange(tags.filter((x) => x !== t));
+  const available = suggestions.filter((s) => !tags.includes(s));
   return (
-    <div
-      onClick={() => ref.current?.focus()}
-      className="flex flex-wrap gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 min-h-[42px] cursor-text focus-within:border-[#0F6E56] transition-colors"
-    >
-      {tags.map((t) => (
-        <span key={t} className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
-          {t}
-          <button type="button" onClick={(e) => { e.stopPropagation(); remove(t); }} className="opacity-50 hover:opacity-100">
-            <X className="h-3 w-3" />
-          </button>
-        </span>
-      ))}
-      <input
-        ref={ref}
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === ",") { e.preventDefault(); add(input); }
-          else if (e.key === "Backspace" && !input && tags.length > 0) remove(tags[tags.length - 1]);
-        }}
-        onBlur={() => input.trim() && add(input)}
-        placeholder={tags.length === 0 ? placeholder : ""}
-        className="flex-1 min-w-[120px] text-sm text-gray-700 placeholder:text-gray-400 outline-none bg-transparent"
-      />
+    <div>
+      <div
+        onClick={() => ref.current?.focus()}
+        className="flex flex-wrap gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 min-h-[42px] cursor-text focus-within:border-[#0F6E56] transition-colors"
+      >
+        {tags.map((t) => (
+          <span key={t} className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-medium text-[#0F6E56]">
+            {t}
+            <button type="button" onClick={(e) => { e.stopPropagation(); remove(t); }} className="opacity-50 hover:opacity-100">
+              <X className="h-3 w-3" />
+            </button>
+          </span>
+        ))}
+        <input
+          ref={ref}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === ",") { e.preventDefault(); add(input); }
+            else if (e.key === "Backspace" && !input && tags.length > 0) remove(tags[tags.length - 1]);
+          }}
+          onBlur={() => input.trim() && add(input)}
+          placeholder={tags.length === 0 ? placeholder : ""}
+          className="flex-1 min-w-[120px] text-sm text-gray-700 placeholder:text-gray-400 outline-none bg-transparent"
+        />
+      </div>
+      {available.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {available.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => add(s)}
+              className="inline-flex items-center gap-1 rounded-full border border-dashed border-gray-200 bg-white px-2.5 py-0.5 text-xs text-gray-400 hover:border-[#0F6E56] hover:text-[#0F6E56] hover:bg-green-50 transition-colors"
+            >
+              <Plus className="h-3 w-3" />
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -337,7 +365,7 @@ function CoverEditor({
 
 // ─── Main tab ─────────────────────────────────────────────────────────────────
 
-export function ProfileTab({ user }: { user: SettingsUser }) {
+export function ProfileTab({ user, activeMode }: { user: SettingsUser; activeMode: "user" | "partner" }) {
   const [form, setForm] = useState({
     name: user.name,
     image: user.image,
@@ -392,7 +420,7 @@ export function ProfileTab({ user }: { user: SettingsUser }) {
     });
   };
 
-  const isPartner = user.role === "PARTNER";
+  const isPartner = activeMode === "partner";
 
   return (
     <div className="space-y-4">
@@ -505,7 +533,8 @@ export function ProfileTab({ user }: { user: SettingsUser }) {
           <TagInput
             tags={form.interests}
             onChange={set("interests") as (v: string[]) => void}
-            placeholder="e.g. GDPR, Self-hosting, DevOps, Open Source…"
+            placeholder="Type an interest and press Enter…"
+            suggestions={INTEREST_SUGGESTIONS}
           />
           <p className="text-[11px] text-gray-400">Press Enter or comma to add · Backspace to remove</p>
         </section>

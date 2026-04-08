@@ -36,7 +36,6 @@ export interface SettingsUser {
     companyName: string;
     country: string;
     description: string;
-    pricing: string;
     website: string;
     approved: boolean;
     rating: number;
@@ -198,7 +197,6 @@ export function SettingsShell({
                 companyName: user.partner.companyName,
                 country: user.partner.country,
                 description: user.partner.description,
-                pricing: user.partner.pricing,
                 website: user.partner.website,
                 logoUrl: user.partner.logoUrl ?? "",
                 coverImage: user.partner.coverImage ?? "",
@@ -225,7 +223,7 @@ export function SettingsShell({
           )}
 
           {/* Switcher-only tabs */}
-          {!isPartner && resolvedTab === "profile" && <ProfileTab user={user} />}
+          {!isPartner && resolvedTab === "profile" && <ProfileTab user={user} activeMode={activeMode} />}
           {!isPartner && resolvedTab === "partner" && <PartnerTab partner={user.partner} />}
           {!isPartner && resolvedTab === "billing" && <BillingTab plan={user.plan} />}
         </div>

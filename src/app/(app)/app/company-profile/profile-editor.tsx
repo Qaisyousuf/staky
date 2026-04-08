@@ -14,6 +14,7 @@ import {
   Save,
   Loader2,
   X,
+  Plus,
   BadgeCheck,
   Camera,
   ImageIcon,
@@ -30,7 +31,6 @@ interface PartnerData {
   companyName: string;
   country: string;
   description: string;
-  pricing: string;
   website: string;
   logoUrl: string;
   coverImage: string;
@@ -50,6 +50,36 @@ const EU_COUNTRIES = [
   "Ireland", "Italy", "Latvia", "Lithuania", "Luxembourg", "Malta", "Netherlands",
   "Poland", "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden",
   "United Kingdom", "Switzerland", "Norway", "Iceland",
+];
+
+// ─── Tag suggestions ──────────────────────────────────────────────────────────
+
+const SPECIALTY_SUGGESTIONS = [
+  "Nextcloud", "Penpot", "Gitea", "Forgejo", "OnlyOffice", "Jitsi Meet",
+  "Element (Matrix)", "Mattermost", "Plausible Analytics", "Matomo", "Baserow",
+  "NocoDB", "Coolify", "ProtonMail", "Tutanota", "Bitwarden", "Keycloak",
+  "Authentik", "Seafile", "Cryptpad", "Zulip", "Rocket.Chat", "Discourse",
+  "OpenProject", "Taiga", "Plane", "Odoo", "ERPNext", "LibreOffice",
+  "Collabora Online", "Thunderbird", "Brevo", "Hetzner Cloud", "OVH Cloud",
+  "Infomaniak", "Grist", "Dolibarr", "Pixelfed", "PeerTube", "Mastodon",
+];
+
+const SERVICES_SUGGESTIONS = [
+  "Data migration", "Staff training", "API integration", "Infrastructure setup",
+  "Cloud migration", "Email migration", "Document migration",
+  "Calendar & contacts migration", "CRM migration", "ERP migration",
+  "Security audit", "GDPR compliance", "Custom development", "Ongoing support",
+  "Backup & recovery", "On-premise deployment", "SaaS to self-hosted",
+  "Google Workspace migration", "Microsoft 365 migration", "Slack migration",
+  "Notion migration", "Salesforce migration", "Container orchestration",
+  "CI/CD setup", "Performance optimisation",
+];
+
+const CERTIFICATIONS_SUGGESTIONS = [
+  "ISO 27001", "ISO 27701", "SOC 2", "GDPR Practitioner", "Privacy by Design",
+  "Nextcloud Certified", "AWS Certified", "Google Cloud Certified",
+  "Azure Certified", "CKA (Kubernetes)", "CISM", "CISA", "CISSP",
+  "PMP", "PRINCE2", "Scrum Master", "C5 (BSI)", "NEN 7510", "ISAE 3402",
 ];
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -133,21 +163,23 @@ function TagInput({
   onChange,
   placeholder,
   color = "green",
+  suggestions = [],
 }: {
   tags: string[];
   onChange: (tags: string[]) => void;
   placeholder?: string;
   color?: "green" | "blue" | "purple";
+  suggestions?: string[];
 }) {
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const colorMap = {
-    green:  { chip: "bg-green-50 text-[#0F6E56] border-green-200",  focus: "focus:border-[#0F6E56]" },
-    blue:   { chip: "bg-blue-50 text-[#2A5FA5] border-blue-200",    focus: "focus:border-[#2A5FA5]" },
-    purple: { chip: "bg-purple-50 text-purple-700 border-purple-200", focus: "focus:border-purple-500" },
+    green:  { chip: "bg-green-50 text-[#0F6E56] border-green-200", suggest: "hover:border-[#0F6E56] hover:text-[#0F6E56] hover:bg-green-50" },
+    blue:   { chip: "bg-blue-50 text-[#2A5FA5] border-blue-200",   suggest: "hover:border-[#2A5FA5] hover:text-[#2A5FA5] hover:bg-blue-50" },
+    purple: { chip: "bg-purple-50 text-purple-700 border-purple-200", suggest: "hover:border-purple-400 hover:text-purple-700 hover:bg-purple-50" },
   };
-  const { chip } = colorMap[color];
+  const { chip, suggest } = colorMap[color];
 
   const add = (val: string) => {
     const trimmed = val.trim();
@@ -167,41 +199,57 @@ function TagInput({
     }
   };
 
+  const available = suggestions.filter((s) => !tags.includes(s));
+
   return (
-    <div
-      onClick={() => inputRef.current?.focus()}
-      className={cn(
-        "flex flex-wrap gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 min-h-[42px] cursor-text transition-colors",
-        "focus-within:border-[#0F6E56]"
-      )}
-    >
-      {tags.map((tag) => (
-        <span
-          key={tag}
-          className={cn(
-            "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium",
-            chip
-          )}
-        >
-          {tag}
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); remove(tag); }}
-            className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity"
+    <div>
+      <div
+        onClick={() => inputRef.current?.focus()}
+        className="flex flex-wrap gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 min-h-[42px] cursor-text focus-within:border-[#0F6E56] transition-colors"
+      >
+        {tags.map((tag) => (
+          <span
+            key={tag}
+            className={cn("inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium", chip)}
           >
-            <X className="h-3 w-3" />
-          </button>
-        </span>
-      ))}
-      <input
-        ref={inputRef}
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={handleKey}
-        onBlur={() => input.trim() && add(input)}
-        placeholder={tags.length === 0 ? placeholder : ""}
-        className="flex-1 min-w-[120px] text-sm text-gray-700 placeholder:text-gray-400 outline-none bg-transparent"
-      />
+            {tag}
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); remove(tag); }}
+              className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </span>
+        ))}
+        <input
+          ref={inputRef}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKey}
+          onBlur={() => input.trim() && add(input)}
+          placeholder={tags.length === 0 ? placeholder : ""}
+          className="flex-1 min-w-[120px] text-sm text-gray-700 placeholder:text-gray-400 outline-none bg-transparent"
+        />
+      </div>
+      {available.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {available.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => add(s)}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full border border-dashed border-gray-200 bg-white px-2.5 py-0.5 text-xs text-gray-400 transition-colors",
+                suggest
+              )}
+            >
+              <Plus className="h-3 w-3" />
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -441,7 +489,6 @@ export function ProfileEditor({ partner }: { partner: PartnerData }) {
     companyName: partner.companyName,
     country: partner.country,
     description: partner.description,
-    pricing: partner.pricing,
     website: partner.website,
     logoUrl: partner.logoUrl,
     coverImage: partner.coverImage,
@@ -619,15 +666,6 @@ export function ProfileEditor({ partner }: { partner: PartnerData }) {
                 {form.description.length}/500 chars · shown on your partner card
               </p>
             </Field>
-            <Field label="Pricing model">
-              <textarea
-                value={form.pricing}
-                onChange={(e) => set("pricing")(e.target.value)}
-                placeholder="e.g. Fixed-fee packages from €2,500 · Hourly rate €120/hr · Free initial consultation"
-                rows={2}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-[#0F6E56] transition-colors resize-none bg-white"
-              />
-            </Field>
           </div>
         </div>
 
@@ -641,8 +679,9 @@ export function ProfileEditor({ partner }: { partner: PartnerData }) {
           <TagInput
             tags={form.specialty}
             onChange={set("specialty") as (v: string[]) => void}
-            placeholder="Type a tool name and press Enter (e.g. Nextcloud, Penpot)"
+            placeholder="Type a tool name and press Enter…"
             color="green"
+            suggestions={SPECIALTY_SUGGESTIONS}
           />
           <p className="text-[11px] text-gray-400 mt-2">Press Enter or comma to add · Backspace to remove last</p>
         </div>
@@ -657,10 +696,11 @@ export function ProfileEditor({ partner }: { partner: PartnerData }) {
           <TagInput
             tags={form.services}
             onChange={set("services") as (v: string[]) => void}
-            placeholder="e.g. Data migration, Staff training, API integrations…"
+            placeholder="Type a service and press Enter…"
             color="blue"
+            suggestions={SERVICES_SUGGESTIONS}
           />
-          <p className="text-[11px] text-gray-400 mt-2">Add up to 10 services</p>
+          <p className="text-[11px] text-gray-400 mt-2">Press Enter or comma to add · Backspace to remove last</p>
         </div>
 
         {/* Certifications */}
@@ -673,9 +713,11 @@ export function ProfileEditor({ partner }: { partner: PartnerData }) {
           <TagInput
             tags={form.certifications}
             onChange={set("certifications") as (v: string[]) => void}
-            placeholder="e.g. Nextcloud Certified, ISO 27001, GDPR Practitioner…"
+            placeholder="Type a certification and press Enter…"
             color="purple"
+            suggestions={CERTIFICATIONS_SUGGESTIONS}
           />
+          <p className="text-[11px] text-gray-400 mt-2">Press Enter or comma to add · Backspace to remove last</p>
         </div>
       </div>
 

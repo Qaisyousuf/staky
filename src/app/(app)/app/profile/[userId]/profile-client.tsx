@@ -52,6 +52,7 @@ interface ProfileUser {
     approved: boolean;
     featured: boolean;
     logoUrl: string | null;
+    coverImage: string | null;
     website: string | null;
   } | null;
 }
@@ -380,7 +381,7 @@ export function ProfileClient({
   // Show partner identity only when the profile user is in partner mode
   const isPartner = user.activeMode === "partner" && !!user.partner?.approved;
   const displayName = isPartner ? (user.partner!.companyName ?? user.name) : user.name;
-  const displayImage = isPartner ? (user.partner!.logoUrl ?? null) : user.image;
+  const displayImage = isPartner ? (user.partner!.logoUrl ?? user.image) : user.image;
 
   const [bioExpanded, setBioExpanded] = useState(false);
 
@@ -397,6 +398,9 @@ export function ProfileClient({
   const coverGradient = isPartner
     ? "linear-gradient(135deg, #0d2748 0%, #1e3f6b 45%, #2A5FA5 75%, #4a7fc4 100%)"
     : "linear-gradient(135deg, #064e3b 0%, #0a5c45 45%, #0F6E56 75%, #10b981 100%)";
+  const activeCover = isPartner
+    ? (user.partner!.coverImage ?? user.coverImage)
+    : user.coverImage;
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -418,10 +422,10 @@ export function ProfileClient({
 
           {/* Cover */}
           <div className="h-40 relative overflow-hidden">
-            {user.coverImage ? (
+            {activeCover ? (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={user.coverImage} alt="" className="w-full h-full object-cover" />
+                <img src={activeCover} alt="" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
               </>
             ) : (
@@ -513,22 +517,6 @@ export function ProfileClient({
               <p className="text-xs text-gray-400 -mt-0.5 mb-2">{user.name}</p>
             )}
 
-            {/* Partner rating badge + project count — prominent */}
-            {isPartner && (
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-100 rounded-lg px-3 py-1.5">
-                  <Star className="h-4 w-4 text-amber-500 fill-amber-500 shrink-0" />
-                  <span className="text-base font-bold text-gray-900">{user.partner!.rating.toFixed(1)}</span>
-                  <span className="text-xs text-gray-400">rating</span>
-                </div>
-                <div className="flex items-center gap-1.5 bg-blue-50 border border-blue-100 rounded-lg px-3 py-1.5">
-                  <Briefcase className="h-4 w-4 text-[#2A5FA5] shrink-0" />
-                  <span className="text-base font-bold text-gray-900">{user.partner!.projectCount}</span>
-                  <span className="text-xs text-gray-400">projects</span>
-                </div>
-              </div>
-            )}
-
             {/* User headline */}
             {!isPartner && user.title && (
               <p className="text-sm font-medium text-gray-600 mb-3">{user.title}</p>
@@ -546,12 +534,6 @@ export function ProfileClient({
                 <span className="flex items-center gap-1">
                   <MapPin className="h-3.5 w-3.5 text-gray-400 shrink-0" />
                   {isPartner ? user.partner!.country : user.location}
-                </span>
-              )}
-              {isPartner && user.partner!.pricing && (
-                <span className="flex items-center gap-1">
-                  <DollarSign className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-                  {user.partner!.pricing}
                 </span>
               )}
               <span className="flex items-center gap-1 text-gray-400">

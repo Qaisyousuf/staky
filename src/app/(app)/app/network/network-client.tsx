@@ -40,6 +40,7 @@ interface CurrentUser {
   partner: {
     companyName: string;
     logoUrl: string | null;
+    coverImage: string | null;
     specialty: string[];
     description: string | null;
     country: string | null;
@@ -191,12 +192,14 @@ function ProfileCard({ user }: { user: CurrentUser }) {
   const coverGradient = isPartner
     ? "linear-gradient(135deg, #1e3a6e 0%, #2A5FA5 100%)"
     : "linear-gradient(135deg, #0a5a45 0%, #0F6E56 100%)";
+  const activeCover = isPartner
+    ? (user.partner!.coverImage ?? user.coverImage)
+    : user.coverImage;
 
   const displayName = isPartner ? user.partner!.companyName : user.name;
   const displayImage = isPartner ? (user.partner!.logoUrl ?? user.image) : user.image;
   const avatarRounded = isPartner ? "rounded-xl" : "rounded-full";
   const avatarBg = isPartner ? "bg-[#2A5FA5]" : "bg-[#0F6E56]";
-  const tags = isPartner ? (user.partner!.specialty ?? []) : user.interests;
   const accentColor = isPartner ? "#2A5FA5" : "#0F6E56";
 
   return (
@@ -210,11 +213,11 @@ function ProfileCard({ user }: { user: CurrentUser }) {
       <div className="relative h-24">
         <div
           className="absolute inset-0 rounded-t-2xl overflow-hidden"
-          style={{ background: user.coverImage ? undefined : coverGradient }}
+          style={{ background: activeCover ? undefined : coverGradient }}
         >
-          {user.coverImage && (
+          {activeCover && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={user.coverImage} alt="" className="h-full w-full object-cover" />
+            <img src={activeCover} alt="" className="h-full w-full object-cover" />
           )}
         </div>
         {/* Avatar: left-aligned, straddling the cover bottom edge */}
@@ -235,53 +238,50 @@ function ProfileCard({ user }: { user: CurrentUser }) {
       </div>
 
       <div className="px-4 pb-4 pt-10">
-        {/* Avatar row: buttons aligned to the right while avatar overlaps from above */}
-        <div className="flex items-center justify-end gap-1.5 mb-3">
-          <Link
-            href={`/app/profile/${user.id}?from=network`}
-            className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-[11px] font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            View profile
-          </Link>
-          <Link
-            href="/app/settings"
-            className="flex items-center justify-center rounded-lg border border-gray-200 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"
-          >
-            <Settings className="h-3.5 w-3.5" />
-          </Link>
-        </div>
+        {/* Top row: name/title/location left, buttons right */}
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="text-sm font-bold text-gray-900 leading-snug truncate">
+                {displayName ?? "Anonymous"}
+              </span>
+              {(user.verified || isPartner) && <BadgeCheck className="h-3.5 w-3.5 text-[#2A5FA5] shrink-0" />}
+            </div>
 
-        {/* Name + verified */}
-        <div className="flex items-center gap-1.5 mb-0.5">
-          <span className="text-sm font-bold text-gray-900 leading-snug truncate">
-            {displayName ?? "Anonymous"}
-          </span>
-          {(user.verified || isPartner) && <BadgeCheck className="h-3.5 w-3.5 text-[#2A5FA5] shrink-0" />}
-        </div>
-
-        {!isPartner && (user.title || user.company) && (
-          <p className="text-xs text-gray-500 truncate leading-snug mb-0.5">
-            {[user.title, user.company].filter(Boolean).join(" · ")}
-          </p>
-        )}
-        {isPartner && (
-          <p className="text-xs text-gray-500 truncate leading-snug mb-0.5">Migration Partner</p>
-        )}
-        {((isPartner ? (user.partner!.country ?? user.location) : user.location)) && (
-          <div className="flex items-center gap-1 mb-1">
-            <MapPin className="h-3 w-3 text-gray-400 shrink-0" />
-            <span className="text-[11px] text-gray-400 truncate">
-              {isPartner ? (user.partner!.country ?? user.location) : user.location}
-            </span>
+            {!isPartner && (user.title || user.company) && (
+              <p className="text-xs text-gray-500 truncate leading-snug mb-0.5">
+                {[user.title, user.company].filter(Boolean).join(" · ")}
+              </p>
+            )}
+            {isPartner && (
+              <p className="text-xs text-gray-500 truncate leading-snug mb-0.5">Migration Partner</p>
+            )}
+            {(isPartner ? (user.partner!.country ?? user.location) : user.location) && (
+              <div className="flex items-center gap-1 mt-0.5">
+                <MapPin className="h-3 w-3 text-gray-400 shrink-0" />
+                <span className="text-[11px] text-gray-400 truncate">
+                  {isPartner ? (user.partner!.country ?? user.location) : user.location}
+                </span>
+              </div>
+            )}
           </div>
-        )}
-        {isPartner && user.partner!.description && (
-          <p className="text-[11px] text-gray-400 leading-relaxed line-clamp-2">{user.partner!.description}</p>
-        )}
-        {!isPartner && user.bio && (
-          <p className="text-[11px] text-gray-400 leading-relaxed line-clamp-2">{user.bio}</p>
-        )}
 
+          {/* Buttons — unchanged position */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Link
+              href={`/app/profile/${user.id}?from=network`}
+              className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-[11px] font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              View profile
+            </Link>
+            <Link
+              href="/app/settings"
+              className="flex items-center justify-center rounded-lg border border-gray-200 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              <Settings className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </div>
         {/* Stats */}
         <div className="grid grid-cols-3 mt-3 pt-3 border-t border-gray-100">
           <Link href="?tab=followers" className="flex flex-col items-center py-1.5 rounded-lg hover:bg-gray-50 transition-colors group">
@@ -304,22 +304,6 @@ function ProfileCard({ user }: { user: CurrentUser }) {
           </Link>
         </div>
 
-        {/* Tags */}
-        {tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-3 pt-3 border-t border-gray-100">
-            {tags.slice(0, 4).map((tag) => (
-              <span
-                key={tag}
-                className={cn(
-                  "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium",
-                  isPartner ? "bg-blue-50 text-[#2A5FA5]" : "bg-emerald-50 text-[#0F6E56]"
-                )}
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
