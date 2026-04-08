@@ -42,13 +42,6 @@ export function Footer() {
               The platform for European software migration. Discover, switch, and grow — privately.
             </p>
 
-            {/* Built in EU badge */}
-            <div className="mt-6 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-              <span className="inline-flex items-center justify-center rounded-[3px] bg-[#EDF5F0] px-1 py-0.5 text-[9px] font-bold tracking-widest text-[#0F6E56] select-none">
-                EU
-              </span>
-              <span className="text-[12px] font-medium text-white/50">Built and hosted in Europe</span>
-            </div>
           </div>
 
           {/* Product */}
@@ -104,9 +97,6 @@ export function Footer() {
         <div className="flex flex-col items-center justify-between gap-3 border-t border-white/[0.08] py-6 sm:flex-row">
           <p className="text-[13px] text-white/30">
             © {year} Staky. All rights reserved.
-          </p>
-          <p className="text-[13px] text-white/30">
-            Made with care in Europe 🇪🇺
           </p>
         </div>
       </div>

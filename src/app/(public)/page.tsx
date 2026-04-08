@@ -177,32 +177,37 @@ function SwitchCard({ alt }: { alt: PublishedAlternative }) {
   return (
     <Link
       href={`/discover?category=${encodeURIComponent(alt.category)}`}
-      className="group flex min-w-[260px] flex-col rounded-2xl border border-[#DDD9D0] bg-white p-6 transition-all duration-200 hover:-translate-y-1 hover:border-[#C5D9CE] hover:shadow-[0_12px_40px_rgba(27,43,31,0.10)]"
-      style={{ fontFamily: F }}
+      className="group flex min-w-[260px] flex-col rounded-[24px] bg-white p-6 transition-all duration-200"
+      style={{
+        fontFamily: F,
+        border: "1.5px solid rgba(0,0,0,0.04)",
+        boxShadow: "0 1px 2px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04)",
+      }}
     >
-      <span className="mb-6 self-start rounded-full bg-[#EFF0EB] px-3 py-1 text-[11px] font-medium text-[#5C6B5E]">
-        {alt.category}
-      </span>
-
-      <div className="flex flex-col items-center gap-1.5 text-center">
-        <InlineLogo tool={fromTool} className="h-9 w-9 object-contain" />
-        <p className="text-[15px] font-bold text-[#1B2B1F]">{fromTool.name}</p>
-      </div>
-
-      <div className="my-4 flex justify-center">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#E4F0EA] transition-colors group-hover:bg-[#0F6E56]">
-          <ArrowDown className="h-4 w-4 text-[#0F6E56] transition-colors group-hover:text-white" />
+      <div className="flex flex-1 flex-col justify-between">
+        <div className="flex flex-col items-center gap-1.5 text-center">
+          <InlineLogo tool={fromTool} className="h-10 w-10 object-contain" />
+          <p className="text-[15px] font-bold text-[#1B2B1F]">{fromTool.name}</p>
         </div>
-      </div>
 
-      <div className="flex flex-col items-center gap-1.5 text-center">
-        <InlineLogo tool={toTool} className="h-9 w-9 object-contain" />
-        <div className="flex items-center gap-1.5">
-          <p className="text-[15px] font-bold text-[#0F6E56]">{toTool.name}</p>
-          {toTool.country && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={`https://flagcdn.com/16x12/${toTool.country}.png`} width={14} height={10} alt={toTool.country} className="rounded-[2px] opacity-80" />
-          )}
+        <div className="my-4 flex justify-center">
+          <div
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[#EAF3EE] transition-all duration-200 group-hover:bg-[#0F6E56]"
+            style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.05), 0 4px 10px rgba(15,110,86,0.08)" }}
+          >
+            <ArrowDown className="h-4 w-4 text-[#0F6E56] transition-colors duration-200 group-hover:text-white" />
+          </div>
+        </div>
+
+        <div className="flex flex-col items-center gap-1.5 text-center">
+          <InlineLogo tool={toTool} className="h-10 w-10 object-contain" />
+          <div className="flex items-center gap-1.5">
+            <p className="text-[15px] font-bold text-[#0F6E56]">{toTool.name}</p>
+            {toTool.country && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={`https://flagcdn.com/16x12/${toTool.country}.png`} width={14} height={10} alt={toTool.country} className="rounded-[2px] opacity-80" />
+            )}
+          </div>
         </div>
       </div>
 
@@ -480,7 +485,6 @@ function FinalCTA() {
               Get started free
             </Link>
           </div>
-          <p className="mt-4 text-[13px] text-white/40">Free forever · No credit card needed</p>
         </FadeIn>
       </div>
     </section>
