@@ -6,11 +6,12 @@ import {
   Search, ArrowRight, Star, Globe, Check, Plus,
   Layers, Users,
 } from "lucide-react";
-import { CATEGORIES, POPULAR_SWITCHES, TOOLS } from "@/data/mock-data";
-import type { Switch } from "@/data/mock-data";
+import type { getPublishedAlternatives } from "@/actions/tools";
 import { ToolIcon } from "@/components/shared/tool-icon";
 import { addStackItem } from "@/actions/stack";
 import { cn } from "@/lib/utils";
+
+type DbAlternative = Awaited<ReturnType<typeof getPublishedAlternatives>>[number];
 
 // ─── Category filter ──────────────────────────────────────────────────────────
 
@@ -46,18 +47,14 @@ function CategoryFilter({
 
 // ─── Alternative card ─────────────────────────────────────────────────────────
 
-function AlternativeCard({ sw }: { sw: Switch }) {
-  const fromTool = TOOLS[sw.from];
-  const toTool   = TOOLS[sw.to];
+function AlternativeCard({ alt }: { alt: DbAlternative }) {
   const [added, setAdded] = useState(false);
   const [isPending, startTransition] = useTransition();
-
-  if (!fromTool || !toTool) return null;
 
   function handleAdd() {
     startTransition(async () => {
       try {
-        await addStackItem(fromTool.name, sw.category);
+        await addStackItem(alt.fromTool.name, alt.category);
         setAdded(true);
       } catch {
         // silently fail — user may not be authed, redirect handled server-side
@@ -71,11 +68,11 @@ function AlternativeCard({ sw }: { sw: Switch }) {
       {/* Top: category + rating */}
       <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
         <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-          {sw.category}
+          {alt.category}
         </span>
         <div className="flex items-center gap-1">
           <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-          <span className="text-xs font-semibold text-gray-700">{sw.rating.toFixed(1)}</span>
+          <span className="text-xs font-semibold text-gray-700">{alt.rating.toFixed(1)}</span>
         </div>
       </div>
 
@@ -84,8 +81,8 @@ function AlternativeCard({ sw }: { sw: Switch }) {
         {/* Tool switch visual */}
         <div className="mb-4 flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
           <div className="flex flex-1 flex-col items-center gap-1.5 text-center">
-            <ToolIcon slug={sw.from} size="lg" />
-            <span className="text-[10px] text-gray-500 leading-tight">{fromTool.name}</span>
+            <ToolIcon toolData={alt.fromTool} size="lg" />
+            <span className="text-[10px] text-gray-500 leading-tight">{alt.fromTool.name}</span>
           </div>
           <div className="flex flex-col items-center gap-1 shrink-0">
             <span className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-white shadow-sm">
@@ -94,27 +91,31 @@ function AlternativeCard({ sw }: { sw: Switch }) {
             <span className="text-[9px] font-semibold uppercase tracking-widest text-gray-300">Switch</span>
           </div>
           <div className="flex flex-1 flex-col items-center gap-1.5 text-center">
-            <ToolIcon slug={sw.to} size="lg" />
-            <span className="text-[10px] font-semibold text-[#0F6E56] leading-tight">{toTool.name}</span>
+            <ToolIcon toolData={alt.toTool} size="lg" />
+            <span className="text-[10px] font-semibold text-[#0F6E56] leading-tight">{alt.toTool.name}</span>
           </div>
         </div>
 
         {/* Description */}
-        <p className="mb-4 flex-1 text-xs leading-relaxed text-gray-600">{sw.description}</p>
+        <p className="mb-4 flex-1 text-xs leading-relaxed text-gray-600">{alt.description ?? ""}</p>
 
         {/* Meta row */}
         <div className="mb-4 flex items-center gap-3 text-[10px] text-gray-400">
-          <span className="flex items-center gap-1">
-            <Globe className="h-3 w-3" />
-            {sw.euCountry}
-          </span>
-          <span className="h-1 w-1 rounded-full bg-gray-200" />
-          <span className="rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-[10px] font-medium text-green-700">
-            {sw.license}
-          </span>
+          {alt.toTool.country && (
+            <span className="flex items-center gap-1">
+              <Globe className="h-3 w-3" />
+              {alt.toTool.country.toUpperCase()}
+            </span>
+          )}
+          {alt.toTool.country && alt.license && <span className="h-1 w-1 rounded-full bg-gray-200" />}
+          {alt.license && (
+            <span className="rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-[10px] font-medium text-green-700">
+              {alt.license}
+            </span>
+          )}
           <span className="ml-auto flex items-center gap-1">
             <Users className="h-3 w-3" />
-            {sw.switcherCount.toLocaleString()}
+            {alt.switcherCount.toLocaleString()}
           </span>
         </div>
 
@@ -147,9 +148,11 @@ function AlternativeCard({ sw }: { sw: Switch }) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export function AppDiscoverClient({
+  alternatives,
   initialCategory,
   initialQuery,
 }: {
+  alternatives: DbAlternative[];
   initialCategory: string;
   initialQuery: string;
 }) {
@@ -158,21 +161,26 @@ export function AppDiscoverClient({
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
 
+  const categories = useMemo(() => {
+    const cats = Array.from(new Set(alternatives.map((a) => a.category))).sort();
+    return ["All", ...cats];
+  }, [alternatives]);
+
   const [activeCategory, setActiveCategory] = useState(initialCategory);
   const [query, setQuery] = useState(initialQuery);
   const deferredQuery = useDeferredValue(query);
   const normalizedQuery = deferredQuery.trim().toLowerCase();
 
   const filtered = useMemo(() => {
-    return POPULAR_SWITCHES.filter((sw) => {
-      const matchesCategory = activeCategory === "All" || sw.category === activeCategory;
+    return alternatives.filter((alt) => {
+      const matchesCategory = activeCategory === "All" || alt.category === activeCategory;
       const text = [
-        TOOLS[sw.from]?.name, TOOLS[sw.to]?.name,
-        sw.category, sw.description, sw.euCountry, sw.license,
+        alt.fromTool.name, alt.toTool.name,
+        alt.category, alt.description, alt.toTool.country, alt.license,
       ].filter(Boolean).join(" ").toLowerCase();
       return matchesCategory && (!normalizedQuery || text.includes(normalizedQuery));
     });
-  }, [activeCategory, normalizedQuery]);
+  }, [alternatives, activeCategory, normalizedQuery]);
 
   function handleCategoryChange(cat: string) {
     setActiveCategory(cat);
@@ -205,7 +213,7 @@ export function AppDiscoverClient({
           <p className="text-[#0F6E56] text-xs font-semibold uppercase tracking-widest mb-1">Discover</p>
           <h1 className="text-2xl font-black text-gray-900">EU Alternatives</h1>
           <p className="text-gray-500 text-sm mt-1">
-            {POPULAR_SWITCHES.length} alternatives across {CATEGORIES.length - 1} categories — add any to your stack.
+            {alternatives.length} alternatives across {categories.length - 1} categories — add any to your stack.
           </p>
         </div>
       </div>
@@ -223,7 +231,7 @@ export function AppDiscoverClient({
           />
         </div>
         <CategoryFilter
-          categories={CATEGORIES}
+          categories={categories}
           active={activeCategory}
           onChange={handleCategoryChange}
         />
@@ -237,8 +245,8 @@ export function AppDiscoverClient({
             {activeCategory !== "All" && ` in ${activeCategory}`}
           </p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((sw) => (
-              <AlternativeCard key={sw.id} sw={sw} />
+            {filtered.map((alt) => (
+              <AlternativeCard key={alt.id} alt={alt} />
             ))}
           </div>
         </>

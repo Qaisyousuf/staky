@@ -80,6 +80,14 @@ export async function getAppFeedPosts({
   const authorIds = Array.from(new Set(rawPosts.map((p) => p.authorId)));
   const activeMode = session.user.activeMode ?? "user";
 
+  // Fetch DB tool records for fromTool/toTool (stored as slugs) to get logo data
+  const toolSlugs = Array.from(new Set(rawPosts.flatMap((p) => [p.fromTool, p.toTool])));
+  const dbTools = await prisma.softwareTool.findMany({
+    where: { slug: { in: toolSlugs } },
+    select: { slug: true, name: true, logoUrl: true, color: true, abbr: true, country: true },
+  });
+  const toolBySlug = new Map(dbTools.map((t) => [t.slug, t]));
+
   const [likes, saves, recs, follows, connections] = await Promise.all([
     prisma.like.findMany({ where: { userId, postId: { in: postIds }, senderMode: activeMode }, select: { postId: true } }),
     prisma.savedPost.findMany({ where: { userId, postId: { in: postIds }, senderMode: activeMode }, select: { postId: true } }),
@@ -95,6 +103,8 @@ export async function getAppFeedPosts({
     id: p.id,
     fromTool: p.fromTool,
     toTool: p.toTool,
+    fromToolData: toolBySlug.get(p.fromTool) ?? null,
+    toToolData: toolBySlug.get(p.toTool) ?? null,
     story: p.story,
     tags: p.tags,
     imageUrls: p.imageUrls,

@@ -61,12 +61,15 @@ export function ToolIcon({ slug, toolData, size = "md", className, plain = false
   if (toolData) {
     const { name, logoUrl, color, abbr } = toolData;
 
-    if (logoUrl) {
+    // Prefer DB logoUrl, then local SVG by slug (covers slugs not in DB)
+    const effectiveLogo = logoUrl || (slug ? TOOL_LOGOS[slug] : null);
+
+    if (effectiveLogo) {
       if (plain) {
         return (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={logoUrl}
+            src={effectiveLogo}
             alt={`${name} logo`}
             width={config.image}
             height={config.image}
@@ -85,7 +88,7 @@ export function ToolIcon({ slug, toolData, size = "md", className, plain = false
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={logoUrl}
+            src={effectiveLogo}
             alt={`${name} logo`}
             width={config.image}
             height={config.image}
@@ -175,14 +178,20 @@ export function ToolName({ slug }: { slug: string }) {
 export function SwitchBadge({
   from,
   to,
+  fromData,
+  toData,
   size = "md",
 }: {
-  from: string;
-  to: string;
+  /** Legacy slug-based lookup */
+  from?: string;
+  to?: string;
+  /** DB tool objects (takes priority over slug) */
+  fromData?: DbTool;
+  toData?: DbTool;
   size?: "sm" | "md";
 }) {
-  const fromTool = TOOLS[from];
-  const toTool = TOOLS[to];
+  const fromTool = fromData ?? (from ? TOOLS[from] : undefined);
+  const toTool   = toData   ?? (to   ? TOOLS[to]   : undefined);
   if (!fromTool || !toTool) return null;
 
   const iconSize = size === "sm" ? "sm" : "md";
@@ -190,14 +199,14 @@ export function SwitchBadge({
 
   return (
     <div className="flex items-center gap-2.5">
-      <ToolIcon slug={from} size={iconSize} />
+      <ToolIcon toolData={fromData} slug={fromData ? undefined : from} size={iconSize} />
       <div className={cn("flex flex-col leading-tight", textSize)}>
         <span className="font-medium text-gray-700">{fromTool.name}</span>
       </div>
       <svg className="h-4 w-4 shrink-0 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
       </svg>
-      <ToolIcon slug={to} size={iconSize} />
+      <ToolIcon toolData={toData} slug={toData ? undefined : to} size={iconSize} />
       <div className={cn("flex flex-col leading-tight", textSize)}>
         <span className="font-medium text-gray-700">{toTool.name}</span>
       </div>

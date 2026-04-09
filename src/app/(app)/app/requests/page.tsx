@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { ArrowRight, BriefcaseBusiness, ChevronRight, Inbox } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { TOOLS } from "@/data/mock-data";
 import { ToolIcon } from "@/components/shared/tool-icon";
 import {
   getRequestStatusMeta,
@@ -28,6 +27,19 @@ export default async function RequestsPage() {
     },
     orderBy: { createdAt: "desc" },
   });
+
+  const slugs = [...new Set(requests.flatMap((r) => {
+    const sw = (r.switches as { fromTool: string; toTool: string }[] | null) ?? [];
+    const p = sw[0] ?? { fromTool: r.fromTool, toTool: r.toTool };
+    return [p.fromTool, p.toTool];
+  }))];
+  const dbTools = slugs.length > 0
+    ? await prisma.softwareTool.findMany({
+        where: { slug: { in: slugs } },
+        select: { slug: true, name: true, logoUrl: true, color: true, abbr: true },
+      })
+    : [];
+  const toolBySlug = new Map(dbTools.map((t) => [t.slug, t]));
 
   const pendingCount  = requests.filter((r) => r.status === "PENDING").length;
   const activeCount   = requests.filter((r) => ["MATCHED", "PROPOSAL_SENT", "ACCEPTED", "IN_PROGRESS"].includes(r.status)).length;
@@ -72,8 +84,8 @@ export default async function RequestsPage() {
             const primary = switches[0] ?? { fromTool: request.fromTool, toTool: request.toTool };
             const extraSwitches = switches.length > 1 ? switches.length - 1 : 0;
 
-            const fromName = TOOLS[primary.fromTool]?.name ?? primary.fromTool;
-            const toName   = TOOLS[primary.toTool]?.name   ?? primary.toTool;
+            const fromName = toolBySlug.get(primary.fromTool)?.name ?? primary.fromTool;
+            const toName   = toolBySlug.get(primary.toTool)?.name   ?? primary.toTool;
 
             const tasks    = (request.phases as MigrationTask[] | null) ?? [];
             const done     = tasks.filter((t) => t.status === "done").length;
@@ -92,9 +104,9 @@ export default async function RequestsPage() {
               >
                 {/* Tool icons */}
                 <div className="flex shrink-0 items-center gap-1.5">
-                  <ToolIcon slug={primary.fromTool} size="sm" />
+                  <ToolIcon toolData={toolBySlug.get(primary.fromTool)} size="sm" />
                   <ArrowRight className="h-3 w-3 text-gray-300" />
-                  <ToolIcon slug={primary.toTool} size="sm" />
+                  <ToolIcon toolData={toolBySlug.get(primary.toTool)} size="sm" />
                 </div>
 
                 {/* Switch label + extras */}

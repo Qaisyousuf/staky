@@ -13,7 +13,6 @@ import {
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
-import { TOOLS } from "@/data/mock-data";
 import { ToolIcon } from "@/components/shared/tool-icon";
 
 export const metadata = { title: "My Posts — Staky" };
@@ -72,6 +71,15 @@ export default async function MyPostsPage() {
       },
     },
   });
+
+  const slugs = [...new Set(posts.flatMap((p) => [p.fromTool, p.toTool]))];
+  const dbTools = slugs.length > 0
+    ? await prisma.softwareTool.findMany({
+        where: { slug: { in: slugs } },
+        select: { slug: true, name: true, logoUrl: true, color: true, abbr: true },
+      })
+    : [];
+  const toolBySlug = new Map(dbTools.map((t) => [t.slug, t]));
 
   if (posts.length === 0) {
     return (
@@ -156,8 +164,6 @@ export default async function MyPostsPage() {
       {/* Post list */}
       <div className="space-y-3">
         {posts.map((post) => {
-          const from = TOOLS[post.fromTool];
-          const to = TOOLS[post.toTool];
           const engagement =
             post._count.likes +
             post._count.comments +
@@ -169,11 +175,11 @@ export default async function MyPostsPage() {
               {/* Switch + date */}
               <div className="flex items-center justify-between gap-3 mb-3">
                 <div className="flex items-center gap-2 min-w-0">
-                  <ToolIcon slug={post.fromTool} size="sm" />
+                  <ToolIcon toolData={toolBySlug.get(post.fromTool)} size="sm" />
                   <ArrowRight className="h-3.5 w-3.5 text-gray-300 shrink-0" />
-                  <ToolIcon slug={post.toTool} size="sm" />
+                  <ToolIcon toolData={toolBySlug.get(post.toTool)} size="sm" />
                   <span className="text-sm font-medium text-gray-700 truncate ml-1">
-                    {from?.name ?? post.fromTool} → {to?.name ?? post.toTool}
+                    {toolBySlug.get(post.fromTool)?.name ?? post.fromTool} → {toolBySlug.get(post.toTool)?.name ?? post.toTool}
                   </span>
                 </div>
                 <span className="text-[11px] text-gray-400 shrink-0">{timeAgo(post.createdAt)}</span>

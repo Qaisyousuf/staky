@@ -15,8 +15,7 @@ import {
   Link2,
   Trash2,
 } from "lucide-react";
-import { TOOLS } from "@/data/mock-data";
-import { ToolIcon } from "@/components/shared/tool-icon";
+import { ToolIcon, type DbTool } from "@/components/shared/tool-icon";
 import {
   ACCEPTED_POST_IMAGE_TYPES,
   MAX_POST_HASHTAGS,
@@ -26,8 +25,7 @@ import {
   parseHashtags,
 } from "@/lib/post-utils";
 
-const US_TOOLS = Object.values(TOOLS).filter((tool) => tool.origin === "us");
-const EU_TOOLS = Object.values(TOOLS).filter((tool) => tool.origin === "eu");
+type ComposerTool = { slug: string; name: string; logoUrl?: string | null; color: string; abbr: string };
 
 type ImageDraft = {
   file: File;
@@ -42,6 +40,8 @@ function PostModal({
   isPartnerMode,
   partnerName,
   partnerLogoUrl,
+  usTools,
+  euTools,
   onClose,
 }: {
   userName: string;
@@ -50,6 +50,8 @@ function PostModal({
   isPartnerMode?: boolean;
   partnerName?: string | null;
   partnerLogoUrl?: string | null;
+  usTools: ComposerTool[];
+  euTools: ComposerTool[];
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -253,7 +255,7 @@ function PostModal({
                     className="w-full appearance-none rounded-xl border border-gray-200 bg-white py-2.5 pl-3 pr-8 text-sm text-gray-700 transition-colors focus:border-[#0F6E56] focus:outline-none"
                   >
                     <option value="">Select tool…</option>
-                    {US_TOOLS.map((tool) => (
+                    {usTools.map((tool) => (
                       <option key={tool.slug} value={tool.slug}>
                         {tool.name}
                       </option>
@@ -266,9 +268,9 @@ function PostModal({
               <div className="shrink-0 pt-5">
                 {fromTool && toTool ? (
                   <div className="flex items-center gap-1.5">
-                    <ToolIcon slug={fromTool} size="sm" />
+                    <ToolIcon toolData={usTools.find((t) => t.slug === fromTool) as DbTool | undefined} slug={fromTool} size="sm" />
                     <ArrowRight className="h-3.5 w-3.5 text-gray-400" />
-                    <ToolIcon slug={toTool} size="sm" />
+                    <ToolIcon toolData={euTools.find((t) => t.slug === toTool) as DbTool | undefined} slug={toTool} size="sm" />
                   </div>
                 ) : (
                   <ArrowRight className="h-4 w-4 text-gray-300" />
@@ -286,7 +288,7 @@ function PostModal({
                     className="w-full appearance-none rounded-xl border border-gray-200 bg-white py-2.5 pl-3 pr-8 text-sm text-gray-700 transition-colors focus:border-[#0F6E56] focus:outline-none"
                   >
                     <option value="">Select EU tool…</option>
-                    {EU_TOOLS.map((tool) => (
+                    {euTools.map((tool) => (
                       <option key={tool.slug} value={tool.slug}>
                         {tool.name}
                       </option>
@@ -477,6 +479,8 @@ export function FeedComposer({
   isPartnerMode,
   partnerName,
   partnerLogoUrl,
+  usTools = [],
+  euTools = [],
 }: {
   userName: string;
   userInitials: string;
@@ -484,6 +488,8 @@ export function FeedComposer({
   isPartnerMode?: boolean;
   partnerName?: string | null;
   partnerLogoUrl?: string | null;
+  usTools?: ComposerTool[];
+  euTools?: ComposerTool[];
 }) {
   const [open, setOpen] = useState(false);
 
@@ -491,7 +497,10 @@ export function FeedComposer({
 
   return (
     <>
-      <div className="mb-4 rounded-xl border border-gray-200 bg-white p-4">
+      <div
+        className="mb-4 rounded-[24px] bg-white p-4"
+        style={{ border: "1.5px solid rgba(0,0,0,0.04)", boxShadow: "0 1px 2px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04)" }}
+      >
         <div className="mb-3 flex items-center gap-3">
           {isPartnerMode ? (
             partnerLogoUrl ? (
@@ -512,29 +521,29 @@ export function FeedComposer({
           )}
           <button
             onClick={() => setOpen(true)}
-            className="flex-1 rounded-full border border-gray-300 px-4 py-2.5 text-left text-sm text-gray-400 transition-colors hover:border-gray-400 hover:bg-gray-50"
+            className="flex-1 rounded-full border border-[#e1dbcf] bg-[#fbfaf6] px-4 py-3 text-left text-sm text-[#8a9288] transition-colors hover:border-[#d5cebe] hover:bg-white"
           >
             {isPartnerMode ? `Post as ${partnerName ?? "your company"}…` : "Share your EU migration story…"}
           </button>
         </div>
-        <div className="flex items-center gap-1 border-t border-gray-100 pt-3">
+        <div className="flex items-center gap-1 border-t border-[#eee7db] pt-3">
           <button
             onClick={() => setOpen(true)}
-            className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+            className="flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-[#667065] transition-colors hover:bg-[#fbfaf6] hover:text-[#1B2B1F]"
           >
             <ImageIcon className="h-4 w-4 text-blue-400" />
             Photo
           </button>
           <button
             onClick={() => setOpen(true)}
-            className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+            className="flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-[#667065] transition-colors hover:bg-[#fbfaf6] hover:text-[#1B2B1F]"
           >
             <FileText className="h-4 w-4 text-orange-400" />
             Story
           </button>
           <button
             onClick={() => setOpen(true)}
-            className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+            className="flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-[#667065] transition-colors hover:bg-[#fbfaf6] hover:text-[#1B2B1F]"
           >
             <Globe className="h-4 w-4 text-green-500" />
             EU Tool
@@ -550,6 +559,8 @@ export function FeedComposer({
           isPartnerMode={isPartnerMode}
           partnerName={partnerName}
           partnerLogoUrl={partnerLogoUrl}
+          usTools={usTools}
+          euTools={euTools}
           onClose={() => setOpen(false)}
         />
       )}
@@ -559,36 +570,39 @@ export function FeedComposer({
 
 export function FeedComposerGuest() {
   return (
-    <div className="mb-4 rounded-xl border border-gray-200 bg-white p-4">
+    <div
+      className="mb-4 rounded-[24px] bg-white p-4"
+      style={{ border: "1.5px solid rgba(0,0,0,0.04)", boxShadow: "0 1px 2px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04)" }}
+    >
       <div className="mb-3 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-gray-100 shrink-0">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#e1dbcf] bg-[#fbfaf6] shrink-0">
           <Users className="h-5 w-5 text-gray-400" />
         </div>
         <Link
           href="/signup"
-          className="flex-1 rounded-full border border-gray-300 px-4 py-2.5 text-sm text-gray-400 transition-colors hover:border-gray-400 hover:bg-gray-50"
+          className="flex-1 rounded-full border border-[#e1dbcf] bg-[#fbfaf6] px-4 py-3 text-sm text-[#8a9288] transition-colors hover:border-[#d5cebe] hover:bg-white"
         >
           Share your EU migration story…
         </Link>
       </div>
-      <div className="flex items-center gap-1 border-t border-gray-100 pt-3">
+      <div className="flex items-center gap-1 border-t border-[#eee7db] pt-3">
         <Link
           href="/signup"
-          className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+          className="flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-[#667065] transition-colors hover:bg-[#fbfaf6] hover:text-[#1B2B1F]"
         >
           <ImageIcon className="h-4 w-4 text-blue-400" />
           Photo
         </Link>
         <Link
           href="/signup"
-          className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+          className="flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-[#667065] transition-colors hover:bg-[#fbfaf6] hover:text-[#1B2B1F]"
         >
           <FileText className="h-4 w-4 text-orange-400" />
           Story
         </Link>
         <Link
           href="/signup"
-          className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+          className="flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-[#667065] transition-colors hover:bg-[#fbfaf6] hover:text-[#1B2B1F]"
         >
           <Globe className="h-4 w-4 text-green-500" />
           EU Tool

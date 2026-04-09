@@ -19,8 +19,7 @@ import { FeedComposer } from "@/components/shared/feed-composer";
 import { FeedScrollHandler } from "@/components/shared/feed-scroll-handler";
 import { getAppFeedPosts, checkNewPosts } from "@/actions/feed";
 import type { AppFeedFilter } from "@/actions/feed";
-import { POPULAR_SWITCHES, TOOLS } from "@/data/mock-data";
-import { ToolIcon } from "@/components/shared/tool-icon";
+import { ToolIcon, type DbTool } from "@/components/shared/tool-icon";
 import { toggleFollow } from "@/actions/social";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -57,7 +56,10 @@ interface FeedClientProps {
   targetPostId?: string;
   targetCommentId?: string;
   suggestedUsers: SuggestedUser[];
-  stackSlugs: string[];
+  stackTools: DbTool[];
+  trendingAlts: { id: string; category: string; switcherCount: number; fromTool: DbTool; toTool: DbTool }[];
+  composerUsTools: { slug: string; name: string; logoUrl?: string | null; color: string; abbr: string }[];
+  composerEuTools: { slug: string; name: string; logoUrl?: string | null; color: string; abbr: string }[];
 }
 
 // ─── Filter tabs ──────────────────────────────────────────────────────────────
@@ -71,7 +73,10 @@ const FILTERS: { value: AppFeedFilter; label: string }[] = [
 
 function FilterTabs({ active }: { active: AppFeedFilter }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 flex overflow-hidden mb-3">
+    <div
+      className="mb-3 flex overflow-hidden rounded-[20px] bg-white"
+      style={{ border: "1.5px solid rgba(0,0,0,0.04)", boxShadow: "0 1px 2px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04)" }}
+    >
       {FILTERS.map((f) => (
         <Link
           key={f.value}
@@ -80,7 +85,7 @@ function FilterTabs({ active }: { active: AppFeedFilter }) {
             "flex-1 py-2.5 text-xs font-semibold text-center transition-colors",
             active === f.value
               ? "bg-[#0F6E56] text-white"
-              : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+              : "text-[#667065] hover:bg-[#fbfaf6] hover:text-[#1B2B1F]"
           )}
         >
           {f.label}
@@ -129,13 +134,16 @@ function SuggestedFollowButton({ userId }: { userId: string }) {
 
 // ─── Right sidebar ─────────────────────────────────────────────────────────────
 
-function RightSidebar({ suggested, stackSlugs }: { suggested: SuggestedUser[]; stackSlugs: string[] }) {
+function RightSidebar({ suggested, stackTools, trendingAlts }: { suggested: SuggestedUser[]; stackTools: DbTool[]; trendingAlts: { id: string; category: string; switcherCount: number; fromTool: DbTool; toTool: DbTool }[] }) {
   return (
     <aside className="space-y-3">
       {/* Grow your network */}
       {suggested.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200">
-          <div className="px-4 py-3 border-b border-gray-100">
+        <div
+          className="rounded-[22px] bg-white"
+          style={{ border: "1.5px solid rgba(0,0,0,0.04)", boxShadow: "0 1px 2px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04)" }}
+        >
+          <div className="border-b border-[#eee7db] px-4 py-3">
             <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wide">
               People to follow
             </h3>
@@ -187,20 +195,26 @@ function RightSidebar({ suggested, stackSlugs }: { suggested: SuggestedUser[]; s
       )}
 
       {/* Your stack */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
+      <div
+        className="rounded-[22px] bg-white p-4"
+        style={{ border: "1.5px solid rgba(0,0,0,0.04)", boxShadow: "0 1px 2px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04)" }}
+      >
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-xs font-semibold text-gray-900">Your stack</h3>
-          <Link href="/app/my-stack" className="text-xs font-medium text-[#0F6E56] hover:underline">
+          <Link
+            href="/app/my-stack"
+            className="inline-flex items-center rounded-full border border-[#e3ddd0] bg-[#fbfaf6] px-2.5 py-1 text-[11px] font-semibold text-[#0F6E56] transition-colors hover:border-[#d6cfbf] hover:bg-white"
+          >
             Manage
           </Link>
         </div>
-        {stackSlugs.length > 0 ? (
+        {stackTools.length > 0 ? (
           <div className="flex flex-wrap gap-2">
-            {stackSlugs.slice(0, 8).map((slug) => (
-              <div key={slug} className="flex flex-col items-center gap-1">
-                <ToolIcon slug={slug} size="md" />
+            {stackTools.slice(0, 8).map((tool) => (
+              <div key={tool.name} className="flex flex-col items-center gap-1">
+                <ToolIcon toolData={tool} size="md" />
                 <span className="text-[9px] text-gray-400 max-w-[40px] text-center truncate">
-                  {TOOLS[slug]?.name}
+                  {tool.name}
                 </span>
               </div>
             ))}
@@ -220,31 +234,27 @@ function RightSidebar({ suggested, stackSlugs }: { suggested: SuggestedUser[]; s
       </div>
 
       {/* Trending switches */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
+      <div
+        className="rounded-[22px] bg-white p-4"
+        style={{ border: "1.5px solid rgba(0,0,0,0.04)", boxShadow: "0 1px 2px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04)" }}
+      >
         <h3 className="text-xs font-semibold text-gray-900 mb-0.5">Trending this week</h3>
         <p className="text-[10px] text-gray-400 mb-3">Most-switched tools in Europe</p>
-        <div className="space-y-0">
-          {POPULAR_SWITCHES.slice(0, 5).map((sw, i) => {
-            const toTool = TOOLS[sw.to];
-            return (
-              <Link
-                key={sw.id}
-                href={`/discover?category=${encodeURIComponent(sw.category)}`}
-                className="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50 -mx-4 px-4 transition-colors"
-              >
-                <span className="text-xs font-bold text-gray-300 w-4 shrink-0">{i + 1}</span>
-                <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                  <ToolIcon slug={sw.from} size="sm" />
-                  <ArrowRight className="h-3 w-3 text-gray-300 shrink-0" />
-                  <ToolIcon slug={sw.to} size="sm" />
-                  <span className="text-xs text-gray-700 truncate ml-1">{toTool?.name}</span>
-                </div>
-                <span className="text-[10px] text-gray-400 shrink-0 font-medium">
-                  {sw.switcherCount.toLocaleString()}
-                </span>
-              </Link>
-            );
-          })}
+        <div className="space-y-2.5">
+          {trendingAlts.map((alt) => (
+            <Link
+              key={alt.id}
+              href={`/discover?category=${encodeURIComponent(alt.category)}`}
+              className="flex items-center gap-3 py-1 transition-colors hover:bg-transparent"
+            >
+              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                <ToolIcon toolData={alt.fromTool} size="sm" />
+                <ArrowRight className="h-3 w-3 text-gray-300 shrink-0" />
+                <ToolIcon toolData={alt.toTool} size="sm" />
+                <span className="text-xs text-gray-700 truncate ml-1">{alt.toTool.name}</span>
+              </div>
+            </Link>
+          ))}
         </div>
         <Link
           href="/discover"
@@ -256,17 +266,27 @@ function RightSidebar({ suggested, stackSlugs }: { suggested: SuggestedUser[]; s
       </div>
 
       {/* Partners CTA */}
-      <div className="rounded-xl border border-blue-100 bg-gradient-to-br from-[#0d2748] to-[#2A5FA5] p-4 text-white">
-        <div className="flex items-center gap-1.5 mb-1.5">
-          <Handshake className="h-4 w-4 text-blue-200" />
-          <h3 className="text-sm font-semibold">Need migration help?</h3>
+      <div
+        className="overflow-hidden rounded-[24px] bg-gradient-to-br from-[#0d2748] to-[#2A5FA5] p-5 text-white"
+        style={{ boxShadow: "0 10px 28px rgba(13,39,72,0.18), inset 0 1px 0 rgba(255,255,255,0.08)" }}
+      >
+        <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-sm">
+          <Handshake className="h-5 w-5 text-blue-100" />
         </div>
-        <p className="text-xs text-blue-200 leading-relaxed mb-3">
+        <div className="mb-1.5">
+          <h3 className="text-[15px] font-semibold tracking-[-0.02em]">Need migration help?</h3>
+        </div>
+        <p className="text-[12px] leading-[1.65] text-blue-100/90 mb-4">
           Connect with certified EU migration partners to guide your team.
         </p>
+        <div className="rounded-[18px] border border-white/10 bg-white/6 p-3 backdrop-blur-[2px]">
+          <p className="text-[11px] text-blue-100/80">
+            Get support from audit to rollout.
+          </p>
+        </div>
         <Link
           href="/partners"
-          className="w-full inline-flex items-center justify-center h-8 bg-white text-[#2A5FA5] text-xs font-semibold rounded-lg hover:bg-blue-50 transition-colors"
+          className="mt-4 inline-flex w-full items-center justify-center rounded-[14px] bg-white px-4 py-2.5 text-xs font-semibold text-[#2A5FA5] transition-colors hover:bg-blue-50"
         >
           Browse partners
         </Link>
@@ -332,7 +352,10 @@ export function FeedClient({
   targetPostId,
   targetCommentId,
   suggestedUsers,
-  stackSlugs,
+  stackTools,
+  trendingAlts,
+  composerUsTools,
+  composerEuTools,
 }: FeedClientProps) {
   const router = useRouter();
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -430,6 +453,8 @@ export function FeedClient({
               isPartnerMode={isPartnerMode}
               partnerName={partnerName}
               partnerLogoUrl={partnerLogoUrl}
+              usTools={composerUsTools}
+              euTools={composerEuTools}
             />
 
             {/* Filter tabs */}
@@ -472,7 +497,7 @@ export function FeedClient({
 
           {/* ── Right sidebar ── */}
           <div className="hidden lg:block sticky top-6 self-start">
-            <RightSidebar suggested={suggestedUsers} stackSlugs={stackSlugs} />
+            <RightSidebar suggested={suggestedUsers} stackTools={stackTools} trendingAlts={trendingAlts} />
           </div>
         </div>
       </div>

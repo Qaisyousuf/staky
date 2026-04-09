@@ -1,7 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { TOOLS } from "@/data/mock-data";
 import { getRequestStatusMeta, type MigrationTask, type MigrationProposal } from "@/lib/request-utils";
 import { markInvoiceViewed } from "@/actions/invoice";
 import type { InvoiceLineItem, InvoiceStatusType } from "@/lib/invoice-utils";
@@ -48,8 +47,14 @@ export default async function RequestDetailPage({
     await markInvoiceViewed(invoice.id);
   }
 
-  const fromTool = TOOLS[request.fromTool];
-  const toTool = TOOLS[request.toTool];
+  const toolSlugs = [...new Set([request.fromTool, request.toTool])];
+  const toolRows = await prisma.softwareTool.findMany({
+    where: { slug: { in: toolSlugs } },
+    select: { slug: true, name: true },
+  });
+  const toolBySlug = new Map(toolRows.map((t) => [t.slug, t]));
+  const fromTool = toolBySlug.get(request.fromTool);
+  const toTool = toolBySlug.get(request.toTool);
   const status = getRequestStatusMeta(request.status as Parameters<typeof getRequestStatusMeta>[0]);
   const tasks = (request.phases as MigrationTask[] | null) ?? [];
   const proposal = request.proposal as MigrationProposal | null;

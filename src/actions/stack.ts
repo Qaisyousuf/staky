@@ -30,7 +30,7 @@ export async function addStackItem(toolName: string, category?: string) {
     _max: { order: true },
   });
 
-  await prisma.stackItem.create({
+  const item = await prisma.stackItem.create({
     data: {
       stackId: stack.id,
       toolName,
@@ -41,7 +41,7 @@ export async function addStackItem(toolName: string, category?: string) {
 
   revalidatePath("/app/my-stack");
   revalidatePath("/app/dashboard");
-  return { ok: true };
+  return { ok: true, id: item.id };
 }
 
 export async function removeStackItem(itemId: string) {

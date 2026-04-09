@@ -5,7 +5,6 @@ import { prisma } from "@/lib/prisma";
 import { getAppFeedPosts } from "@/actions/feed";
 import type { AppFeedFilter } from "@/actions/feed";
 import { getSuggestedProfiles } from "@/actions/profile";
-import { TOOLS } from "@/data/mock-data";
 import { FeedClient } from "./feed-client";
 
 export const metadata: Metadata = {
@@ -58,22 +57,39 @@ export default async function AppFeedPage({
   // Timestamp this render — used as key + new-posts poll baseline
   const loadedAt = new Date().toISOString();
 
-  const TOOL_NAME_TO_SLUG = Object.fromEntries(
-    Object.entries(TOOLS).map(([slug, t]) => [t.name.toLowerCase(), slug])
-  );
-
-  const [feedResult, followingRows, stackItems] = await Promise.all([
+  const [feedResult, followingRows, stackItems, trendingAlts, composerTools] = await Promise.all([
     getAppFeedPosts({ filter }),
     prisma.follow.findMany({ where: { followerId: userId }, select: { followingId: true } }),
     prisma.stackItem.findMany({ where: { stack: { userId } }, orderBy: { order: "asc" }, take: 8 }),
+    prisma.softwareAlternative.findMany({
+      where: { published: true },
+      orderBy: { switcherCount: "desc" },
+      take: 5,
+      include: {
+        fromTool: { select: { name: true, logoUrl: true, color: true, abbr: true, country: true } },
+        toTool:   { select: { name: true, logoUrl: true, color: true, abbr: true, country: true } },
+      },
+    }),
+    prisma.softwareTool.findMany({
+      where: { published: true },
+      select: { slug: true, name: true, origin: true, logoUrl: true, color: true, abbr: true },
+      orderBy: { name: "asc" },
+    }),
   ]);
 
   const followingIds = followingRows.map((r) => r.followingId);
   const suggestedUsers = await getSuggestedProfiles([userId, ...followingIds]);
 
-  const stackSlugs = stackItems
-    .map((i) => TOOL_NAME_TO_SLUG[i.toolName.toLowerCase()])
-    .filter((s): s is string => Boolean(s));
+  // Fetch DB tool records for stack items by name
+  const stackToolNames = stackItems.map((i) => i.toolName);
+  const dbStackTools = await prisma.softwareTool.findMany({
+    where: { name: { in: stackToolNames } },
+    select: { name: true, logoUrl: true, color: true, abbr: true, country: true },
+  });
+  const toolByName = new Map(dbStackTools.map((t) => [t.name, t]));
+  const stackTools = stackItems
+    .map((i) => toolByName.get(i.toolName))
+    .filter((t): t is NonNullable<typeof t> => t !== undefined);
 
   return (
     <FeedClient
@@ -98,7 +114,10 @@ export default async function AppFeedPage({
       targetPostId={searchParams.post}
       targetCommentId={searchParams.comment}
       suggestedUsers={suggestedUsers}
-      stackSlugs={stackSlugs}
+      stackTools={stackTools}
+      trendingAlts={trendingAlts}
+      composerUsTools={composerTools.filter((t) => t.origin === "us")}
+      composerEuTools={composerTools.filter((t) => t.origin === "eu")}
     />
   );
 }

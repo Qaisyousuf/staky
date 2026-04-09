@@ -11,8 +11,7 @@ import {
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
-import { TOOLS, POPULAR_SWITCHES } from "@/data/mock-data";
-import { ToolIcon } from "@/components/shared/tool-icon";
+import { ToolIcon, type DbTool } from "@/components/shared/tool-icon";
 import { getSuggestedProfiles } from "@/actions/profile";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -30,10 +29,6 @@ function getInitials(name: string | null | undefined) {
   if (!name) return "?";
   return name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 }
-
-const TOOL_NAME_TO_SLUG = Object.fromEntries(
-  Object.entries(TOOLS).map(([slug, t]) => [t.name.toLowerCase(), slug])
-);
 
 // ─── Metric card ──────────────────────────────────────────────────────────────
 
@@ -92,14 +87,15 @@ function StatusBadge({ status }: { status: string }) {
 
 type DashboardPost = {
   id: string; fromTool: string; toTool: string; story: string; createdAt: Date;
+  fromToolData?: DbTool | null; toToolData?: DbTool | null;
   author: { name: string | null; image: string | null; title: string | null; company: string | null; role: string };
   _count: { likes: number; comments: number };
 };
 
 function PostCard({ post }: { post: DashboardPost }) {
-  const fromTool = TOOLS[post.fromTool];
-  const toTool   = TOOLS[post.toTool];
   const isPartner = post.author.role === "PARTNER";
+  const fromData = post.fromToolData;
+  const toData   = post.toToolData;
 
   return (
     <Link href={`/app/feed?post=${post.id}`}>
@@ -129,12 +125,12 @@ function PostCard({ post }: { post: DashboardPost }) {
           <span className="text-[10px] text-gray-400 shrink-0">{timeAgo(post.createdAt)}</span>
         </div>
 
-        {fromTool && toTool && (
+        {(fromData || toData) && (
           <div className="inline-flex items-center gap-2 mb-3 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5">
-            <ToolIcon slug={post.fromTool} size="sm" />
+            <ToolIcon toolData={fromData ?? undefined} size="sm" />
             <ArrowRight className="h-3 w-3 text-gray-300 shrink-0" />
-            <ToolIcon slug={post.toTool} size="sm" />
-            <span className="text-xs text-gray-600 font-medium">{toTool.name}</span>
+            <ToolIcon toolData={toData ?? undefined} size="sm" />
+            <span className="text-xs text-gray-600 font-medium">{toData?.name}</span>
           </div>
         )}
 
@@ -169,7 +165,7 @@ function SectionHeader({ title, action }: { title: string; action?: { href: stri
 async function UserDashboard({ userId, userName, activeMode }: { userId: string; userName: string | null | undefined; activeMode: string }) {
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-  const [stackCount, followingCount, connectionCount, stackItems, profileViewsCount, recentViewers] =
+  const [stackCount, followingCount, connectionCount, stackItems, profileViewsCount, recentViewers, topAlts] =
     await Promise.all([
       prisma.stackItem.count({ where: { stack: { userId, mode: activeMode } } }),
       prisma.follow.count({ where: { followerId: userId } }),
@@ -183,10 +179,28 @@ async function UserDashboard({ userId, userName, activeMode }: { userId: string;
         take: 10,
         distinct: ["viewerId"],
       }),
+      prisma.softwareAlternative.findMany({
+        where: { published: true },
+        orderBy: { switcherCount: "desc" },
+        take: 4,
+        include: {
+          fromTool: { select: { name: true, logoUrl: true, color: true, abbr: true, country: true } },
+          toTool:   { select: { name: true, logoUrl: true, color: true, abbr: true, country: true } },
+        },
+      }),
     ]);
 
-  const stackSlugs = stackItems.map((i) => TOOL_NAME_TO_SLUG[i.toolName.toLowerCase()]).filter(Boolean);
-  const suggestedUsers = await getSuggestedProfiles([userId]);
+  // Resolve stack tool names → slugs via DB for feed filtering
+  const stackToolNames = stackItems.map((i) => i.toolName);
+  const [dbStackTools, suggestedUsers] = await Promise.all([
+    prisma.softwareTool.findMany({
+      where: { name: { in: stackToolNames } },
+      select: { name: true, slug: true, logoUrl: true, color: true, abbr: true, country: true },
+    }),
+    getSuggestedProfiles([userId]),
+  ]);
+  const toolByName = new Map(dbStackTools.map((t) => [t.name.toLowerCase(), t]));
+  const stackSlugs = dbStackTools.map((t) => t.slug);
 
   const feedPosts = await prisma.alternativePost.findMany({
     where: {
@@ -199,6 +213,14 @@ async function UserDashboard({ userId, userName, activeMode }: { userId: string;
     orderBy: { createdAt: "desc" },
     take: 4,
   });
+
+  // Fetch tool data for feed post slugs
+  const feedSlugs = Array.from(new Set(feedPosts.flatMap((p) => [p.fromTool, p.toTool])));
+  const feedDbTools = await prisma.softwareTool.findMany({
+    where: { slug: { in: feedSlugs } },
+    select: { slug: true, name: true, logoUrl: true, color: true, abbr: true, country: true },
+  });
+  const toolBySlug = new Map(feedDbTools.map((t) => [t.slug, t]));
 
   const firstName = userName?.split(" ")[0] ?? "there";
 
@@ -264,17 +286,17 @@ async function UserDashboard({ userId, userName, activeMode }: { userId: string;
         {/* Feed */}
         <div className="lg:col-span-2 space-y-3">
           <SectionHeader
-            title={stackSlugs.length > 0 ? "From your stack" : "Recent stories"}
+            title={stackItems.length > 0 ? "From your stack" : "Recent stories"}
             action={{ href: "/app/feed", label: "View all" }}
           />
           {feedPosts.length > 0 ? (
-            feedPosts.map((post) => <PostCard key={post.id} post={post as unknown as DashboardPost} />)
+            feedPosts.map((post) => <PostCard key={post.id} post={{ ...post, fromToolData: toolBySlug.get(post.fromTool) ?? null, toToolData: toolBySlug.get(post.toTool) ?? null }} />)
           ) : (
             <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-10 text-center">
               <FileText className="h-8 w-8 text-gray-300 mx-auto mb-3" />
               <p className="text-sm font-semibold text-gray-700">No stories yet</p>
               <p className="text-xs text-gray-400 mt-1 mb-4">
-                {stackSlugs.length > 0 ? "No posts about your stack tools yet." : "Be the first to share your migration story."}
+                {stackItems.length > 0 ? "No posts about your stack tools yet." : "Be the first to share your migration story."}
               </p>
               <Link href="/app/feed" className="inline-flex items-center gap-2 rounded-xl bg-[#0F6E56] hover:bg-[#0d5f4a] text-white text-xs font-semibold px-4 py-2 transition-colors">
                 <PenSquare className="h-3.5 w-3.5" />Write a story
@@ -292,11 +314,11 @@ async function UserDashboard({ userId, userName, activeMode }: { userId: string;
             {stackItems.length > 0 ? (
               <div className="flex flex-wrap gap-3">
                 {stackItems.map((item) => {
-                  const slug = TOOL_NAME_TO_SLUG[item.toolName.toLowerCase()];
-                  return slug ? (
+                  const dbTool = toolByName.get(item.toolName.toLowerCase());
+                  return dbTool ? (
                     <div key={item.id} className="flex flex-col items-center gap-1">
-                      <ToolIcon slug={slug} size="md" />
-                      <span className="text-[9px] text-gray-400 max-w-[40px] text-center truncate">{TOOLS[slug]?.name}</span>
+                      <ToolIcon toolData={dbTool} size="md" />
+                      <span className="text-[9px] text-gray-400 max-w-[40px] text-center truncate">{dbTool.name}</span>
                     </div>
                   ) : (
                     <span key={item.id} className="inline-flex items-center rounded-lg bg-gray-100 px-2.5 py-1.5 text-xs font-medium text-gray-600">
@@ -320,23 +342,20 @@ async function UserDashboard({ userId, userName, activeMode }: { userId: string;
           <div className="bg-white rounded-2xl border border-gray-200 p-4">
             <SectionHeader title="Suggested switches" action={{ href: "/app/discover", label: "See all" }} />
             <div className="space-y-0">
-              {POPULAR_SWITCHES.slice(0, 4).map((sw) => {
-                const toTool = TOOLS[sw.to];
-                return (
-                  <Link key={sw.id} href={`/app/discover?category=${encodeURIComponent(sw.category)}`}
-                    className="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0 -mx-4 px-4 hover:bg-gray-50 transition-colors rounded-lg"
-                  >
-                    <ToolIcon slug={sw.from} size="sm" />
-                    <ArrowRight className="h-3 w-3 text-gray-300 shrink-0" />
-                    <ToolIcon slug={sw.to} size="sm" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-gray-700 truncate">{toTool?.name}</p>
-                      <p className="text-[10px] text-gray-400">{sw.switcherCount.toLocaleString()} switched</p>
-                    </div>
-                    <Zap className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                  </Link>
-                );
-              })}
+              {topAlts.map((alt) => (
+                <Link key={alt.id} href={`/app/discover?category=${encodeURIComponent(alt.category)}`}
+                  className="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0 -mx-4 px-4 hover:bg-gray-50 transition-colors rounded-lg"
+                >
+                  <ToolIcon toolData={alt.fromTool} size="sm" />
+                  <ArrowRight className="h-3 w-3 text-gray-300 shrink-0" />
+                  <ToolIcon toolData={alt.toTool} size="sm" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-gray-700 truncate">{alt.toTool.name}</p>
+                    <p className="text-[10px] text-gray-400">{alt.switcherCount.toLocaleString()} switched</p>
+                  </div>
+                  <Zap className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                </Link>
+              ))}
             </div>
           </div>
 
@@ -431,6 +450,17 @@ async function PartnerDashboard({ userId, userName }: { userId: string; userName
       take: 5,
     }),
   ]);
+
+  // Resolve tool slugs to names for leads + posts
+  const partnerToolSlugs = Array.from(new Set([
+    ...(recentLeads as { fromTool: string; toTool: string }[]).flatMap((l) => [l.fromTool, l.toTool]),
+    ...myPosts.flatMap((p) => [p.fromTool, p.toTool]),
+  ]));
+  const partnerDbTools = await prisma.softwareTool.findMany({
+    where: { slug: { in: partnerToolSlugs } },
+    select: { slug: true, name: true, logoUrl: true, color: true, abbr: true, country: true },
+  });
+  const partnerToolBySlug = new Map(partnerDbTools.map((t) => [t.slug, t]));
 
   const firstName = userName?.split(" ")[0] ?? "Partner";
 
@@ -571,8 +601,8 @@ async function PartnerDashboard({ userId, userName }: { userId: string; userName
             {recentLeads.length > 0 ? (
               <div className="divide-y divide-gray-50">
                 {recentLeads.map((lead) => {
-                  const fromTool = TOOLS[lead.fromTool];
-                  const toTool   = TOOLS[lead.toTool];
+                  const fromName = partnerToolBySlug.get(lead.fromTool)?.name ?? lead.fromTool;
+                  const toName   = partnerToolBySlug.get(lead.toTool)?.name ?? lead.toTool;
                   return (
                     <Link key={lead.id} href={`/app/leads/${lead.id}`}
                       className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 transition-colors"
@@ -588,9 +618,9 @@ async function PartnerDashboard({ userId, userName }: { userId: string; userName
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-gray-900 truncate">{lead.user.name ?? lead.user.email}</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                          {fromTool && <span className="text-[10px] text-gray-400">{fromTool.name}</span>}
+                          <span className="text-[10px] text-gray-400">{fromName}</span>
                           <ArrowRight className="h-2.5 w-2.5 text-gray-300 shrink-0" />
-                          {toTool && <span className="text-[10px] font-semibold text-[#0F6E56]">{toTool.name}</span>}
+                          <span className="text-[10px] font-semibold text-[#0F6E56]">{toName}</span>
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
@@ -621,17 +651,17 @@ async function PartnerDashboard({ userId, userName }: { userId: string; userName
             {myPosts.length > 0 ? (
               <div className="divide-y divide-gray-50">
                 {myPosts.map((post) => {
-                  const fromTool = TOOLS[post.fromTool];
-                  const toTool   = TOOLS[post.toTool];
+                  const fromData = partnerToolBySlug.get(post.fromTool);
+                  const toData   = partnerToolBySlug.get(post.toTool);
                   const total    = post._count.likes + post._count.comments + post._count.recommendations;
                   const max      = Math.max(...myPosts.map((p) => p._count.likes + p._count.comments + p._count.recommendations), 1);
                   return (
                     <div key={post.id} className="px-5 py-4">
                       <div className="flex items-start gap-3 mb-3">
                         <div className="flex items-center gap-1 shrink-0 mt-0.5">
-                          {fromTool && <ToolIcon slug={post.fromTool} size="sm" />}
+                          {fromData && <ToolIcon toolData={fromData} size="sm" />}
                           <ArrowRight className="h-3 w-3 text-gray-300" />
-                          {toTool && <ToolIcon slug={post.toTool} size="sm" />}
+                          {toData && <ToolIcon toolData={toData} size="sm" />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-gray-700 leading-relaxed line-clamp-2">{post.story}</p>

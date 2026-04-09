@@ -13,7 +13,6 @@ import {
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
-import { TOOLS } from "@/data/mock-data";
 import { ToolIcon } from "@/components/shared/tool-icon";
 import { LeadActions } from "./lead-actions";
 import {
@@ -48,9 +47,12 @@ const STATUS_DOT: Record<string, string> = {
 
 // ─── Assigned lead row ─────────────────────────────────────────────────────────
 
+type DbToolData = { slug: string; name: string; logoUrl?: string | null; color: string; abbr: string };
+
 function AssignedLeadRow({
   request,
   isFirst,
+  toolBySlug,
 }: {
   request: {
     id: string;
@@ -64,12 +66,13 @@ function AssignedLeadRow({
     user: { name: string | null; company: string | null; location: string | null };
   };
   isFirst: boolean;
+  toolBySlug: Map<string, DbToolData>;
 }) {
   const status = getRequestStatusMeta(request.status as Parameters<typeof getRequestStatusMeta>[0]);
   const dotColor = STATUS_DOT[request.status] ?? "bg-gray-300";
 
-  const fromName = TOOLS[request.fromTool]?.name ?? request.fromTool;
-  const toName   = TOOLS[request.toTool]?.name   ?? request.toTool;
+  const fromName = toolBySlug.get(request.fromTool)?.name ?? request.fromTool;
+  const toName   = toolBySlug.get(request.toTool)?.name   ?? request.toTool;
 
   const phases = request.phases ?? [];
   const done   = phases.filter((p) => p.done).length;
@@ -90,9 +93,9 @@ function AssignedLeadRow({
 
       {/* Tool icons */}
       <div className="flex shrink-0 items-center gap-1.5">
-        <ToolIcon slug={request.fromTool} size="sm" />
+        <ToolIcon toolData={toolBySlug.get(request.fromTool)} size="sm" />
         <ArrowRight className="h-3 w-3 text-gray-300" />
-        <ToolIcon slug={request.toTool} size="sm" />
+        <ToolIcon toolData={toolBySlug.get(request.toTool)} size="sm" />
       </div>
 
       {/* Switch label */}
@@ -178,6 +181,7 @@ function AssignedLeadRow({
 function OpenRequestRow({
   request,
   isFirst,
+  toolBySlug,
 }: {
   request: {
     id: string;
@@ -189,9 +193,10 @@ function OpenRequestRow({
     user: { name: string | null; company: string | null; location: string | null };
   };
   isFirst: boolean;
+  toolBySlug: Map<string, DbToolData>;
 }) {
-  const fromName = TOOLS[request.fromTool]?.name ?? request.fromTool;
-  const toName   = TOOLS[request.toTool]?.name   ?? request.toTool;
+  const fromName = toolBySlug.get(request.fromTool)?.name ?? request.fromTool;
+  const toName   = toolBySlug.get(request.toTool)?.name   ?? request.toTool;
   const extra    = request.switches.length > 1 ? request.switches.length - 1 : 0;
 
   return (
@@ -201,9 +206,9 @@ function OpenRequestRow({
     )}>
       {/* Tool icons */}
       <div className="flex shrink-0 items-center gap-1.5">
-        <ToolIcon slug={request.fromTool} size="sm" />
+        <ToolIcon toolData={toolBySlug.get(request.fromTool)} size="sm" />
         <ArrowRight className="h-3 w-3 text-gray-300" />
-        <ToolIcon slug={request.toTool} size="sm" />
+        <ToolIcon toolData={toolBySlug.get(request.toTool)} size="sm" />
       </div>
 
       {/* Label + client */}
@@ -275,7 +280,7 @@ export default async function LeadsPage() {
   const partner = await prisma.partner.findUnique({ where: { userId: session.user.id } });
   if (!partner) redirect("/app/dashboard");
 
-  const [assignedRequests, openRequests] = await Promise.all([
+  const [assignedRequests, openRequests, dbTools] = await Promise.all([
     prisma.migrationRequest.findMany({
       where: { partnerId: partner.id },
       orderBy: { updatedAt: "desc" },
@@ -291,7 +296,12 @@ export default async function LeadsPage() {
         user: { select: { id: true, name: true, company: true, email: true, location: true } },
       },
     }),
+    prisma.softwareTool.findMany({
+      where: { published: true },
+      select: { slug: true, name: true, logoUrl: true, color: true, abbr: true },
+    }),
   ]);
+  const toolBySlug = new Map(dbTools.map((t) => [t.slug, t]));
 
   const pendingAssigned = assignedRequests.filter((r) =>
     ["PENDING", "UNDER_REVIEW", "MATCHED", "PROPOSAL_SENT"].includes(r.status)
@@ -382,7 +392,7 @@ export default async function LeadsPage() {
               </p>
               <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
                 {pendingAssigned.map((r, i) => (
-                  <AssignedLeadRow key={r.id} request={toAssigned(r)} isFirst={i === 0} />
+                  <AssignedLeadRow key={r.id} request={toAssigned(r)} isFirst={i === 0} toolBySlug={toolBySlug} />
                 ))}
               </div>
             </div>
@@ -396,7 +406,7 @@ export default async function LeadsPage() {
               </p>
               <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
                 {activeAssigned.map((r, i) => (
-                  <AssignedLeadRow key={r.id} request={toAssigned(r)} isFirst={i === 0} />
+                  <AssignedLeadRow key={r.id} request={toAssigned(r)} isFirst={i === 0} toolBySlug={toolBySlug} />
                 ))}
               </div>
             </div>
@@ -419,7 +429,7 @@ export default async function LeadsPage() {
         ) : (
           <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
             {openRequests.map((r, i) => (
-              <OpenRequestRow key={r.id} request={toOpen(r)} isFirst={i === 0} />
+              <OpenRequestRow key={r.id} request={toOpen(r)} isFirst={i === 0} toolBySlug={toolBySlug} />
             ))}
           </div>
         )}
@@ -434,7 +444,7 @@ export default async function LeadsPage() {
           </p>
           <div className="overflow-hidden rounded-xl border border-gray-200 bg-white opacity-70 shadow-sm">
             {closedAssigned.map((r, i) => (
-              <AssignedLeadRow key={r.id} request={toAssigned(r)} isFirst={i === 0} />
+              <AssignedLeadRow key={r.id} request={toAssigned(r)} isFirst={i === 0} toolBySlug={toolBySlug} />
             ))}
           </div>
         </div>

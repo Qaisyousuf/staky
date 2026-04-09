@@ -16,9 +16,10 @@ import {
   Loader2,
   ExternalLink,
   X,
+  ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SwitchBadge } from "@/components/shared/tool-icon";
+import { ToolIcon, type DbTool } from "@/components/shared/tool-icon";
 import {
   getUrlDomain,
   splitPostContent,
@@ -37,6 +38,8 @@ export interface FeedPostData {
   id: string;
   fromTool: string;
   toTool: string;
+  fromToolData?: DbTool | null;
+  toToolData?: DbTool | null;
   story: string;
   tags: string[];
   imageUrls: string[];
@@ -260,6 +263,36 @@ function CommentItem({
   );
 }
 
+function CommentPreview({ comment }: { comment: SerializedComment }) {
+  const isPartnerComment = comment.senderMode === "partner" && !!comment.author.partner;
+  const commentDisplayName = isPartnerComment
+    ? (comment.author.partner?.companyName ?? comment.author.name)
+    : comment.author.name;
+  const commentDisplayImage = isPartnerComment
+    ? (comment.author.partner?.logoUrl ?? comment.author.image)
+    : comment.author.image;
+
+  return (
+    <div className="flex gap-2.5">
+      <Avatar
+        name={commentDisplayName}
+        image={commentDisplayImage}
+        size={7}
+        rounded={isPartnerComment ? "xl" : "full"}
+      />
+      <div className="min-w-0 flex-1 rounded-[16px] bg-[#fbfaf6] px-3 py-2.5">
+        <div className="flex flex-wrap items-baseline gap-1.5">
+          <span className="text-xs font-semibold text-[#1B2B1F]">{commentDisplayName}</span>
+          <span className="text-[10px] text-[#98a093]">{timeAgo(comment.createdAt)}</span>
+        </div>
+        <p className="mt-0.5 line-clamp-2 text-[13px] leading-[1.55] text-[#5a6459]">
+          {comment.content}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function LinkPreview({
   url,
   title,
@@ -280,21 +313,22 @@ function LinkPreview({
       href={url}
       target="_blank"
       rel="noreferrer"
-      className="block overflow-hidden rounded-lg border border-[#eee] bg-white transition-colors hover:border-gray-300 hover:shadow-sm"
+      className="block overflow-hidden rounded-[20px] border border-[#ece7dc] bg-white transition-all duration-200 hover:border-[#d8d1c3]"
+      style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 6px 18px rgba(0,0,0,0.03)" }}
     >
       {image && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={image} alt="" className="aspect-[1.91/1] max-h-[350px] w-full object-cover" />
       )}
-      <div className="border-t border-[#eee] bg-[#f8fafb] px-3 py-2.5">
+      <div className="border-t border-[#eee7db] bg-[#fbfaf6] px-4 py-3">
         <div className="flex items-start justify-between gap-2.5">
         <div className="min-w-0">
           <p className="text-[11px] uppercase tracking-wide text-gray-400">{displayDomain}</p>
-          <p className="mt-0.5 line-clamp-2 text-[14px] font-semibold leading-snug text-gray-900">
+          <p className="mt-0.5 line-clamp-2 text-[14px] font-semibold leading-snug text-[#1B2B1F]">
             {title || url}
           </p>
           {description && (
-            <p className="mt-0.5 line-clamp-2 text-[12px] leading-5 text-gray-500">{description}</p>
+            <p className="mt-0.5 line-clamp-2 text-[12px] leading-5 text-[#667065]">{description}</p>
           )}
           {!title && (
             <p className="mt-1 truncate text-[11px] text-[#0F6E56]">{url}</p>
@@ -321,10 +355,11 @@ function ImageGallery({
       <button
         type="button"
         onClick={() => onOpen(0)}
-        className="block w-full overflow-hidden rounded-lg border border-[#eee] bg-gray-50"
+        className="block w-full overflow-hidden rounded-[20px] border border-[#ece7dc] bg-[#fbfaf7]"
+        style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 6px 18px rgba(0,0,0,0.03)" }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={imageUrls[0]} alt="" className="max-h-[320px] w-full rounded-lg object-contain" />
+        <img src={imageUrls[0]} alt="" className="max-h-[350px] w-full rounded-[20px] object-contain" />
       </button>
     );
   }
@@ -336,12 +371,61 @@ function ImageGallery({
           key={url}
           type="button"
           onClick={() => onOpen(index)}
-          className="block overflow-hidden rounded-lg border border-[#eee] bg-gray-50"
+          className="block overflow-hidden rounded-[18px] border border-[#ece7dc] bg-[#fbfaf7]"
+          style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 6px 18px rgba(0,0,0,0.03)" }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={url} alt="" className="aspect-[4/3] max-h-[320px] w-full rounded-lg object-cover" />
+          <img src={url} alt="" className="aspect-[4/3] max-h-[350px] w-full rounded-[18px] object-cover" />
         </button>
       ))}
+    </div>
+  );
+}
+
+function SwitchPanel({ post }: { post: FeedPostData }) {
+  return (
+    <div className="flex items-center justify-center gap-3">
+      <div className="flex min-w-0 items-center gap-2">
+        <ToolIcon
+          toolData={post.fromToolData ?? undefined}
+          slug={post.fromToolData ? undefined : post.fromTool}
+          size="md"
+          plain
+          className="h-8 w-8 object-contain"
+        />
+        <p className="truncate text-[14px] font-semibold text-[#1B2B1F]">
+          {post.fromToolData?.name ?? post.fromTool}
+        </p>
+      </div>
+
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#F3F6F2]">
+        <ArrowRight className="h-3.5 w-3.5 text-[#0F6E56]" />
+      </div>
+
+      <div className="flex min-w-0 items-center gap-2">
+        <ToolIcon
+          toolData={post.toToolData ?? undefined}
+          slug={post.toToolData ? undefined : post.toTool}
+          size="md"
+          plain
+          className="h-8 w-8 object-contain"
+        />
+        <div className="flex min-w-0 items-center gap-1.5">
+          <p className="truncate text-[14px] font-semibold text-[#0F6E56]">
+            {post.toToolData?.name ?? post.toTool}
+          </p>
+          {post.toToolData?.country && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`https://flagcdn.com/16x12/${post.toToolData.country}.png`}
+              width={14}
+              height={10}
+              alt={post.toToolData.country}
+              className="rounded-[2px] opacity-80"
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -394,6 +478,13 @@ export function FeedPost({
       .catch(() => setComments([]))
       .finally(() => setLoadingComments(false));
   }, [commentsOpen, comments, post.id]);
+
+  useEffect(() => {
+    if (commentsOpen || comments !== null || post.commentCount === 0) return;
+    getPostComments(post.id)
+      .then((rows) => setComments(rows as unknown as SerializedComment[]))
+      .catch(() => {});
+  }, [commentsOpen, comments, post.commentCount, post.id]);
 
   function handleLike() {
     if (!currentUserId) return;
@@ -495,13 +586,17 @@ export function FeedPost({
       <article
         id={`post-${post.id}`}
         className={cn(
-          "overflow-hidden rounded-xl border border-[#eee] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]",
+          "overflow-hidden rounded-[24px] bg-white",
           isPartner && "border-l-[3px] border-l-[#2A5FA5]"
         )}
+        style={{
+          border: "1.5px solid rgba(0,0,0,0.04)",
+          boxShadow: "0 1px 2px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04)",
+        }}
       >
-        <div className="px-4 py-3">
-          <div className="mb-2 flex items-start justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-2.5">
+        <div className="px-5 py-4">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
               <Avatar
                 name={displayName}
                 image={displayImage}
@@ -510,15 +605,15 @@ export function FeedPost({
               />
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-1.5 leading-tight">
-                  <span className="truncate text-sm font-semibold leading-tight text-gray-900">{displayName}</span>
+                  <span className="truncate text-sm font-semibold leading-tight text-[#1B2B1F]">{displayName}</span>
                   {(post.author.verified || isPartner) && <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-[#2A5FA5]" />}
                 </div>
                 {!isPartner && (post.author.title || post.author.company) && (
-                  <p className="truncate text-xs leading-tight text-gray-400">
+                  <p className="truncate text-xs leading-tight text-[#7d857b]">
                     {[post.author.title, post.author.company].filter(Boolean).join(" · ")}
                   </p>
                 )}
-                <p className="text-[10px] leading-tight text-gray-400">{timeAgo(post.createdAt)}</p>
+                <p className="text-[10px] leading-tight text-[#98a093]">{timeAgo(post.createdAt)}</p>
               </div>
             </div>
 
@@ -530,7 +625,7 @@ export function FeedPost({
                   "shrink-0 flex items-center gap-1 rounded-full border px-3 py-1 text-[12px] font-semibold transition-colors",
                   connected
                     ? "border-[#2A5FA5] bg-blue-50 text-[#2A5FA5]"
-                    : "border-gray-300 text-gray-600 hover:border-[#2A5FA5] hover:text-[#2A5FA5]"
+                    : "border-[#ded8cb] text-[#657064] hover:border-[#2A5FA5] hover:text-[#2A5FA5]"
                 )}
               >
                 {connected ? <UserCheck className="h-3.5 w-3.5" /> : <UserPlus className="h-3.5 w-3.5" />}
@@ -545,7 +640,7 @@ export function FeedPost({
                   "shrink-0 flex items-center gap-1 rounded-full border px-3 py-1 text-[12px] font-semibold transition-colors",
                   following
                     ? "border-[#0F6E56] bg-green-50 text-[#0F6E56]"
-                    : "border-gray-300 text-gray-600 hover:border-[#0F6E56] hover:text-[#0F6E56]"
+                    : "border-[#ded8cb] text-[#657064] hover:border-[#0F6E56] hover:text-[#0F6E56]"
                 )}
               >
                 {following ? <UserCheck className="h-3.5 w-3.5" /> : <UserPlus className="h-3.5 w-3.5" />}
@@ -555,33 +650,20 @@ export function FeedPost({
             {!currentUserId && (
               <a
                 href="/login"
-                className="shrink-0 rounded-full border border-gray-300 px-3 py-1 text-[12px] font-semibold text-gray-600 transition-colors hover:border-[#0F6E56] hover:text-[#0F6E56]"
+                className="shrink-0 rounded-full border border-[#ded8cb] px-3 py-1 text-[12px] font-semibold text-[#657064] transition-colors hover:border-[#0F6E56] hover:text-[#0F6E56]"
               >
                 {isPartner ? "Connect" : "Follow"}
               </a>
             )}
           </div>
 
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#eee] bg-gray-50 px-2.5 py-1">
-            <SwitchBadge from={post.fromTool} to={post.toTool} size="sm" />
+          <div className="mb-4">
+            <SwitchPanel post={post} />
           </div>
 
-          {hashtags.length > 0 && (
-            <div className="mb-2 flex flex-wrap gap-x-2 gap-y-0.5">
-              {hashtags.map((tag) => (
-                <Link
-                  key={tag}
-                  href={`/feed?tag=${encodeURIComponent(tag)}`}
-                  className="text-[12px] font-medium text-[#0F6E56] transition-colors hover:text-[#0d5f4a]"
-                >
-                  #{tag}
-                </Link>
-              ))}
-            </div>
-          )}
 
           {text && (
-            <div className="mb-2 text-[14px] leading-[1.5] text-gray-700 whitespace-pre-line">
+            <div className="mb-2 text-[14px] leading-[1.65] text-[#495346] whitespace-pre-line">
               {displayStory}
               {isLong && !expanded && "…"}
             </div>
@@ -595,14 +677,28 @@ export function FeedPost({
             </button>
           )}
 
+          {hashtags.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {hashtags.map((tag) => (
+                <Link
+                  key={tag}
+                  href={`/feed?tag=${encodeURIComponent(tag)}`}
+                  className="rounded-full border border-[#e4ded2] bg-[#fbfaf6] px-2.5 py-1 text-[11px] font-medium text-[#0F6E56] transition-colors hover:border-[#d7d0c0]"
+                >
+                  #{tag}
+                </Link>
+              ))}
+            </div>
+          )}
+
           {post.imageUrls.length > 0 && (
-            <div className={cn("mt-2", !text && hashtags.length === 0 && "mt-0")}>
+            <div className={cn("mt-3", !text && hashtags.length === 0 && "mt-0")}>
               <ImageGallery imageUrls={post.imageUrls} onOpen={setActiveImageIndex} />
             </div>
           )}
 
           {post.linkUrl && (
-            <div className="mt-2">
+            <div className="mt-3">
               <LinkPreview
                 url={post.linkUrl}
                 title={post.linkTitle}
@@ -615,8 +711,8 @@ export function FeedPost({
         </div>
 
         {(likeCount > 0 || recommendCount > 0 || commentCount > 0) && (
-          <div className="flex items-center justify-between border-t border-[#eee] px-4 py-1.5 text-[11px] text-gray-400">
-            <span>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#eee7db] px-5 py-2 text-[11px] text-[#8b9389]">
+            <span className="min-w-0 break-words">
               {likeCount > 0 && `${likeCount} like${likeCount !== 1 ? "s" : ""}`}
               {likeCount > 0 && recommendCount > 0 && " · "}
               {recommendCount > 0 &&
@@ -625,7 +721,7 @@ export function FeedPost({
             {commentCount > 0 && (
               <button
                 onClick={() => setCommentsOpen((value) => !value)}
-                className="transition-colors hover:text-gray-700"
+                className="shrink-0 transition-colors hover:text-gray-700"
               >
                 {commentCount} comment{commentCount !== 1 ? "s" : ""}
               </button>
@@ -633,60 +729,69 @@ export function FeedPost({
           </div>
         )}
 
-        <div className="flex border-t border-[#eee]">
+        {!commentsOpen && commentCount > 0 && comments && comments.length > 0 && (
+          <button
+            onClick={() => setCommentsOpen(true)}
+            className="block w-full border-t border-[#eee7db] px-5 py-3 text-left transition-colors hover:bg-[#fbfaf6]"
+          >
+            <CommentPreview comment={comments[0]} />
+          </button>
+        )}
+
+        <div className="flex border-t border-[#eee7db] bg-[#fcfbf7]">
           <button
             onClick={handleLike}
             className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 text-[13px] font-medium transition-colors",
+              "flex min-w-0 flex-1 items-center justify-center gap-1 px-2 py-2 text-[12px] font-medium transition-colors sm:gap-1.5 sm:px-3 sm:text-[13px]",
               liked
                 ? "bg-green-50 text-[#0F6E56] hover:bg-green-100"
-                : "text-gray-500 hover:bg-gray-50 hover:text-[#0F6E56]"
+                : "text-[#667065] hover:bg-white hover:text-[#0F6E56]"
             )}
           >
             <ThumbsUp className={cn("h-4 w-4 shrink-0", liked && "fill-[#0F6E56]")} />
-            <span>Like</span>
+            <span className="truncate">Like</span>
           </button>
 
           <button
             onClick={() => setCommentsOpen((value) => !value)}
             className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 text-[13px] font-medium transition-colors",
-              commentsOpen ? "bg-green-50 text-[#0F6E56]" : "text-gray-500 hover:bg-gray-50 hover:text-[#0F6E56]"
+              "flex min-w-0 flex-1 items-center justify-center gap-1 px-2 py-2 text-[12px] font-medium transition-colors sm:gap-1.5 sm:px-3 sm:text-[13px]",
+              commentsOpen ? "bg-green-50 text-[#0F6E56]" : "text-[#667065] hover:bg-white hover:text-[#0F6E56]"
             )}
           >
             <MessageCircle className="h-4 w-4 shrink-0" />
-            <span>Comment</span>
+            <span className="truncate">Comment</span>
           </button>
 
           <button
             onClick={handleSave}
             className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 text-[13px] font-medium transition-colors",
+              "flex min-w-0 flex-1 items-center justify-center gap-1 px-2 py-2 text-[12px] font-medium transition-colors sm:gap-1.5 sm:px-3 sm:text-[13px]",
               saved
                 ? "bg-green-50 text-[#0F6E56] hover:bg-green-100"
-                : "text-gray-500 hover:bg-gray-50 hover:text-[#0F6E56]"
+                : "text-[#667065] hover:bg-white hover:text-[#0F6E56]"
             )}
           >
             <Bookmark className={cn("h-4 w-4 shrink-0", saved && "fill-[#0F6E56]")} />
-            <span>Save</span>
+            <span className="truncate">Save</span>
           </button>
 
           <button
             onClick={handleRecommend}
             className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 text-[13px] font-medium transition-colors",
+              "flex min-w-0 flex-1 items-center justify-center gap-1 px-2 py-2 text-[12px] font-medium transition-colors sm:gap-1.5 sm:px-3 sm:text-[13px]",
               recommended
                 ? "bg-amber-50 text-amber-500 hover:bg-amber-100"
-                : "text-gray-500 hover:bg-gray-50 hover:text-amber-500"
+                : "text-[#667065] hover:bg-white hover:text-amber-500"
             )}
           >
             <Star className={cn("h-4 w-4 shrink-0", recommended && "fill-amber-500")} />
-            <span>Recommend</span>
+            <span className="truncate">Recommend</span>
           </button>
         </div>
 
         {commentsOpen && (
-          <div className="space-y-3 border-t border-[#eee] px-4 pb-4 pt-3">
+          <div className="space-y-3 border-t border-[#eee7db] px-5 pb-5 pt-4">
             {loadingComments && (
               <div className="flex justify-center py-4">
                 <Loader2 className="h-5 w-5 animate-spin text-gray-300" />
