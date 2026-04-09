@@ -32,7 +32,7 @@ export default async function RequestsPage() {
     const sw = (r.switches as { fromTool: string; toTool: string }[] | null) ?? [];
     const p = sw[0] ?? { fromTool: r.fromTool, toTool: r.toTool };
     return [p.fromTool, p.toTool];
-  }))];
+  })));
   const dbTools = slugs.length > 0
     ? await prisma.softwareTool.findMany({
         where: { slug: { in: slugs } },
