@@ -47,7 +47,7 @@ export default async function RequestDetailPage({
     await markInvoiceViewed(invoice.id);
   }
 
-  const toolSlugs = [...new Set([request.fromTool, request.toTool])];
+  const toolSlugs = Array.from(new Set([request.fromTool, request.toTool]));
   const toolRows = await prisma.softwareTool.findMany({
     where: { slug: { in: toolSlugs } },
     select: { slug: true, name: true },

@@ -72,7 +72,7 @@ export default async function MyPostsPage() {
     },
   });
 
-  const slugs = [...new Set(posts.flatMap((p) => [p.fromTool, p.toTool]))];
+  const slugs = Array.from(new Set(posts.flatMap((p) => [p.fromTool, p.toTool])));
   const dbTools = slugs.length > 0
     ? await prisma.softwareTool.findMany({
         where: { slug: { in: slugs } },

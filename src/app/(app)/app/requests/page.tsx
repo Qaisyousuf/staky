@@ -28,7 +28,7 @@ export default async function RequestsPage() {
     orderBy: { createdAt: "desc" },
   });
 
-  const slugs = [...new Set(requests.flatMap((r) => {
+  const slugs = Array.from(new Set(requests.flatMap((r) => {
     const sw = (r.switches as { fromTool: string; toTool: string }[] | null) ?? [];
     const p = sw[0] ?? { fromTool: r.fromTool, toTool: r.toTool };
     return [p.fromTool, p.toTool];
