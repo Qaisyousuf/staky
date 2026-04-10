@@ -4,35 +4,46 @@ import { useRef, useEffect, useState } from "react";
 import type { ComponentType } from "react";
 import { Compass, Layers, Users } from "lucide-react";
 
-/* ─── Font ──────────────────────────────────────────────────────────────────── */
+/* ─── Font & keyframes ──────────────────────────────────────────────────────── */
 
 const F =
   "var(--font-jakarta,'Plus Jakarta Sans'),-apple-system,BlinkMacSystemFont,sans-serif";
-
-/* ─── Keyframes (injected once) ─────────────────────────────────────────────── */
 
 const CSS = `
 @keyframes hiw-fade-up {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-@keyframes hiw-grow-x {
-  from { transform: scaleX(0); }
-  to   { transform: scaleX(1); }
+@keyframes hiw-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
-@keyframes hiw-grow-y-top {
-  from { transform: scaleY(0); transform-origin: top center; }
-  to   { transform: scaleY(1); transform-origin: top center; }
-}
-@keyframes hiw-grow-y-bot {
-  from { transform: scaleY(0); transform-origin: bottom center; }
-  to   { transform: scaleY(1); transform-origin: bottom center; }
+@keyframes hiw-draw {
+  to { stroke-dashoffset: 0; }
 }
 `;
 
+/* ─── Rect type ─────────────────────────────────────────────────────────────── */
+
+interface Rect {
+  x: number; y: number;
+  w: number; h: number;
+  cx: number; cy: number;
+}
+
+function getRect(el: HTMLElement | null, base: HTMLElement | null): Rect | null {
+  if (!el || !base) return null;
+  const e = el.getBoundingClientRect();
+  const b = base.getBoundingClientRect();
+  if (b.width === 0 && b.height === 0) return null;
+  const x = e.left - b.left;
+  const y = e.top - b.top;
+  return { x, y, w: e.width, h: e.height, cx: x + e.width / 2, cy: y + e.height / 2 };
+}
+
 /* ─── IntersectionObserver hook ─────────────────────────────────────────────── */
 
-function useInView(threshold = 0.08) {
+function useInView() {
   const ref = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(false);
   useEffect(() => {
@@ -40,76 +51,64 @@ function useInView(threshold = 0.08) {
     if (!el) return;
     const obs = new IntersectionObserver(
       ([e]) => { if (e.isIntersecting) { setInView(true); obs.disconnect(); } },
-      { threshold }
+      { threshold: 0.08 }
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, [threshold]);
+  }, []);
   return { ref, inView };
 }
 
-/* ─── Animation style helpers ───────────────────────────────────────────────── */
+/* ─── Animation helpers ─────────────────────────────────────────────────────── */
 
-type Sty = React.CSSProperties;
-
-function fadeUp(inView: boolean, delay: number): Sty {
+function fadeUp(inView: boolean, delay: number): React.CSSProperties {
   if (!inView) return { opacity: 0 };
-  return {
-    animationName: "hiw-fade-up",
-    animationDuration: "400ms",
-    animationDelay: `${delay}ms`,
-    animationFillMode: "both",
-    animationTimingFunction: "ease-out",
-  };
+  return { animation: `hiw-fade-up 400ms ease-out ${delay}ms both` };
 }
 
-function growX(inView: boolean, delay: number): Sty {
-  if (!inView) return { transform: "scaleX(0)", transformOrigin: "left center" };
-  return {
-    animationName: "hiw-grow-x",
-    animationDuration: "400ms",
-    animationDelay: `${delay}ms`,
-    animationFillMode: "both",
-    animationTimingFunction: "ease-out",
-    transformOrigin: "left center",
-  };
-}
+/* ─── SVG primitives ────────────────────────────────────────────────────────── */
 
-function growYTop(inView: boolean, delay: number): Sty {
-  if (!inView) return { transform: "scaleY(0)", transformOrigin: "top center" };
-  return {
-    animationName: "hiw-grow-y-top",
-    animationDuration: "280ms",
-    animationDelay: `${delay}ms`,
-    animationFillMode: "both",
-    animationTimingFunction: "ease-out",
-  };
-}
-
-function growYBot(inView: boolean, delay: number): Sty {
-  if (!inView) return { transform: "scaleY(0)", transformOrigin: "bottom center" };
-  return {
-    animationName: "hiw-grow-y-bot",
-    animationDuration: "280ms",
-    animationDelay: `${delay}ms`,
-    animationFillMode: "both",
-    animationTimingFunction: "ease-out",
-  };
-}
-
-/* ─── Atoms ─────────────────────────────────────────────────────────────────── */
-
-/** A small junction dot that marks a real connection endpoint. */
-function Dot() {
+function SvgLine({
+  x1, y1, x2, y2, inView, delay,
+}: {
+  x1: number; y1: number; x2: number; y2: number;
+  inView: boolean; delay: number;
+}) {
+  const len = Math.round(Math.abs(x2 - x1) + Math.abs(y2 - y1));
+  if (len < 2) return null;
   return (
-    <span
-      className="block h-[5px] w-[5px] shrink-0 rounded-full bg-white/[0.18]"
-      aria-hidden
+    <line
+      x1={Math.round(x1)} y1={Math.round(y1)}
+      x2={Math.round(x2)} y2={Math.round(y2)}
+      stroke="rgba(255,255,255,0.18)"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeDasharray={len}
+      style={{
+        strokeDashoffset: len,
+        animation: inView ? `hiw-draw 450ms ease-out ${delay}ms forwards` : "none",
+      }}
     />
   );
 }
 
-/** Pulsing green status indicator, absolute-positioned top-left of parent. */
+function SvgDot({
+  cx, cy, inView, delay,
+}: { cx: number; cy: number; inView: boolean; delay: number }) {
+  return (
+    <circle
+      cx={Math.round(cx)} cy={Math.round(cy)} r="3"
+      fill="rgba(255,255,255,0.25)"
+      style={{
+        opacity: 0,
+        animation: inView ? `hiw-fade 250ms ease-out ${delay}ms both` : "none",
+      }}
+    />
+  );
+}
+
+/* ─── Status dot ────────────────────────────────────────────────────────────── */
+
 function StatusDot() {
   return (
     <span className="absolute left-4 top-4 flex h-2 w-2" aria-hidden>
@@ -119,55 +118,7 @@ function StatusDot() {
   );
 }
 
-/* ─── Connector lines ───────────────────────────────────────────────────────── */
-
-/**
- * Horizontal line between two nodes.
- * Dots at each end mark real junction points.
- * scaleX grows left → right.
- */
-function HLine({ inView, delay }: { inView: boolean; delay: number }) {
-  return (
-    <div className="flex flex-1 items-center" aria-hidden>
-      <Dot />
-      <div
-        className="flex-1 h-px bg-white/[0.12]"
-        style={growX(inView, delay)}
-      />
-      <Dot />
-    </div>
-  );
-}
-
-/**
- * Vertical line from step-card top up to sub-card bottom.
- * Origin = bottom so it grows upward from the step card.
- */
-function VLineUp({ inView, delay }: { inView: boolean; delay: number }) {
-  return (
-    <div className="flex flex-col items-center" aria-hidden>
-      <Dot />
-      <div className="w-px h-8 bg-white/[0.12]" style={growYBot(inView, delay)} />
-      <Dot />
-    </div>
-  );
-}
-
-/**
- * Vertical line from step-card bottom down to sub-card top.
- * Origin = top so it grows downward from the step card.
- */
-function VLineDown({ inView, delay }: { inView: boolean; delay: number }) {
-  return (
-    <div className="flex flex-col items-center" aria-hidden>
-      <Dot />
-      <div className="w-px h-8 bg-white/[0.12]" style={growYTop(inView, delay)} />
-      <Dot />
-    </div>
-  );
-}
-
-/* ─── Trigger card ──────────────────────────────────────────────────────────── */
+/* ─── Card components ───────────────────────────────────────────────────────── */
 
 function TriggerCard({ inView }: { inView: boolean }) {
   return (
@@ -181,20 +132,15 @@ function TriggerCard({ inView }: { inView: boolean }) {
       <p className="mb-4 text-[12px] leading-[1.4] text-white/40">
         US tools you want to replace
       </p>
-
-      {/* "On every switch" row */}
       <div className="mb-3.5 flex items-center gap-1.5 text-[11px] text-white/40">
         <span>On every</span>
         <span className="rounded-[6px] border border-white/10 bg-white/[0.07] px-1.5 py-[3px] font-medium text-white/65">
           switch
         </span>
-        {/* toggle dot */}
         <span className="ml-auto flex h-[14px] w-[24px] items-center rounded-full bg-[#0F6E56]/30 px-[3px]">
           <span className="ml-auto h-[9px] w-[9px] rounded-full bg-[#0F6E56]" />
         </span>
       </div>
-
-      {/* Ready indicator */}
       <div className="flex items-center gap-1.5">
         <span className="h-1.5 w-1.5 rounded-full bg-[#0F6E56]" />
         <span className="text-[11px] text-white/40">Ready to migrate</span>
@@ -203,14 +149,7 @@ function TriggerCard({ inView }: { inView: boolean }) {
   );
 }
 
-/* ─── Sub-card ──────────────────────────────────────────────────────────────── */
-
-interface SubCardProps {
-  label: string;
-  detail: string;
-  inView: boolean;
-  delay: number;
-}
+interface SubCardProps { label: string; detail: string; inView: boolean; delay: number; }
 
 function SubCard({ label, detail, inView, delay }: SubCardProps) {
   return (
@@ -222,12 +161,10 @@ function SubCard({ label, detail, inView, delay }: SubCardProps) {
         <span className="h-[6px] w-[6px] shrink-0 rounded-full bg-[#0F6E56]/60" />
         <span className="text-[13px] font-[500] text-white/60">{label}</span>
       </div>
-      <p className="pl-[13px] text-[11px] leading-tight text-white/28">{detail}</p>
+      <p className="pl-[13px] text-[11px] leading-tight text-white/30">{detail}</p>
     </div>
   );
 }
-
-/* ─── Step card ─────────────────────────────────────────────────────────────── */
 
 interface StepCardProps {
   num: string;
@@ -245,7 +182,6 @@ function StepCard({ num, icon: Icon, title, desc, inView, delay }: StepCardProps
       style={fadeUp(inView, delay)}
     >
       <StatusDot />
-      {/* Watermark step number */}
       <span
         className="pointer-events-none absolute right-4 top-2 select-none font-bold leading-none text-white/[0.06]"
         style={{ fontSize: 48 }}
@@ -260,147 +196,220 @@ function StepCard({ num, icon: Icon, title, desc, inView, delay }: StepCardProps
   );
 }
 
-/* ─── Step column (desktop) ─────────────────────────────────────────────────── */
+/* ─── SVG line builder ──────────────────────────────────────────────────────── */
 
-/**
- * A vertical column containing: SubCard (top) → VLine → StepCard → VLine → SubCard (bottom).
- * The outer `flex items-center` container centers all columns on the step-card midpoint,
- * because both VLines and both SubCards are identical in height → step card IS the column center.
- */
-interface StepColProps {
-  num: string;
-  icon: ComponentType<{ className?: string }>;
-  title: string;
-  desc: string;
-  subTop: { label: string; detail: string };
-  subBottom: { label: string; detail: string };
-  inView: boolean;
-  stepDelay: number;
-  vlineDelay: number;
-  subDelay: number;
+interface AllRects {
+  containerW: number;
+  containerH: number;
+  trigger: Rect | null;
+  steps: (Rect | null)[];
+  subTops: (Rect | null)[];
+  subBots: (Rect | null)[];
 }
 
-function StepCol({
-  num, icon, title, desc,
-  subTop, subBottom,
-  inView, stepDelay, vlineDelay, subDelay,
-}: StepColProps) {
-  return (
-    <div className="flex w-[240px] shrink-0 flex-col">
-      <SubCard {...subTop}    inView={inView} delay={subDelay} />
-      <VLineUp               inView={inView} delay={vlineDelay} />
-      <StepCard
-        num={num} icon={icon} title={title} desc={desc}
-        inView={inView} delay={stepDelay}
-      />
-      <VLineDown             inView={inView} delay={vlineDelay} />
-      <SubCard {...subBottom} inView={inView} delay={subDelay + 120} />
-    </div>
-  );
+function buildSvgElems(r: AllRects, inView: boolean): React.ReactNode {
+  const { trigger: tri, steps: s, subTops: st, subBots: sb } = r;
+  if (!tri || !s[0]) return null;
+
+  const elems: React.ReactNode[] = [];
+  let k = 0;
+
+  function line(x1: number, y1: number, x2: number, y2: number, delay: number) {
+    elems.push(<SvgLine key={`l${k++}`} x1={x1} y1={y1} x2={x2} y2={y2} inView={inView} delay={delay} />);
+  }
+  function dot(cx: number, cy: number, delay: number) {
+    elems.push(<SvgDot key={`d${k++}`} cx={cx} cy={cy} inView={inView} delay={delay} />);
+  }
+
+  // ── Trigger → Step 0 ──────────────────────────────────────────────────────
+  if (s[0]) {
+    const y = s[0].cy;
+    line(tri.x + tri.w, y, s[0].x, y, 200);
+    dot(tri.x + tri.w, y, 350);
+    dot(s[0].x, y, 500);
+  }
+
+  // ── Step 0 branches ───────────────────────────────────────────────────────
+  if (s[0]) {
+    if (st[0]) {
+      // vertical up: step top-center → sub bottom-center
+      line(s[0].cx, s[0].y, st[0].cx, st[0].y + st[0].h, 800);
+      dot(s[0].cx, s[0].y, 800);
+      dot(st[0].cx, st[0].y + st[0].h, 950);
+    }
+    if (sb[0]) {
+      // vertical down: step bottom-center → sub top-center
+      line(s[0].cx, s[0].y + s[0].h, sb[0].cx, sb[0].y, 800);
+      dot(s[0].cx, s[0].y + s[0].h, 800);
+      dot(sb[0].cx, sb[0].y, 950);
+    }
+  }
+
+  // ── Step 0 → Step 1 ───────────────────────────────────────────────────────
+  if (s[0] && s[1]) {
+    const y = s[0].cy;
+    line(s[0].x + s[0].w, y, s[1].x, y, 1200);
+    dot(s[0].x + s[0].w, y, 1200);
+    dot(s[1].x, y, 1350);
+  }
+
+  // ── Step 1 branches ───────────────────────────────────────────────────────
+  if (s[1]) {
+    if (st[1]) {
+      line(s[1].cx, s[1].y, st[1].cx, st[1].y + st[1].h, 1600);
+      dot(s[1].cx, s[1].y, 1600);
+      dot(st[1].cx, st[1].y + st[1].h, 1750);
+    }
+    if (sb[1]) {
+      line(s[1].cx, s[1].y + s[1].h, sb[1].cx, sb[1].y, 1600);
+      dot(s[1].cx, s[1].y + s[1].h, 1600);
+      dot(sb[1].cx, sb[1].y, 1750);
+    }
+  }
+
+  // ── Step 1 → Step 2 ───────────────────────────────────────────────────────
+  if (s[1] && s[2]) {
+    const y = s[1].cy;
+    line(s[1].x + s[1].w, y, s[2].x, y, 2000);
+    dot(s[1].x + s[1].w, y, 2000);
+    dot(s[2].x, y, 2150);
+  }
+
+  // ── Step 2 branches ───────────────────────────────────────────────────────
+  if (s[2]) {
+    if (st[2]) {
+      line(s[2].cx, s[2].y, st[2].cx, st[2].y + st[2].h, 2400);
+      dot(s[2].cx, s[2].y, 2400);
+      dot(st[2].cx, st[2].y + st[2].h, 2550);
+    }
+    if (sb[2]) {
+      line(s[2].cx, s[2].y + s[2].h, sb[2].cx, sb[2].y, 2400);
+      dot(s[2].cx, s[2].y + s[2].h, 2400);
+      dot(sb[2].cx, sb[2].y, 2550);
+    }
+  }
+
+  return elems;
 }
 
-/* ─── Mobile step block ─────────────────────────────────────────────────────── */
+/* ─── Step data ─────────────────────────────────────────────────────────────── */
 
-interface MobileBlockProps {
-  num: string;
-  icon: ComponentType<{ className?: string }>;
-  title: string;
-  desc: string;
-  subTop: { label: string; detail: string };
-  subBottom: { label: string; detail: string };
-  inView: boolean;
-  stepDelay: number;
-  subDelay: number;
-}
-
-function MobileBlock({
-  num, icon, title, desc,
-  subTop, subBottom,
-  inView, stepDelay, subDelay,
-}: MobileBlockProps) {
-  return (
-    <div className="w-full">
-      <StepCard
-        num={num} icon={icon} title={title} desc={desc}
-        inView={inView} delay={stepDelay}
-      />
-      <div className="mt-2 grid grid-cols-2 gap-2">
-        <SubCard {...subTop}    inView={inView} delay={subDelay} />
-        <SubCard {...subBottom} inView={inView} delay={subDelay + 120} />
-      </div>
-    </div>
-  );
-}
-
-/* ─── Vertical connector used in mobile flow ────────────────────────────────── */
-
-function MobileVConn({ inView, delay }: { inView: boolean; delay: number }) {
-  return (
-    <div className="flex flex-col items-center py-1" aria-hidden>
-      <Dot />
-      <div className="h-8 w-px bg-white/[0.12]" style={growYTop(inView, delay)} />
-      <Dot />
-    </div>
-  );
-}
+const STEPS = [
+  {
+    num: "01", icon: Compass,
+    title: "Discover alternatives",
+    desc: "Browse 186+ EU alternatives across 10 categories. Compare features, ratings, and real stories.",
+    subTop:    { label: "Search & filter",    detail: "186+ tools indexed"     },
+    subBottom: { label: "Community ratings",  detail: "Real user reviews"      },
+  },
+  {
+    num: "02", icon: Layers,
+    title: "Build your stack",
+    desc: "Add your current tools. Get a personalized migration plan with difficulty scores.",
+    subTop:    { label: "Difficulty scoring", detail: "Auto-analyzed"          },
+    subBottom: { label: "Migration order",    detail: "Smart recommendations"  },
+  },
+  {
+    num: "03", icon: Users,
+    title: "Get expert help",
+    desc: "Connect with certified EU partners. Track progress and join the community.",
+    subTop:    { label: "Certified partners", detail: "6 verified experts"     },
+    subBottom: { label: "Community support",  detail: "Active discussions"     },
+  },
+] as const;
 
 /* ─── Main export ───────────────────────────────────────────────────────────── */
 
 export function HowItWorks() {
-  const { ref, inView } = useInView();
+  const { ref: sectionRef, inView } = useInView();
 
-  // Step data
-  const steps = [
-    {
-      num: "01",
-      icon: Compass,
-      title: "Discover alternatives",
-      desc: "Browse 186+ EU alternatives across 10 categories. Compare features, ratings, and real stories.",
-      subTop:    { label: "Search & filter",    detail: "186+ tools indexed" },
-      subBottom: { label: "Community ratings",  detail: "Real user reviews"  },
-    },
-    {
-      num: "02",
-      icon: Layers,
-      title: "Build your stack",
-      desc: "Add your current tools. Get a personalized migration plan with difficulty scores.",
-      subTop:    { label: "Difficulty scoring", detail: "Auto-analyzed"         },
-      subBottom: { label: "Migration order",    detail: "Smart recommendations" },
-    },
-    {
-      num: "03",
-      icon: Users,
-      title: "Get expert help",
-      desc: "Connect with certified EU partners. Track progress and join the community.",
-      subTop:    { label: "Certified partners",  detail: "6 verified experts" },
-      subBottom: { label: "Community support",   detail: "Active discussions"  },
-    },
-  ] as const;
+  // ── Refs for SVG measurement (desktop only) ────────────────────────────────
+  const desktopRef  = useRef<HTMLDivElement>(null);
+  const triggerRef  = useRef<HTMLDivElement>(null);
 
-  /* Animation delay schedule (ms)
-   * 1.  Trigger card    0
-   * 2.  H-line → 01   200  (draws 400ms)
-   * 3.  Step 01        600
-   * 4.  V-lines 01     800  (branches out)
-   * 5.  Sub A / Sub B 1000
-   * 6.  H-line → 02   1200 (draws 400ms)
-   * 7.  Step 02        1400
-   * 8.  V-lines 02     1600
-   * 9.  Sub C / Sub D 1800
-   * 10. H-line → 03   2000
-   * 11. Step 03        2200
-   * 12. V-lines 03     2400
-   * 13. Sub E / Sub F 2600
-   */
+  const stepRef0    = useRef<HTMLDivElement>(null);
+  const stepRef1    = useRef<HTMLDivElement>(null);
+  const stepRef2    = useRef<HTMLDivElement>(null);
+
+  const subTopRef0  = useRef<HTMLDivElement>(null);
+  const subTopRef1  = useRef<HTMLDivElement>(null);
+  const subTopRef2  = useRef<HTMLDivElement>(null);
+
+  const subBotRef0  = useRef<HTMLDivElement>(null);
+  const subBotRef1  = useRef<HTMLDivElement>(null);
+  const subBotRef2  = useRef<HTMLDivElement>(null);
+
+  const [allRects, setAllRects] = useState<AllRects | null>(null);
+
+  useEffect(() => {
+    function measure() {
+      const base = desktopRef.current;
+      if (!base) return;
+      const cb = base.getBoundingClientRect();
+      if (cb.width === 0) return; // hidden on mobile, skip
+
+      function r(el: HTMLDivElement | null) { return getRect(el, base); }
+
+      setAllRects({
+        containerW: cb.width,
+        containerH: cb.height,
+        trigger:  r(triggerRef.current),
+        steps:    [r(stepRef0.current), r(stepRef1.current), r(stepRef2.current)],
+        subTops:  [r(subTopRef0.current), r(subTopRef1.current), r(subTopRef2.current)],
+        subBots:  [r(subBotRef0.current), r(subBotRef1.current), r(subBotRef2.current)],
+      });
+    }
+
+    // Measure after first paint (layout is stable)
+    const t = requestAnimationFrame(() => { measure(); });
+
+    const obs = new ResizeObserver(measure);
+    if (desktopRef.current) obs.observe(desktopRef.current);
+
+    window.addEventListener("resize", measure);
+    return () => {
+      cancelAnimationFrame(t);
+      obs.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+
+  // Re-measure when inView fires (ensures animation timing is current)
+  useEffect(() => {
+    if (!inView) return;
+    const base = desktopRef.current;
+    if (!base) return;
+    const cb = base.getBoundingClientRect();
+    if (cb.width === 0) return;
+    function r(el: HTMLDivElement | null) { return getRect(el, base); }
+    setAllRects({
+      containerW: cb.width,
+      containerH: cb.height,
+      trigger:  r(triggerRef.current),
+      steps:    [r(stepRef0.current), r(stepRef1.current), r(stepRef2.current)],
+      subTops:  [r(subTopRef0.current), r(subTopRef1.current), r(subTopRef2.current)],
+      subBots:  [r(subBotRef0.current), r(subBotRef1.current), r(subBotRef2.current)],
+    });
+  }, [inView]);
+
+  // ── Delay schedule ─────────────────────────────────────────────────────────
+  const D = {
+    trigger: 0,
+    step:    [600,  1400, 2200] as const,
+    sub:     [1000, 1800, 2600] as const,
+  };
 
   return (
-    <section className="bg-[#1B2B1F] py-[100px]" style={{ fontFamily: F }}>
-      {/* Inject keyframes once — React deduplicates identical style tags */}
+    <section
+      ref={sectionRef}
+      className="bg-[#1B2B1F] py-[100px]"
+      style={{ fontFamily: F }}
+    >
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
-      <div ref={ref} className="mx-auto max-w-[1100px] px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1100px] px-4 sm:px-6 lg:px-8">
 
-        {/* ── Section header ── */}
+        {/* ── Header ── */}
         <div className="mb-16 text-center" style={fadeUp(inView, 0)}>
           <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-white/40">
             How it works
@@ -416,83 +425,124 @@ export function HowItWorks() {
           </p>
         </div>
 
-        {/* ── Desktop: horizontal pipeline ───────────────────────────────── */}
+        {/* ══ Desktop: SVG-connected pipeline ════════════════════════════════ */}
         {/*
-          Outer flex items-center ensures HLines align with node centers.
-          Each StepCol is symmetric (SubCard + VLine + StepCard + VLine + SubCard)
-          so the column's geometric center == the StepCard's center == HLine height.
+          Layout: flex items-center → trigger + [flex-1 gap] + node-col × 3
+          Node col: flex-col gap-[56px] → sub-top, step, sub-bottom
+          Symmetry: sub heights ≈ equal, gap heights = equal
+            → column center == step card center == H-line center ✓
+          SVG overlay: absolute inset-0, pointer-events-none
+            → draws lines between measured card positions
         */}
-        <div className="hidden lg:flex items-center">
+        <div ref={desktopRef} className="relative hidden lg:block">
+          <div className="flex items-center">
 
-          <TriggerCard inView={inView} />
-
-          <HLine inView={inView} delay={200} />
-
-          <StepCol
-            {...steps[0]}
-            inView={inView}
-            stepDelay={600}
-            vlineDelay={800}
-            subDelay={1000}
-          />
-
-          <HLine inView={inView} delay={1200} />
-
-          <StepCol
-            {...steps[1]}
-            inView={inView}
-            stepDelay={1400}
-            vlineDelay={1600}
-            subDelay={1800}
-          />
-
-          <HLine inView={inView} delay={2000} />
-
-          <StepCol
-            {...steps[2]}
-            inView={inView}
-            stepDelay={2200}
-            vlineDelay={2400}
-            subDelay={2600}
-          />
-
-        </div>
-
-        {/* ── Tablet (md–lg): vertical pipeline, cards full width ─────────── */}
-        <div className="hidden md:flex lg:hidden flex-col items-center max-w-sm mx-auto">
-
-          <TriggerCard inView={inView} />
-
-          {steps.map((step, i) => (
-            <div key={step.num} className="w-full">
-              <MobileVConn inView={inView} delay={i * 800 + 200} />
-              <MobileBlock
-                {...step}
-                inView={inView}
-                stepDelay={i * 800 + 400}
-                subDelay={i * 800 + 600}
-              />
+            {/* Trigger */}
+            <div ref={triggerRef}>
+              <TriggerCard inView={inView} />
             </div>
-          ))}
 
+            {/* Gap 1 */}
+            <div className="flex-1 min-w-[28px]" />
+
+            {/* Node 01 */}
+            <div className="flex w-[240px] shrink-0 flex-col gap-[56px]">
+              <div ref={subTopRef0}>
+                <SubCard {...STEPS[0].subTop} inView={inView} delay={D.sub[0]} />
+              </div>
+              <div ref={stepRef0}>
+                <StepCard num={STEPS[0].num} icon={STEPS[0].icon} title={STEPS[0].title} desc={STEPS[0].desc} inView={inView} delay={D.step[0]} />
+              </div>
+              <div ref={subBotRef0}>
+                <SubCard {...STEPS[0].subBottom} inView={inView} delay={D.sub[0] + 120} />
+              </div>
+            </div>
+
+            {/* Gap 2 */}
+            <div className="flex-1 min-w-[28px]" />
+
+            {/* Node 02 */}
+            <div className="flex w-[240px] shrink-0 flex-col gap-[56px]">
+              <div ref={subTopRef1}>
+                <SubCard {...STEPS[1].subTop} inView={inView} delay={D.sub[1]} />
+              </div>
+              <div ref={stepRef1}>
+                <StepCard num={STEPS[1].num} icon={STEPS[1].icon} title={STEPS[1].title} desc={STEPS[1].desc} inView={inView} delay={D.step[1]} />
+              </div>
+              <div ref={subBotRef1}>
+                <SubCard {...STEPS[1].subBottom} inView={inView} delay={D.sub[1] + 120} />
+              </div>
+            </div>
+
+            {/* Gap 3 */}
+            <div className="flex-1 min-w-[28px]" />
+
+            {/* Node 03 */}
+            <div className="flex w-[240px] shrink-0 flex-col gap-[56px]">
+              <div ref={subTopRef2}>
+                <SubCard {...STEPS[2].subTop} inView={inView} delay={D.sub[2]} />
+              </div>
+              <div ref={stepRef2}>
+                <StepCard num={STEPS[2].num} icon={STEPS[2].icon} title={STEPS[2].title} desc={STEPS[2].desc} inView={inView} delay={D.step[2]} />
+              </div>
+              <div ref={subBotRef2}>
+                <SubCard {...STEPS[2].subBottom} inView={inView} delay={D.sub[2] + 120} />
+              </div>
+            </div>
+
+          </div>
+
+          {/* SVG overlay — drawn lines between cards */}
+          {allRects && (
+            <svg
+              className="pointer-events-none absolute inset-0"
+              width={allRects.containerW}
+              height={allRects.containerH}
+              aria-hidden
+            >
+              {buildSvgElems(allRects, inView)}
+            </svg>
+          )}
         </div>
 
-        {/* ── Mobile (<md): same vertical flow, full width ─────────────────── */}
-        <div className="flex md:hidden flex-col items-center">
+        {/* ══ Mobile / Tablet: vertical stack with CSS lines ════════════════ */}
+        <div className="flex flex-col items-center lg:hidden">
 
+          {/* Trigger */}
           <div className="w-full max-w-[360px]">
             <TriggerCard inView={inView} />
           </div>
 
-          {steps.map((step, i) => (
-            <div key={step.num} className="w-full max-w-[360px]">
-              <MobileVConn inView={inView} delay={i * 700 + 200} />
-              <MobileBlock
-                {...step}
+          {STEPS.map((step, i) => (
+            <div key={step.num} className="flex w-full max-w-[360px] flex-col">
+              {/* Connector line from above */}
+              <div className="flex justify-center py-1">
+                <div
+                  className="w-px bg-white/[0.18]"
+                  style={{
+                    height: 36,
+                    transformOrigin: "top center",
+                    transform: inView ? "scaleY(1)" : "scaleY(0)",
+                    transition: `transform 280ms ease-out ${i * 700 + 200}ms`,
+                  }}
+                />
+              </div>
+
+              {/* Step card */}
+              <StepCard
+                num={step.num}
+                icon={step.icon}
+                title={step.title}
+                desc={step.desc}
                 inView={inView}
-                stepDelay={i * 700 + 350}
-                subDelay={i * 700 + 500}
+                delay={i * 700 + 350}
               />
+
+              {/* Sub-cards 2-col */}
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <SubCard {...step.subTop}    inView={inView} delay={i * 700 + 550} />
+                <SubCard {...step.subBottom} inView={inView} delay={i * 700 + 650} />
+              </div>
             </div>
           ))}
 
