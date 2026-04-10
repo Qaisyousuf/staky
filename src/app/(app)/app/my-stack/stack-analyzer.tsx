@@ -698,7 +698,7 @@ export function StackAnalyzer({
       return;
     }
     const snapshot = items;
-    setRemovingIds((s) => new Set([...s, id]));
+    setRemovingIds((s) => new Set(Array.from(s).concat(id)));
     setItems((p) => p.filter((i) => i.id !== id));
     removeStackItem(id).catch(() => {
       setItems(snapshot);
