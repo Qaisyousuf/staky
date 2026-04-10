@@ -130,7 +130,7 @@ const IMPACT_CONFIG: Record<Impact, { label: string; cls: string }> = {
 
 // Converts "de" → "🇩🇪" using Unicode Regional Indicator Symbols
 function countryFlag(code: string): string {
-  return [...code.toUpperCase()].map((c) =>
+  return Array.from(code.toUpperCase()).map((c) =>
     String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65)
   ).join("");
 }
