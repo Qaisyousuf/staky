@@ -222,7 +222,7 @@ function USToolBrowser({
               <div className="flex items-center gap-2 min-w-0">
                 {enrichedEu ? (
                   <>
-                    <ToolIcon toolData={enrichedEu} slug={euTool.slug} size="sm" className="h-6 w-6 shrink-0" />
+                    <ToolIcon toolData={enrichedEu} slug={euTool!.slug} size="sm" className="h-6 w-6 shrink-0" />
                     <div className="min-w-0">
                       <div className="flex items-center gap-1">
                         <p className="text-[11px] font-semibold text-[#0F6E56] truncate leading-tight">{enrichedEu.name}</p>
