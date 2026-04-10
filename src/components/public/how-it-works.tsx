@@ -2,271 +2,406 @@
 
 import { useRef, useEffect, useState } from "react";
 import type { ComponentType } from "react";
-import {
-  Compass, Layers, Users,
-  Search, Star, BarChart3, ArrowUpDown,
-  Shield, MessageSquare,
-} from "lucide-react";
+import { Compass, Layers, Users } from "lucide-react";
+
+/* ─── Font ──────────────────────────────────────────────────────────────────── */
 
 const F =
   "var(--font-jakarta,'Plus Jakarta Sans'),-apple-system,BlinkMacSystemFont,sans-serif";
 
-/* ─────────────────────────────── Animation hook ──────────────────────────── */
+/* ─── Keyframes (injected once) ─────────────────────────────────────────────── */
 
-function usePipelineAnimation() {
+const CSS = `
+@keyframes hiw-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes hiw-grow-x {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+@keyframes hiw-grow-y-top {
+  from { transform: scaleY(0); transform-origin: top center; }
+  to   { transform: scaleY(1); transform-origin: top center; }
+}
+@keyframes hiw-grow-y-bot {
+  from { transform: scaleY(0); transform-origin: bottom center; }
+  to   { transform: scaleY(1); transform-origin: bottom center; }
+}
+`;
+
+/* ─── IntersectionObserver hook ─────────────────────────────────────────────── */
+
+function useInView(threshold = 0.08) {
   const ref = useRef<HTMLDivElement>(null);
-  const [triggered, setTriggered] = useState(false);
-
+  const [inView, setInView] = useState(false);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setTriggered(true);
-          obs.disconnect();
-        }
-      },
-      { threshold: 0.1 }
+      ([e]) => { if (e.isIntersecting) { setInView(true); obs.disconnect(); } },
+      { threshold }
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, []);
-
-  return { ref, triggered };
+  }, [threshold]);
+  return { ref, inView };
 }
 
-/* ─────────────────────────────── Style helpers ────────────────────────────── */
+/* ─── Animation style helpers ───────────────────────────────────────────────── */
 
-function fadeStyle(triggered: boolean, delay: number): React.CSSProperties {
+type Sty = React.CSSProperties;
+
+function fadeUp(inView: boolean, delay: number): Sty {
+  if (!inView) return { opacity: 0 };
   return {
-    opacity: triggered ? 1 : 0,
-    transform: triggered ? "translateY(0)" : "translateY(10px)",
-    transition: `opacity 300ms ease-out ${delay}ms, transform 300ms ease-out ${delay}ms`,
+    animationName: "hiw-fade-up",
+    animationDuration: "400ms",
+    animationDelay: `${delay}ms`,
+    animationFillMode: "both",
+    animationTimingFunction: "ease-out",
   };
 }
 
-function scaleXStyle(triggered: boolean, delay: number): React.CSSProperties {
+function growX(inView: boolean, delay: number): Sty {
+  if (!inView) return { transform: "scaleX(0)", transformOrigin: "left center" };
   return {
+    animationName: "hiw-grow-x",
+    animationDuration: "400ms",
+    animationDelay: `${delay}ms`,
+    animationFillMode: "both",
+    animationTimingFunction: "ease-out",
     transformOrigin: "left center",
-    transform: triggered ? "scaleX(1)" : "scaleX(0)",
-    transition: `transform 400ms ease-out ${delay}ms`,
   };
 }
 
-function scaleYStyle(triggered: boolean, delay: number): React.CSSProperties {
+function growYTop(inView: boolean, delay: number): Sty {
+  if (!inView) return { transform: "scaleY(0)", transformOrigin: "top center" };
   return {
-    transformOrigin: "top center",
-    transform: triggered ? "scaleY(1)" : "scaleY(0)",
-    transition: `transform 250ms ease-out ${delay}ms`,
+    animationName: "hiw-grow-y-top",
+    animationDuration: "280ms",
+    animationDelay: `${delay}ms`,
+    animationFillMode: "both",
+    animationTimingFunction: "ease-out",
   };
 }
 
-/* ─────────────────────────────── Atoms ────────────────────────────────────── */
+function growYBot(inView: boolean, delay: number): Sty {
+  if (!inView) return { transform: "scaleY(0)", transformOrigin: "bottom center" };
+  return {
+    animationName: "hiw-grow-y-bot",
+    animationDuration: "280ms",
+    animationDelay: `${delay}ms`,
+    animationFillMode: "both",
+    animationTimingFunction: "ease-out",
+  };
+}
 
+/* ─── Atoms ─────────────────────────────────────────────────────────────────── */
+
+/** A small junction dot that marks a real connection endpoint. */
+function Dot() {
+  return (
+    <span
+      className="block h-[5px] w-[5px] shrink-0 rounded-full bg-white/[0.18]"
+      aria-hidden
+    />
+  );
+}
+
+/** Pulsing green status indicator, absolute-positioned top-left of parent. */
 function StatusDot() {
   return (
-    <span className="absolute left-4 top-4 flex h-2 w-2">
-      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#0F6E56] opacity-40" />
+    <span className="absolute left-4 top-4 flex h-2 w-2" aria-hidden>
+      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#0F6E56] opacity-35" />
       <span className="relative inline-flex h-2 w-2 rounded-full bg-[#0F6E56]" />
     </span>
   );
 }
 
-function ConnDot() {
-  return <span className="h-[6px] w-[6px] shrink-0 rounded-full bg-white/20" />;
-}
+/* ─── Connector lines ───────────────────────────────────────────────────────── */
 
-function HLine({ triggered, delay }: { triggered: boolean; delay: number }) {
+/**
+ * Horizontal line between two nodes.
+ * Dots at each end mark real junction points.
+ * scaleX grows left → right.
+ */
+function HLine({ inView, delay }: { inView: boolean; delay: number }) {
   return (
-    <div className="flex flex-1 items-center">
+    <div className="flex flex-1 items-center" aria-hidden>
+      <Dot />
       <div
-        className="flex-1 h-px bg-white/15"
-        style={scaleXStyle(triggered, delay)}
+        className="flex-1 h-px bg-white/[0.12]"
+        style={growX(inView, delay)}
       />
+      <Dot />
     </div>
   );
 }
 
-function VLine({ triggered, delay }: { triggered: boolean; delay: number }) {
+/**
+ * Vertical line from step-card top up to sub-card bottom.
+ * Origin = bottom so it grows upward from the step card.
+ */
+function VLineUp({ inView, delay }: { inView: boolean; delay: number }) {
   return (
-    <div className="flex flex-col items-center gap-1">
-      <ConnDot />
-      <div
-        className="w-px h-8 bg-white/15"
-        style={scaleYStyle(triggered, delay)}
-      />
-      <ConnDot />
+    <div className="flex flex-col items-center" aria-hidden>
+      <Dot />
+      <div className="w-px h-8 bg-white/[0.12]" style={growYBot(inView, delay)} />
+      <Dot />
     </div>
   );
 }
 
-/* ─────────────────────────────── Cards ────────────────────────────────────── */
-
-interface SubCardProps {
-  icon: ComponentType<{ className?: string }>;
-  label: string;
-  triggered: boolean;
-  delay: number;
-}
-
-function SubCard({ icon: Icon, label, triggered, delay }: SubCardProps) {
+/**
+ * Vertical line from step-card bottom down to sub-card top.
+ * Origin = top so it grows downward from the step card.
+ */
+function VLineDown({ inView, delay }: { inView: boolean; delay: number }) {
   return (
-    <div
-      className="flex items-center gap-2 whitespace-nowrap rounded-[10px] border border-white/[0.08] bg-white/[0.04] px-[18px] py-[13px] text-[12px] font-medium text-white/55"
-      style={fadeStyle(triggered, delay)}
-    >
-      <Icon className="h-4 w-4 shrink-0 text-white/35" />
-      {label}
+    <div className="flex flex-col items-center" aria-hidden>
+      <Dot />
+      <div className="w-px h-8 bg-white/[0.12]" style={growYTop(inView, delay)} />
+      <Dot />
     </div>
   );
 }
 
-interface MainNodeProps {
-  num: string;
-  icon: ComponentType<{ className?: string }>;
-  title: string;
-  desc: string;
-  pill: string;
-  triggered: boolean;
-  delay: number;
-}
+/* ─── Trigger card ──────────────────────────────────────────────────────────── */
 
-function MainNode({ num, icon: Icon, title, desc, pill, triggered, delay }: MainNodeProps) {
+function TriggerCard({ inView }: { inView: boolean }) {
   return (
     <div
-      className="relative w-[230px] shrink-0 rounded-[14px] border border-white/10 bg-white/[0.06] p-7 hover:border-white/20 hover:bg-white/10"
-      style={{
-        opacity: triggered ? 1 : 0,
-        transform: triggered ? "translateY(0)" : "translateY(10px)",
-        transition: `opacity 300ms ease-out ${delay}ms, transform 300ms ease-out ${delay}ms, border-color 200ms ease-out, background-color 200ms ease-out`,
-      }}
+      className="w-[178px] shrink-0 rounded-[12px] border border-white/10 bg-white/[0.05] p-5"
+      style={fadeUp(inView, 0)}
     >
-      <StatusDot />
-      <span
-        className="pointer-events-none absolute right-4 top-3 select-none font-black leading-none text-white/[0.07]"
-        style={{ fontSize: 40 }}
-        aria-hidden="true"
-      >
-        {num}
-      </span>
-      <Icon className="mb-3 mt-1 h-7 w-7 text-[#4CAF8B]" />
-      <h3 className="mb-2 text-[17px] font-semibold leading-snug text-white">{title}</h3>
-      <p className="mb-4 text-[13px] leading-[1.65] text-white/60">{desc}</p>
-      <span className="inline-block rounded-full bg-white/[0.08] px-3 py-1 text-[11px] font-medium text-white/50">
-        {pill}
-      </span>
-    </div>
-  );
-}
+      <p className="mb-1 text-[14px] font-semibold leading-tight text-white">
+        Your current stack
+      </p>
+      <p className="mb-4 text-[12px] leading-[1.4] text-white/40">
+        US tools you want to replace
+      </p>
 
-function TriggerCard({ triggered }: { triggered: boolean }) {
-  return (
-    <div
-      className="w-[148px] shrink-0 rounded-[10px] border border-white/10 bg-white/[0.04] px-5 py-[18px]"
-      style={fadeStyle(triggered, 0)}
-    >
-      <p className="mb-1 text-[13px] font-bold leading-tight text-white">Your current stack</p>
-      <p className="mb-3 text-[11px] leading-snug text-white/45">US tools you want to replace</p>
+      {/* "On every switch" row */}
+      <div className="mb-3.5 flex items-center gap-1.5 text-[11px] text-white/40">
+        <span>On every</span>
+        <span className="rounded-[6px] border border-white/10 bg-white/[0.07] px-1.5 py-[3px] font-medium text-white/65">
+          switch
+        </span>
+        {/* toggle dot */}
+        <span className="ml-auto flex h-[14px] w-[24px] items-center rounded-full bg-[#0F6E56]/30 px-[3px]">
+          <span className="ml-auto h-[9px] w-[9px] rounded-full bg-[#0F6E56]" />
+        </span>
+      </div>
+
+      {/* Ready indicator */}
       <div className="flex items-center gap-1.5">
-        <span className="h-2 w-2 rounded-full bg-[#0F6E56]" />
-        <span className="text-[11px] text-white/50">Ready to switch</span>
+        <span className="h-1.5 w-1.5 rounded-full bg-[#0F6E56]" />
+        <span className="text-[11px] text-white/40">Ready to migrate</span>
       </div>
     </div>
   );
 }
 
-/* ─────────────────────────────── Node column ───────────────────────────────── */
+/* ─── Sub-card ──────────────────────────────────────────────────────────────── */
 
-interface NodeDef {
-  num: string;
-  icon: ComponentType<{ className?: string }>;
-  title: string;
-  desc: string;
-  pill: string;
-  subTop: { icon: ComponentType<{ className?: string }>; label: string };
-  subBottom: { icon: ComponentType<{ className?: string }>; label: string };
+interface SubCardProps {
+  label: string;
+  detail: string;
+  inView: boolean;
+  delay: number;
 }
 
-interface NodeColumnProps {
-  node: NodeDef;
-  triggered: boolean;
-  nodeDelay: number;
-  subDelay: number;
-  vlineDelay: number;
-}
-
-function NodeColumn({ node, triggered, nodeDelay, subDelay, vlineDelay }: NodeColumnProps) {
+function SubCard({ label, detail, inView, delay }: SubCardProps) {
   return (
-    <div className="flex flex-col items-center">
-      <SubCard
-        icon={node.subTop.icon}
-        label={node.subTop.label}
-        triggered={triggered}
-        delay={subDelay}
-      />
-      <VLine triggered={triggered} delay={vlineDelay} />
-      <MainNode
-        num={node.num}
-        icon={node.icon}
-        title={node.title}
-        desc={node.desc}
-        pill={node.pill}
-        triggered={triggered}
-        delay={nodeDelay}
-      />
-      <VLine triggered={triggered} delay={vlineDelay} />
-      <SubCard
-        icon={node.subBottom.icon}
-        label={node.subBottom.label}
-        triggered={triggered}
-        delay={subDelay + 150}
-      />
+    <div
+      className="rounded-[10px] border border-white/[0.08] bg-white/[0.03] px-[18px] py-[14px]"
+      style={fadeUp(inView, delay)}
+    >
+      <div className="mb-[5px] flex items-center gap-[7px]">
+        <span className="h-[6px] w-[6px] shrink-0 rounded-full bg-[#0F6E56]/60" />
+        <span className="text-[13px] font-[500] text-white/60">{label}</span>
+      </div>
+      <p className="pl-[13px] text-[11px] leading-tight text-white/28">{detail}</p>
     </div>
   );
 }
 
-/* ─────────────────────────────── Main export ───────────────────────────────── */
+/* ─── Step card ─────────────────────────────────────────────────────────────── */
+
+interface StepCardProps {
+  num: string;
+  icon: ComponentType<{ className?: string }>;
+  title: string;
+  desc: string;
+  inView: boolean;
+  delay: number;
+}
+
+function StepCard({ num, icon: Icon, title, desc, inView, delay }: StepCardProps) {
+  return (
+    <div
+      className="relative rounded-[14px] border border-white/[0.12] bg-white/[0.06] p-6 transition-[border-color,background-color] duration-200 hover:border-white/25 hover:bg-white/[0.08]"
+      style={fadeUp(inView, delay)}
+    >
+      <StatusDot />
+      {/* Watermark step number */}
+      <span
+        className="pointer-events-none absolute right-4 top-2 select-none font-bold leading-none text-white/[0.06]"
+        style={{ fontSize: 48 }}
+        aria-hidden
+      >
+        {num}
+      </span>
+      <Icon className="mb-[10px] mt-[2px] h-6 w-6 text-[#4CAF8B]" />
+      <h3 className="mb-[6px] text-[16px] font-semibold leading-snug text-white">{title}</h3>
+      <p className="text-[13px] leading-[1.5] text-white/50">{desc}</p>
+    </div>
+  );
+}
+
+/* ─── Step column (desktop) ─────────────────────────────────────────────────── */
+
+/**
+ * A vertical column containing: SubCard (top) → VLine → StepCard → VLine → SubCard (bottom).
+ * The outer `flex items-center` container centers all columns on the step-card midpoint,
+ * because both VLines and both SubCards are identical in height → step card IS the column center.
+ */
+interface StepColProps {
+  num: string;
+  icon: ComponentType<{ className?: string }>;
+  title: string;
+  desc: string;
+  subTop: { label: string; detail: string };
+  subBottom: { label: string; detail: string };
+  inView: boolean;
+  stepDelay: number;
+  vlineDelay: number;
+  subDelay: number;
+}
+
+function StepCol({
+  num, icon, title, desc,
+  subTop, subBottom,
+  inView, stepDelay, vlineDelay, subDelay,
+}: StepColProps) {
+  return (
+    <div className="flex w-[240px] shrink-0 flex-col">
+      <SubCard {...subTop}    inView={inView} delay={subDelay} />
+      <VLineUp               inView={inView} delay={vlineDelay} />
+      <StepCard
+        num={num} icon={icon} title={title} desc={desc}
+        inView={inView} delay={stepDelay}
+      />
+      <VLineDown             inView={inView} delay={vlineDelay} />
+      <SubCard {...subBottom} inView={inView} delay={subDelay + 120} />
+    </div>
+  );
+}
+
+/* ─── Mobile step block ─────────────────────────────────────────────────────── */
+
+interface MobileBlockProps {
+  num: string;
+  icon: ComponentType<{ className?: string }>;
+  title: string;
+  desc: string;
+  subTop: { label: string; detail: string };
+  subBottom: { label: string; detail: string };
+  inView: boolean;
+  stepDelay: number;
+  subDelay: number;
+}
+
+function MobileBlock({
+  num, icon, title, desc,
+  subTop, subBottom,
+  inView, stepDelay, subDelay,
+}: MobileBlockProps) {
+  return (
+    <div className="w-full">
+      <StepCard
+        num={num} icon={icon} title={title} desc={desc}
+        inView={inView} delay={stepDelay}
+      />
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <SubCard {...subTop}    inView={inView} delay={subDelay} />
+        <SubCard {...subBottom} inView={inView} delay={subDelay + 120} />
+      </div>
+    </div>
+  );
+}
+
+/* ─── Vertical connector used in mobile flow ────────────────────────────────── */
+
+function MobileVConn({ inView, delay }: { inView: boolean; delay: number }) {
+  return (
+    <div className="flex flex-col items-center py-1" aria-hidden>
+      <Dot />
+      <div className="h-8 w-px bg-white/[0.12]" style={growYTop(inView, delay)} />
+      <Dot />
+    </div>
+  );
+}
+
+/* ─── Main export ───────────────────────────────────────────────────────────── */
 
 export function HowItWorks() {
-  const { ref, triggered } = usePipelineAnimation();
+  const { ref, inView } = useInView();
 
-  const nodes: NodeDef[] = [
+  // Step data
+  const steps = [
     {
       num: "01",
       icon: Compass,
       title: "Discover alternatives",
-      desc: "Browse 186+ EU alternatives across 10 categories. Compare features, community ratings, and real migration stories.",
-      pill: "186+ tools",
-      subTop: { icon: Search, label: "Search & filter" },
-      subBottom: { icon: Star, label: "Community ratings" },
+      desc: "Browse 186+ EU alternatives across 10 categories. Compare features, ratings, and real stories.",
+      subTop:    { label: "Search & filter",    detail: "186+ tools indexed" },
+      subBottom: { label: "Community ratings",  detail: "Real user reviews"  },
     },
     {
       num: "02",
       icon: Layers,
       title: "Build your stack",
-      desc: "Add your current tools. Get a personalized migration plan with difficulty scores and recommended switching order.",
-      pill: "Smart analysis",
-      subTop: { icon: BarChart3, label: "Difficulty scoring" },
-      subBottom: { icon: ArrowUpDown, label: "Migration order" },
+      desc: "Add your current tools. Get a personalized migration plan with difficulty scores.",
+      subTop:    { label: "Difficulty scoring", detail: "Auto-analyzed"         },
+      subBottom: { label: "Migration order",    detail: "Smart recommendations" },
     },
     {
       num: "03",
       icon: Users,
       title: "Get expert help",
-      desc: "Connect with certified EU migration partners. Track progress, share experiences, and join the community.",
-      pill: "6 certified partners",
-      subTop: { icon: Shield, label: "Certified partners" },
-      subBottom: { icon: MessageSquare, label: "Community support" },
+      desc: "Connect with certified EU partners. Track progress and join the community.",
+      subTop:    { label: "Certified partners",  detail: "6 verified experts" },
+      subBottom: { label: "Community support",   detail: "Active discussions"  },
     },
-  ];
+  ] as const;
+
+  /* Animation delay schedule (ms)
+   * 1.  Trigger card    0
+   * 2.  H-line → 01   200  (draws 400ms)
+   * 3.  Step 01        600
+   * 4.  V-lines 01     800  (branches out)
+   * 5.  Sub A / Sub B 1000
+   * 6.  H-line → 02   1200 (draws 400ms)
+   * 7.  Step 02        1400
+   * 8.  V-lines 02     1600
+   * 9.  Sub C / Sub D 1800
+   * 10. H-line → 03   2000
+   * 11. Step 03        2200
+   * 12. V-lines 03     2400
+   * 13. Sub E / Sub F 2600
+   */
 
   return (
     <section className="bg-[#1B2B1F] py-[100px]" style={{ fontFamily: F }}>
+      {/* Inject keyframes once — React deduplicates identical style tags */}
+      <style dangerouslySetInnerHTML={{ __html: CSS }} />
+
       <div ref={ref} className="mx-auto max-w-[1100px] px-4 sm:px-6 lg:px-8">
 
         {/* ── Section header ── */}
-        <div className="mb-16 text-center" style={fadeStyle(triggered, 0)}>
+        <div className="mb-16 text-center" style={fadeUp(inView, 0)}>
           <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-white/40">
             How it works
           </p>
@@ -281,82 +416,86 @@ export function HowItWorks() {
           </p>
         </div>
 
-        {/* ── Desktop: horizontal pipeline ── */}
+        {/* ── Desktop: horizontal pipeline ───────────────────────────────── */}
+        {/*
+          Outer flex items-center ensures HLines align with node centers.
+          Each StepCol is symmetric (SubCard + VLine + StepCard + VLine + SubCard)
+          so the column's geometric center == the StepCard's center == HLine height.
+        */}
         <div className="hidden lg:flex items-center">
-          <TriggerCard triggered={triggered} />
-          <HLine triggered={triggered} delay={300} />
-          <NodeColumn
-            node={nodes[0]}
-            triggered={triggered}
-            nodeDelay={700}
-            subDelay={900}
-            vlineDelay={600}
+
+          <TriggerCard inView={inView} />
+
+          <HLine inView={inView} delay={200} />
+
+          <StepCol
+            {...steps[0]}
+            inView={inView}
+            stepDelay={600}
+            vlineDelay={800}
+            subDelay={1000}
           />
-          <HLine triggered={triggered} delay={1100} />
-          <NodeColumn
-            node={nodes[1]}
-            triggered={triggered}
-            nodeDelay={1500}
-            subDelay={1700}
-            vlineDelay={1400}
+
+          <HLine inView={inView} delay={1200} />
+
+          <StepCol
+            {...steps[1]}
+            inView={inView}
+            stepDelay={1400}
+            vlineDelay={1600}
+            subDelay={1800}
           />
-          <HLine triggered={triggered} delay={1900} />
-          <NodeColumn
-            node={nodes[2]}
-            triggered={triggered}
-            nodeDelay={2300}
-            subDelay={2500}
-            vlineDelay={2200}
+
+          <HLine inView={inView} delay={2000} />
+
+          <StepCol
+            {...steps[2]}
+            inView={inView}
+            stepDelay={2200}
+            vlineDelay={2400}
+            subDelay={2600}
           />
+
         </div>
 
-        {/* ── Mobile: vertical flow ── */}
-        <div className="flex flex-col items-center lg:hidden">
-          <TriggerCard triggered={triggered} />
-          {nodes.map((node, i) => (
-            <div key={node.num} className="flex w-full max-w-sm flex-col items-center">
-              {/* Vertical connector from above */}
-              <div
-                className="h-8 w-px bg-white/15"
-                style={scaleYStyle(triggered, i * 600 + 200)}
+        {/* ── Tablet (md–lg): vertical pipeline, cards full width ─────────── */}
+        <div className="hidden md:flex lg:hidden flex-col items-center max-w-sm mx-auto">
+
+          <TriggerCard inView={inView} />
+
+          {steps.map((step, i) => (
+            <div key={step.num} className="w-full">
+              <MobileVConn inView={inView} delay={i * 800 + 200} />
+              <MobileBlock
+                {...step}
+                inView={inView}
+                stepDelay={i * 800 + 400}
+                subDelay={i * 800 + 600}
               />
-              <MainNode
-                num={node.num}
-                icon={node.icon}
-                title={node.title}
-                desc={node.desc}
-                pill={node.pill}
-                triggered={triggered}
-                delay={i * 600 + 350}
-              />
-              {/* Sub-cards side by side below each node */}
-              <div className="mt-2 flex w-full gap-2">
-                <div className="flex-1">
-                  <SubCard
-                    icon={node.subTop.icon}
-                    label={node.subTop.label}
-                    triggered={triggered}
-                    delay={i * 600 + 500}
-                  />
-                </div>
-                <div className="flex-1">
-                  <SubCard
-                    icon={node.subBottom.icon}
-                    label={node.subBottom.label}
-                    triggered={triggered}
-                    delay={i * 600 + 600}
-                  />
-                </div>
-              </div>
-              {/* Vertical connector to next node */}
-              {i < 2 && (
-                <div
-                  className="mt-3 h-8 w-px bg-white/15"
-                  style={scaleYStyle(triggered, i * 600 + 700)}
-                />
-              )}
             </div>
           ))}
+
+        </div>
+
+        {/* ── Mobile (<md): same vertical flow, full width ─────────────────── */}
+        <div className="flex md:hidden flex-col items-center">
+
+          <div className="w-full max-w-[360px]">
+            <TriggerCard inView={inView} />
+          </div>
+
+          {steps.map((step, i) => (
+            <div key={step.num} className="w-full max-w-[360px]">
+              <MobileVConn inView={inView} delay={i * 700 + 200} />
+              <MobileBlock
+                {...step}
+                inView={inView}
+                stepDelay={i * 700 + 350}
+                subDelay={i * 700 + 500}
+              />
+            </div>
+          ))}
+
         </div>
 
       </div>
