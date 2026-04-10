@@ -301,7 +301,7 @@ function InlinePartnerList({
           partnerUserId: partner.userId,
           switches,
         });
-        setSentIds((prev) => new Set([...prev, partner.id]));
+        setSentIds((prev) => new Set(Array.from(prev).concat(partner.id)));
         onConnected(partner);
         router.push(`/app/requests/${result.requestId}`);
       } catch {
