@@ -1,8 +1,9 @@
 import Link from "next/link";
 import {
-  ArrowDown, ArrowRight, Compass, Layers, Users,
+  ArrowDown, ArrowRight,
   Star, Heart, MessageCircle,
 } from "lucide-react";
+import { HowItWorks } from "@/components/public/how-it-works";
 import { MOCK_PARTNERS, MOCK_POSTS } from "@/data/mock-data";
 import { FadeIn } from "@/components/public/fade-in";
 import { getPublishedTools, getPublishedAlternatives } from "@/actions/tools";
@@ -257,50 +258,6 @@ function PopularSwitches({ alternatives }: { alternatives: PublishedAlternative[
             <div key={alt.id} className="w-[260px] shrink-0">
               <SwitchCard alt={alt} />
             </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── How It Works ──────────────────────────────────────────────────────────────
-
-function HowItWorks() {
-  const steps = [
-    {
-      num: "01", icon: Compass, title: "Discover",
-      desc: "Browse 186+ EU alternatives across 10 categories. Compare features, ratings, and real migration stories.",
-    },
-    {
-      num: "02", icon: Layers, title: "Plan",
-      desc: "Build your stack. Get a personalized migration plan with difficulty ratings and recommended switching order.",
-    },
-    {
-      num: "03", icon: Users, title: "Switch",
-      desc: "Connect with certified EU partners. Get expert help, track progress, and share your story with the community.",
-    },
-  ];
-
-  return (
-    <section className="bg-[#1B2B1F] py-20" style={{ fontFamily: F }}>
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <FadeIn>
-          <SectionLabel text="HOW IT WORKS" light />
-          <h2 className="text-[32px] font-bold text-white" style={{ letterSpacing: "-0.03em" }}>
-            Three steps to EU sovereignty
-          </h2>
-        </FadeIn>
-        <div className="mt-16 grid gap-10 sm:grid-cols-3">
-          {steps.map(({ num, icon: Icon, title, desc }, i) => (
-            <FadeIn key={num} delay={i * 120}>
-              <p className="mb-5 font-bold leading-none text-white/[0.07]" style={{ fontSize: "56px" }}>{num}</p>
-              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
-                <Icon className="h-5 w-5 text-white" />
-              </div>
-              <h3 className="mb-2 text-[18px] font-bold text-white">{title}</h3>
-              <p className="text-[14px] leading-relaxed text-white/65">{desc}</p>
-            </FadeIn>
           ))}
         </div>
       </div>
