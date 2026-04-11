@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -344,8 +344,8 @@ function PostModal({ mode, initial, onClose, onSave, saving }: ModalProps) {
 
 export function BlogTab({ posts: initialPosts }: { posts: BlogPostRow[] }) {
   const router = useRouter();
-  const [posts, setPosts] = useState<BlogPostRow[]>(initialPosts);
-  const [isPending, startTransition] = useTransition();
+  const [posts] = useState<BlogPostRow[]>(initialPosts);
+  const [ startTransition] = useTransition();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPostRow | null>(null);
