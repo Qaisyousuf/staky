@@ -3,9 +3,9 @@ import {
   ArrowDown, ArrowRight,
   Star, Heart, MessageCircle,
 } from "lucide-react";
-import { HowItWorks } from "@/components/public/how-it-works";
 import { MOCK_PARTNERS, MOCK_POSTS } from "@/data/mock-data";
 import { FadeIn } from "@/components/public/fade-in";
+import { HowItWorks } from "@/components/public/how-it-works";
 import { getPublishedTools, getPublishedAlternatives } from "@/actions/tools";
 import type { DbTool } from "@/components/shared/tool-icon";
 

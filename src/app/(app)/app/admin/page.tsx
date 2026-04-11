@@ -9,6 +9,7 @@ import { PartnersTab } from "./tabs/partners-tab";
 import { UsersTab } from "./tabs/users-tab";
 import { ReportsTab } from "./tabs/reports-tab";
 import { ToolsTab } from "./tabs/tools-tab";
+import { BlogTab } from "./tabs/blog-tab";
 import {
   getAdminStats,
   getPendingPosts,
@@ -21,9 +22,10 @@ import {
   adminGetReports,
 } from "@/actions/admin";
 import { adminGetTools, adminGetAlternatives } from "@/actions/tools";
+import { adminGetBlogPosts } from "@/actions/blog";
 
 const VALID_TABS: AdminTab[] = [
-  "overview", "posts", "comments", "requests", "partners", "users", "reports", "tools",
+  "overview", "posts", "comments", "requests", "partners", "users", "reports", "tools", "blog",
 ];
 
 export default async function AdminPage({
@@ -49,6 +51,7 @@ export default async function AdminPage({
       {tab === "users" && <UsersTabLoader userId={session.user.id} />}
       {tab === "reports" && <ReportsTabLoader />}
       {tab === "tools" && <ToolsTabLoader />}
+      {tab === "blog" && <BlogTabLoader />}
     </AdminShell>
   );
 }
@@ -106,4 +109,9 @@ async function ToolsTabLoader() {
     adminGetAlternatives(),
   ]);
   return <ToolsTab initialTools={tools} initialAlternatives={alternatives} />;
+}
+
+async function BlogTabLoader() {
+  const posts = await adminGetBlogPosts();
+  return <BlogTab posts={posts} />;
 }

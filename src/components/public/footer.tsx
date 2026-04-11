@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/shared/logo";
+import { CookieSettingsLink } from "@/components/public/cookie-settings-link";
 
 const F = "var(--font-jakarta, 'Plus Jakarta Sans'), -apple-system, BlinkMacSystemFont, sans-serif";
 
@@ -98,6 +99,7 @@ export function Footer() {
           <p className="text-[13px] text-white/30">
             © {year} Staky. All rights reserved.
           </p>
+          <CookieSettingsLink />
         </div>
       </div>
     </footer>

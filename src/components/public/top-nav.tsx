@@ -13,6 +13,7 @@ const NAV_LINKS = [
   { href: "/discover", label: "Discover" },
   { href: "/feed", label: "Feed" },
   { href: "/partners", label: "Partners" },
+  { href: "/blog", label: "Blog" },
 ];
 
 function getInitials(name: string | null | undefined) {

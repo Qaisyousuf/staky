@@ -146,6 +146,7 @@ model User {
   verified           Boolean   @default(false)
   suspended          Boolean   @default(false)
   profileVisibility  String    @default("PUBLIC")
+  cookieConsent      Json?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -188,6 +189,8 @@ model User {
 
   profileViews   ProfileView[] @relation("ProfileViewed")
   viewedProfiles ProfileView[] @relation("ProfileViewer")
+
+  blogPosts BlogPost[]
 
   @@index([role])
   @@index([createdAt])
@@ -634,4 +637,29 @@ model ProfileView {
   @@index([profileId, createdAt(sort: Desc)])
   @@index([viewerId])
   @@map("profile_views")
+}
+
+// ─── Blog ────────────────────────────────────────────────────────────────────
+
+model BlogPost {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  excerpt     String
+  content     String   @db.Text
+  coverImage  String?
+  category    String   @default("General")
+  tags        String[]
+  published   Boolean  @default(false)
+  featured    Boolean  @default(false)
+  readingTime Int      @default(5)
+  views       Int      @default(0)
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([published, createdAt(sort: Desc)])
+  @@index([slug])
+  @@map("blog_posts")
 }

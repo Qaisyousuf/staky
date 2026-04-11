@@ -10,6 +10,7 @@ import {
   Users,
   BarChart3,
   Package2,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +25,7 @@ const TABS = [
   { id: "users",     label: "Users",     icon: Users },
   { id: "reports",   label: "Reports",   icon: BarChart3 },
   { id: "tools",     label: "Tools",     icon: Package2 },
+  { id: "blog",      label: "Blog",      icon: BookOpen },
 ] as const;
 
 export type AdminTab = typeof TABS[number]["id"];

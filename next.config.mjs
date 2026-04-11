@@ -1,7 +1,20 @@
 import withPWA from "@ducanh2912/next-pwa";
 
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "utfs.io",
+      },
+    ],
+  },
+};
 
 export default withPWA({
   dest: "public",

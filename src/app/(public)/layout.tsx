@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { TopNav } from "@/components/public/top-nav";
 import { Footer } from "@/components/public/footer";
+import { CookieBanner } from "@/components/public/cookie-banner";
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -19,6 +20,7 @@ export default async function PublicLayout({ children }: { children: React.React
       <TopNav userImage={userImage} />
       <main className="flex-1">{children}</main>
       <Footer />
+      <CookieBanner />
     </div>
   );
 }
