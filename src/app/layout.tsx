@@ -13,6 +13,7 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXTAUTH_URL || "http://localhost:3000"),
   title: "Staky — EU Stack Switcher",
   description: "Discover European alternatives to US software and connect with migration experts.",
   manifest: "/manifest.json",

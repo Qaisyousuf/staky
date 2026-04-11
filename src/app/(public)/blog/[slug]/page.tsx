@@ -51,33 +51,63 @@ function BlogContent({ content }: { content: string }) {
   const nodes: React.ReactNode[] = [];
   let i = 0;
 
+  function isImplicitHeading(line: string, previousLine: string | undefined, nextLine: string | undefined) {
+    const value = line.trim();
+    if (!value) return false;
+    if (isSpecialLine(value)) return false;
+    if (value.length > 72) return false;
+    if (/[.!?]$/.test(value)) return false;
+    if (/https?:\/\//i.test(value)) return false;
+    if (value.includes(":") && value.split(":").length > 2) return false;
+    if (previousLine && previousLine.trim() !== "") return false;
+    if (!nextLine || nextLine.trim() === "") return false;
+    if (/^[a-z]/.test(value)) return false;
+    return true;
+  }
+
+  function isSpecialLine(value: string) {
+    return (
+      value.startsWith("# ") ||
+      value.startsWith("## ") ||
+      value.startsWith("### ") ||
+      value.startsWith("#### ") ||
+      value.startsWith("- ") ||
+      value.startsWith("* ") ||
+      /^\d+\.\s/.test(value) ||
+      value.startsWith("> ") ||
+      value.startsWith("```") ||
+      value.trim() === "---" ||
+      value.startsWith(":::")
+    );
+  }
+
   while (i < lines.length) {
     const line = lines[i];
 
     if (line.startsWith("# ") && !line.startsWith("## ")) {
       nodes.push(
-        <h1 key={i} className="mt-12 mb-4 text-[30px] font-bold text-[#1B2B1F]" style={{ letterSpacing: "-0.025em", lineHeight: 1.25 }}>
+        <h1 key={i} className="mt-14 mb-5 text-[34px] font-bold text-[#1B2B1F]" style={{ letterSpacing: "-0.03em", lineHeight: 1.15 }}>
           {parseInline(line.slice(2))}
         </h1>
       );
     } else if (line.startsWith("## ") && !line.startsWith("### ")) {
       nodes.push(
-        <div key={i} className="mt-12 mb-4">
-          <h2 className="text-[21px] font-bold text-[#1B2B1F]" style={{ letterSpacing: "-0.02em", lineHeight: 1.35 }}>
+        <div key={i} className="mt-14 mb-5">
+          <h2 className="text-[26px] font-bold text-[#1B2B1F]" style={{ letterSpacing: "-0.025em", lineHeight: 1.22 }}>
             {parseInline(line.slice(3))}
           </h2>
-          <div className="mt-2 h-[2px] w-8 rounded-full bg-[#0F6E56]/30" />
+          <div className="mt-3 h-[3px] w-10 rounded-full bg-[#0F6E56]/35" />
         </div>
       );
     } else if (line.startsWith("### ")) {
       nodes.push(
-        <h3 key={i} className="mt-8 mb-3 text-[17px] font-semibold text-[#1B2B1F]" style={{ letterSpacing: "-0.01em" }}>
+        <h3 key={i} className="mt-10 mb-3 text-[21px] font-semibold text-[#1B2B1F]" style={{ letterSpacing: "-0.018em", lineHeight: 1.3 }}>
           {parseInline(line.slice(4))}
         </h3>
       );
     } else if (line.startsWith("#### ")) {
       nodes.push(
-        <h4 key={i} className="mt-6 mb-2 text-[12px] font-bold uppercase tracking-[0.1em] text-[#8A9090]">
+        <h4 key={i} className="mt-8 mb-2 text-[12px] font-bold uppercase tracking-[0.14em] text-[#0F6E56]">
           {parseInline(line.slice(5))}
         </h4>
       );
@@ -195,10 +225,29 @@ function BlogContent({ content }: { content: string }) {
       );
     } else if (line.trim() === "") {
       // skip blank lines
+    } else if (isImplicitHeading(line, lines[i - 1], lines[i + 1])) {
+      nodes.push(
+        <div key={`implicit-${i}`} className="mt-14 mb-5">
+          <h2 className="text-[26px] font-bold text-[#1B2B1F]" style={{ letterSpacing: "-0.025em", lineHeight: 1.22 }}>
+            {parseInline(line.trim())}
+          </h2>
+          <div className="mt-3 h-[3px] w-10 rounded-full bg-[#0F6E56]/35" />
+        </div>
+      );
     } else {
+      const paragraphLines: string[] = [line.trim()];
+      while (
+        i + 1 < lines.length &&
+        lines[i + 1].trim() !== "" &&
+        !isSpecialLine(lines[i + 1])
+      ) {
+        paragraphLines.push(lines[i + 1].trim());
+        i++;
+      }
+
       nodes.push(
         <p key={i} className="my-5 text-[17px] leading-[1.9] text-[#3D4A40]">
-          {parseInline(line)}
+          {parseInline(paragraphLines.join(" "))}
         </p>
       );
     }
@@ -258,11 +307,22 @@ function SidebarPostCard({ post }: { post: RelatedPost }) {
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const post = await getBlogPost(params.slug);
+  const image = `/blog/${params.slug}/opengraph-image`;
   if (!post) return { title: "Post not found — Staky" };
   return {
     title: `${post.title} — Staky Blog`,
     description: post.excerpt,
-    openGraph: { title: post.title, description: post.excerpt, images: post.coverImage ? [post.coverImage] : [] },
+    openGraph: {
+      title: post.title,
+      description: post.excerpt,
+      images: [{ url: image, width: 1200, height: 630, alt: post.title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: post.excerpt,
+      images: [image],
+    },
   };
 }
 
@@ -300,42 +360,54 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
             {/* Header */}
             <FadeIn>
-              <span className="inline-block rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide" style={{ background: bg, color: textColor }}>
-                {post.category}
-              </span>
+              <div
+                className="relative overflow-hidden rounded-[28px] px-6 py-8 sm:px-8 sm:py-10"
+                style={{
+                  background: "linear-gradient(135deg, #F5F1E8 0%, #FAF8F5 58%, #F3F7F3 100%)",
+                  border: "1.5px solid rgba(0,0,0,0.05)",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.04), 0 12px 36px rgba(0,0,0,0.05)",
+                }}
+              >
+                <div className="absolute right-[-40px] top-[-24px] h-36 w-36 rounded-full bg-[#0F6E56]/8 blur-3xl" />
+                <div className="absolute left-[18%] bottom-[-30px] h-24 w-24 rounded-full bg-[#C8956C]/10 blur-3xl" />
+                <div className="relative">
+                  <span className="inline-block rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide" style={{ background: bg, color: textColor }}>
+                    {post.category}
+                  </span>
 
-              <h1 className="mt-4 text-[36px] font-bold leading-[1.15] text-[#1B2B1F] sm:text-[42px]" style={{ letterSpacing: "-0.03em" }}>
-                {post.title}
-              </h1>
+                  <h1 className="mt-4 max-w-[860px] text-[38px] font-bold leading-[1.1] text-[#1B2B1F] sm:text-[46px]" style={{ letterSpacing: "-0.04em" }}>
+                    {post.title}
+                  </h1>
 
-              <p className="mt-4 text-[17px] leading-[1.75] text-[#5C6B5E]">
-                {post.excerpt}
-              </p>
+                  <p className="mt-5 max-w-[760px] text-[18px] leading-[1.8] text-[#5C6B5E]">
+                    {post.excerpt}
+                  </p>
 
-              {/* Author + meta */}
-              <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-b border-[#E8E4DB] py-4">
-                <div className="flex items-center gap-2.5">
-                  {post.author.image ? (
-                    <Image src={post.author.image} alt={post.author.name ?? ""} width={36} height={36} className="rounded-full ring-2 ring-white" />
-                  ) : (
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0F6E56]/15 text-sm font-bold text-[#0F6E56] ring-2 ring-white">
-                      {(post.author.name ?? "S")[0]}
+                  <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-[#E8E4DB] pt-5">
+                    <div className="flex items-center gap-2.5">
+                      {post.author.image ? (
+                        <Image src={post.author.image} alt={post.author.name ?? ""} width={38} height={38} className="rounded-full ring-2 ring-white" />
+                      ) : (
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0F6E56]/15 text-sm font-bold text-[#0F6E56] ring-2 ring-white">
+                          {(post.author.name ?? "S")[0]}
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-[13px] font-semibold text-[#1B2B1F]">{post.author.name ?? "Staky Team"}</p>
+                        {post.author.title && <p className="text-[11px] text-[#8A9090]">{post.author.title}</p>}
+                      </div>
                     </div>
-                  )}
-                  <div>
-                    <p className="text-[13px] font-semibold text-[#1B2B1F]">{post.author.name ?? "Staky Team"}</p>
-                    {post.author.title && <p className="text-[11px] text-[#8A9090]">{post.author.title}</p>}
+                    <span className="hidden h-3 w-px bg-[#D4CFC7] sm:block" />
+                    <div className="flex items-center gap-4 text-[13px] text-[#8A9090]">
+                      <span className="flex items-center gap-1.5">
+                        <Calendar className="h-3.5 w-3.5" />
+                        {new Date(post.createdAt).toLocaleDateString("en", { month: "long", day: "numeric", year: "numeric" })}
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Eye className="h-3.5 w-3.5" />{fakeViews(post.slug, post.views)} views
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <span className="hidden h-3 w-px bg-[#D4CFC7] sm:block" />
-                <div className="flex items-center gap-4 text-[13px] text-[#8A9090]">
-                  <span className="flex items-center gap-1.5">
-                    <Calendar className="h-3.5 w-3.5" />
-                    {new Date(post.createdAt).toLocaleDateString("en", { month: "long", day: "numeric", year: "numeric" })}
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <Eye className="h-3.5 w-3.5" />{fakeViews(post.slug, post.views)} views
-                  </span>
                 </div>
               </div>
             </FadeIn>
@@ -351,7 +423,17 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
             {/* Content */}
             <FadeIn delay={120}>
-              <article className="pt-8 pb-10">
+              <article
+                className="mt-8 mb-8 rounded-[24px] bg-white px-6 py-8 sm:px-10 sm:py-10"
+                style={{ border: "1.5px solid rgba(0,0,0,0.05)", boxShadow: "0 1px 2px rgba(0,0,0,0.03), 0 8px 24px rgba(0,0,0,0.04)" }}
+              >
+                <div className="mb-8 flex items-center gap-3">
+                  <div className="h-[2px] w-8 rounded-full bg-[#0F6E56]/35" />
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8A9090]">
+                    Article
+                  </p>
+                </div>
+
                 <BlogContent content={post.content} />
 
                 {/* Tags + share */}

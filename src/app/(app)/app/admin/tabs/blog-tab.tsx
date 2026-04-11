@@ -1,11 +1,13 @@
 "use client";
 
-import { startTransition, useState } from "react";
+import type React from "react";
+import { startTransition, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
   PlusCircle, Pencil, Trash2, Eye, Star, StarOff,
   Globe, EyeOff, X, Loader2, FileText, BookOpen,
+  Heading2, Heading3, Bold, Italic, List, ListOrdered, Quote, Code2, Link2, Minus,
 } from "lucide-react";
 import {
   adminCreateBlogPost,
@@ -84,6 +86,145 @@ function formatDate(date: Date) {
   });
 }
 
+function parseInlinePreview(text: string) {
+  const parts = text.split(/(\[([^\]]+)\]\(([^)]+)\)|\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/);
+  return parts.map((part, index) => {
+    if (!part) return null;
+    const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+    if (linkMatch) return <span key={index} className="text-[#0F6E56] underline underline-offset-2">{linkMatch[1]}</span>;
+    if (part.startsWith("**") && part.endsWith("**")) return <strong key={index}>{part.slice(2, -2)}</strong>;
+    if (part.startsWith("*") && part.endsWith("*")) return <em key={index}>{part.slice(1, -1)}</em>;
+    if (part.startsWith("`") && part.endsWith("`")) {
+      return (
+        <code
+          key={index}
+          className="rounded-md border border-[#DCE7DF] bg-[#F7FAF7] px-1.5 py-0.5 font-mono text-[0.9em] text-[#275843]"
+        >
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    return part;
+  });
+}
+
+function BlogPreview({ content }: { content: string }) {
+  const lines = content.split("\n");
+  const nodes: React.ReactNode[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    if (line.startsWith("## ")) {
+      nodes.push(<h2 key={i} className="mt-7 mb-3 text-[22px] font-bold text-[#1B2B1F]">{parseInlinePreview(line.slice(3))}</h2>);
+    } else if (line.startsWith("### ")) {
+      nodes.push(<h3 key={i} className="mt-6 mb-2 text-[18px] font-semibold text-[#1B2B1F]">{parseInlinePreview(line.slice(4))}</h3>);
+    } else if (line.startsWith("- ")) {
+      const items: string[] = [];
+      while (i < lines.length && lines[i].startsWith("- ")) {
+        items.push(lines[i].slice(2));
+        i++;
+      }
+      nodes.push(
+        <ul key={`ul-${i}`} className="my-4 space-y-2">
+          {items.map((item, idx) => (
+            <li key={idx} className="flex items-start gap-3 text-[14px] leading-7 text-[#415146]">
+              <span className="mt-[10px] h-1.5 w-1.5 rounded-full bg-[#0F6E56]" />
+              <span>{parseInlinePreview(item)}</span>
+            </li>
+          ))}
+        </ul>
+      );
+      continue;
+    } else if (/^\d+\.\s/.test(line)) {
+      const items: string[] = [];
+      while (i < lines.length && /^\d+\.\s/.test(lines[i])) {
+        items.push(lines[i].replace(/^\d+\.\s/, ""));
+        i++;
+      }
+      nodes.push(
+        <ol key={`ol-${i}`} className="my-4 space-y-2">
+          {items.map((item, idx) => (
+            <li key={idx} className="flex items-start gap-3 text-[14px] leading-7 text-[#415146]">
+              <span className="mt-[2px] flex h-5 w-5 items-center justify-center rounded-full bg-[#0F6E56]/10 text-[11px] font-semibold text-[#0F6E56]">
+                {idx + 1}
+              </span>
+              <span>{parseInlinePreview(item)}</span>
+            </li>
+          ))}
+        </ol>
+      );
+      continue;
+    } else if (line.startsWith("> ")) {
+      nodes.push(
+        <blockquote key={i} className="my-5 rounded-r-xl border-l-4 border-[#0F6E56] bg-[#F3F8F3] px-4 py-3 text-[14px] italic leading-7 text-[#415146]">
+          {parseInlinePreview(line.slice(2))}
+        </blockquote>
+      );
+    } else if (line.startsWith("```")) {
+      const lang = line.slice(3).trim();
+      const codeLines: string[] = [];
+      i++;
+      while (i < lines.length && !lines[i].startsWith("```")) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      nodes.push(
+        <div key={`code-${i}`} className="my-6 overflow-hidden rounded-[20px] border border-[#213127] bg-[#121A14] shadow-[0_14px_34px_rgba(0,0,0,0.16)]">
+          <div className="flex items-center justify-between border-b border-white/[0.06] bg-[#182119] px-4 py-2.5">
+            <div className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#314637]" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#314637]" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#314637]" />
+            </div>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">
+              {lang || "code"}
+            </span>
+          </div>
+          <pre className="overflow-x-auto px-4 py-4 text-[12px] leading-6 text-[#D7E7DB]">
+            <code className="font-mono">
+              {codeLines.map((codeLine, lineIndex) => (
+                <div key={lineIndex} className="grid grid-cols-[32px_1fr] gap-3">
+                  <span className="select-none text-right text-white/22">{lineIndex + 1}</span>
+                  <span>{codeLine || " "}</span>
+                </div>
+              ))}
+            </code>
+          </pre>
+        </div>
+      );
+      continue;
+    } else if (line.trim() === "---") {
+      nodes.push(<div key={i} className="my-6 h-px bg-[#E4E9E1]" />);
+    } else if (line.trim() !== "") {
+      const paragraphLines = [line.trim()];
+      while (
+        i + 1 < lines.length &&
+        lines[i + 1].trim() !== "" &&
+        !lines[i + 1].startsWith("## ") &&
+        !lines[i + 1].startsWith("### ") &&
+        !lines[i + 1].startsWith("- ") &&
+        !/^\d+\.\s/.test(lines[i + 1]) &&
+        !lines[i + 1].startsWith("> ") &&
+        lines[i + 1].trim() !== "---"
+      ) {
+        paragraphLines.push(lines[i + 1].trim());
+        i++;
+      }
+      nodes.push(<p key={i} className="my-4 text-[14px] leading-7 text-[#415146]">{parseInlinePreview(paragraphLines.join(" "))}</p>);
+    }
+
+    i++;
+  }
+
+  if (nodes.length === 0) {
+    return <p className="text-[13px] leading-6 text-gray-400">Start writing to preview your article structure.</p>;
+  }
+
+  return <div>{nodes}</div>;
+}
+
 /* ── Modal ────────────────────────────────────────────────────────────────── */
 
 type ModalProps = {
@@ -98,6 +239,7 @@ function PostModal({ mode, initial, onClose, onSave, saving }: ModalProps) {
   const [form, setForm] = useState<BlogPostFormData>(initial);
   const [tagsInput, setTagsInput] = useState(initial.tags.join(", "));
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(mode === "edit");
+  const contentRef = useRef<HTMLTextAreaElement>(null);
 
   function set<K extends keyof BlogPostFormData>(key: K, value: BlogPostFormData[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -122,6 +264,75 @@ function PostModal({ mode, initial, onClose, onSave, saving }: ModalProps) {
       .map((t) => t.trim())
       .filter(Boolean);
     onSave({ ...form, tags });
+  }
+
+  function updateContent(next: string) {
+    set("content", next);
+    set("readingTime", estimateReadingTime(next));
+  }
+
+  function wrapSelection(prefix: string, suffix = prefix, placeholder = "text") {
+    const el = contentRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const selected = form.content.slice(start, end) || placeholder;
+    const next = `${form.content.slice(0, start)}${prefix}${selected}${suffix}${form.content.slice(end)}`;
+    updateContent(next);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + prefix.length, start + prefix.length + selected.length);
+    });
+  }
+
+  function prefixLines(prefix: string, placeholder: string) {
+    const el = contentRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const selected = form.content.slice(start, end) || placeholder;
+    const transformed = selected.split("\n").map((line) => (line.trim() ? `${prefix}${line}` : line)).join("\n");
+    const next = `${form.content.slice(0, start)}${transformed}${form.content.slice(end)}`;
+    updateContent(next);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start, start + transformed.length);
+    });
+  }
+
+  function insertBlock(block: string) {
+    const el = contentRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const prefix = start > 0 && form.content[start - 1] !== "\n" ? "\n\n" : "";
+    const suffix = end < form.content.length && form.content[end] !== "\n" ? "\n\n" : "";
+    const next = `${form.content.slice(0, start)}${prefix}${block}${suffix}${form.content.slice(end)}`;
+    updateContent(next);
+    requestAnimationFrame(() => {
+      const cursor = start + prefix.length + block.length;
+      el.focus();
+      el.setSelectionRange(cursor, cursor);
+    });
+  }
+
+  function insertCodeBlock() {
+    const el = contentRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const selected = form.content.slice(start, end).trim();
+    const snippet = selected || "const migration = 'ready';";
+    const prefix = start > 0 && form.content[start - 1] !== "\n" ? "\n\n" : "";
+    const suffix = end < form.content.length && form.content[end] !== "\n" ? "\n\n" : "";
+    const block = `\`\`\`ts\n${snippet}\n\`\`\``;
+    const next = `${form.content.slice(0, start)}${prefix}${block}${suffix}${form.content.slice(end)}`;
+    updateContent(next);
+    requestAnimationFrame(() => {
+      const codeStart = start + prefix.length + "```ts\n".length;
+      el.focus();
+      el.setSelectionRange(codeStart, codeStart + snippet.length);
+    });
   }
 
   return (
@@ -252,16 +463,65 @@ function PostModal({ mode, initial, onClose, onSave, saving }: ModalProps) {
             <label className="block text-[12px] font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
               Content
             </label>
+            <div className="mb-2 overflow-hidden rounded-[14px] border border-gray-200 bg-white">
+              <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 bg-gray-50 px-3 py-2.5">
+                {[
+                  { label: "H2", icon: Heading2, action: () => prefixLines("## ", "Section heading") },
+                  { label: "H3", icon: Heading3, action: () => prefixLines("### ", "Subheading") },
+                  { label: "Bold", icon: Bold, action: () => wrapSelection("**") },
+                  { label: "Italic", icon: Italic, action: () => wrapSelection("*") },
+                  { label: "List", icon: List, action: () => prefixLines("- ", "List item") },
+                  { label: "Numbered", icon: ListOrdered, action: () => prefixLines("1. ", "First item") },
+                  { label: "Quote", icon: Quote, action: () => prefixLines("> ", "Quote") },
+                  { label: "Code", icon: Code2, action: () => insertCodeBlock() },
+                  { label: "Link", icon: Link2, action: () => wrapSelection("[", "](https://example.com)", "Link text") },
+                  { label: "Divider", icon: Minus, action: () => insertBlock("---") },
+                ].map(({ label, icon: Icon, action }) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={action}
+                    className="inline-flex items-center gap-1.5 rounded-[10px] border border-gray-200 bg-white px-2.5 py-1.5 text-[11px] font-medium text-gray-600 transition-colors hover:border-[#0F6E56]/30 hover:text-[#0F6E56]"
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div>
+                <div className="border-b border-gray-100">
+                  <div className="border-b border-gray-100 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">
+                    Write
+                  </div>
+                  <textarea
+                    ref={contentRef}
+                    rows={16}
+                    value={form.content}
+                    onChange={(e) => handleContentChange(e.target.value)}
+                    placeholder="Write your article here...&#10;&#10;Use the toolbar for headings, lists, quotes, links, and formatting."
+                    className="w-full resize-y border-0 px-4 py-3 text-[13px] font-mono text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-0"
+                  />
+                </div>
+                <div className="bg-[#FBFCFA]">
+                  <div className="border-b border-gray-100 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">
+                    Preview
+                  </div>
+                  <div className="max-h-[376px] overflow-y-auto px-4 py-3">
+                    <BlogPreview content={form.content} />
+                  </div>
+                </div>
+              </div>
+            </div>
             <textarea
               required
               rows={12}
               value={form.content}
               onChange={(e) => handleContentChange(e.target.value)}
               placeholder="Write your article here…&#10;&#10;Supports basic markdown-like syntax:&#10;## Heading 2   ### Heading 3&#10;**bold**   *italic*   `code`&#10;- List item&#10;> Blockquote"
-              className="w-full rounded-[10px] border border-gray-200 px-3.5 py-2.5 text-[13px] font-mono text-gray-900 placeholder:text-gray-400 focus:border-[#0F6E56] focus:outline-none focus:ring-2 focus:ring-[#0F6E56]/10 resize-y"
+              className="hidden"
             />
-            <p className="mt-1 text-[11px] text-gray-400">
-              Supports: ## heading, ### heading, **bold**, *italic*, `code`, - list, &gt; blockquote, --- divider
+            <p className="mt-2 text-[11px] text-gray-400">
+              Use the toolbar to insert headings, lists, quotes, links, code, and dividers without typing markdown manually.
             </p>
           </div>
 

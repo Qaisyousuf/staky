@@ -142,7 +142,7 @@ function PostCard({ post }: { post: PostSummary }) {
   return (
     <Link href={`/blog/${post.slug}`} className="group flex flex-col">
       <div
-        className="flex h-full flex-col overflow-hidden rounded-[20px] bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+        className="flex h-full min-h-[370px] flex-col overflow-hidden rounded-[20px] bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
         style={{ border: "1.5px solid rgba(0,0,0,0.06)", boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04)" }}
       >
         {/* Cover */}
@@ -165,12 +165,12 @@ function PostCard({ post }: { post: PostSummary }) {
         <div className="flex flex-1 flex-col p-5">
           <CategoryBadge category={post.category} size="xs" />
           <h3
-            className="mt-2.5 flex-1 text-[16px] font-bold leading-snug text-[#1B2B1F] line-clamp-2 transition-colors group-hover:text-[#0F6E56]"
+            className="mt-2.5 min-h-[44px] text-[15px] font-bold leading-snug text-[#1B2B1F] line-clamp-2 transition-colors group-hover:text-[#0F6E56]"
             style={{ letterSpacing: "-0.018em" }}
           >
             {post.title}
           </h3>
-          <p className="mt-2 text-[13px] leading-[1.65] text-[#5C6B5E] line-clamp-2">
+          <p className="mt-2 flex-1 text-[13px] leading-[1.65] text-[#5C6B5E] line-clamp-3">
             {post.excerpt}
           </p>
           <div className="mt-4 border-t border-[#F0EDE8] pt-3.5">
@@ -233,24 +233,31 @@ export default async function BlogPage({
     <div className="min-h-screen bg-[#FAF8F5]" style={{ fontFamily: F }}>
 
       {/* ── Header ── */}
-      <div className="border-b border-[#E8E4DB]">
-        <div className="mx-auto max-w-6xl px-4 pb-10 pt-16 sm:px-6 lg:px-8">
+      <div className="border-b border-[#E8E4DB] bg-[linear-gradient(180deg,#F8F5EE_0%,#FAF8F5_58%,#FAF8F5_100%)]">
+        <div className="mx-auto max-w-6xl px-4 pb-12 pt-16 sm:px-6 lg:px-8">
           <FadeIn>
+            <div className="relative py-4">
+              <div className="absolute right-[4%] top-0 h-36 w-36 rounded-full bg-[#0F6E56]/6 blur-3xl" />
+              <div className="absolute left-[18%] top-16 h-24 w-24 rounded-full bg-[#C8956C]/8 blur-3xl" />
+              <div className="relative">
             <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-[#0F6E56]">
               Staky Blog
             </p>
-            <h1 className="text-[40px] font-bold text-[#1B2B1F] sm:text-[48px]" style={{ letterSpacing: "-0.03em", lineHeight: 1.08 }}>
-              Guides, stories<br className="hidden sm:block" /> & updates
+            <h1 className="max-w-[760px] text-[42px] font-bold text-[#1B2B1F] sm:text-[54px]" style={{ letterSpacing: "-0.04em", lineHeight: 1.02 }}>
+              Guides, stories & updates
             </h1>
-            <p className="mt-3 max-w-[480px] text-[15px] leading-[1.75] text-[#5C6B5E]">
+            <p className="mt-4 max-w-[640px] text-[16px] leading-[1.8] text-[#5C6B5E]">
               Everything you need to navigate European software migration — from practical guides to community stories.
             </p>
+              </div>
+            </div>
           </FadeIn>
+
 
           {/* Category filters */}
           {categories.length > 0 && (
             <FadeIn delay={100}>
-              <div className="mt-8 flex flex-wrap gap-2">
+              <div className="mt-10 flex flex-wrap gap-2">
                 {["all", ...categories].map((cat) => (
                   <Link
                     key={cat}
@@ -310,10 +317,10 @@ export default async function BlogPage({
                   </div>
                 </FadeIn>
 
-                <div className="lg:grid lg:grid-cols-[1fr_300px] lg:gap-12">
+                <div className={listPosts.length > 0 ? "lg:grid lg:grid-cols-[1fr_300px] lg:gap-12" : ""}>
 
                   {/* Grid */}
-                  <div className="grid gap-6 sm:grid-cols-2">
+                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {gridPosts.map((post: PostSummary, i: number) => (
                       <FadeIn key={post.id} delay={i * 50}>
                         <PostCard post={post} />
