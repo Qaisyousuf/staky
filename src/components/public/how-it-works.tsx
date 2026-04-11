@@ -25,20 +25,6 @@ const segments = [
   { d: "M 1234 115 L 1234 12",         delay: 5520, dur: 644  },
 ];
 
-// When the light arrives at each desktop card (seg delay + dur of the incoming segment)
-const ARRIVE = {
-  trigger:     300,
-  action:      1100,
-  suggest:     3115,
-  list:        3521,
-  find:        3927,
-  connect:     4333,
-  started:     4708,
-  inProgress:  5114,
-  configuring: 5520,
-  completed:   6164,
-};
-
 const STEP_DUR = 420; // mobile connector duration ms
 
 /* ── CSS ─────────────────────────────────────────────────────────────────── */
@@ -47,10 +33,6 @@ const css = `
 @keyframes workflow-draw {
   from { stroke-dashoffset: 1; }
   to   { stroke-dashoffset: 0; }
-}
-@keyframes card-arrive {
-  0%   { opacity: 1; box-shadow: 0 0 0 1.5px rgba(255,255,255,0.7), 0 0 28px rgba(255,255,255,0.22); }
-  100% { opacity: 0; box-shadow: none; }
 }
 .workflow-root { background: #1B2B1F; }
 .workflow-card {
@@ -86,18 +68,6 @@ function useInView() {
   return { ref, visible };
 }
 
-/* ── Glow overlay — fires exactly when the line arrives ──────────────────── */
-
-function GlowOverlay({ visible, delay }: { visible: boolean; delay: number }) {
-  if (!visible) return null;
-  return (
-    <div
-      className="pointer-events-none absolute inset-0 rounded-2xl"
-      style={{ opacity: 0, animation: `card-arrive 900ms ease-out ${delay}ms forwards` }}
-    />
-  );
-}
-
 /* ── Base card ───────────────────────────────────────────────────────────── */
 
 function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
@@ -123,9 +93,9 @@ function IconBox({ icon: Icon }: { icon: LucideIcon }) {
 
 /* ── TriggerCard ─────────────────────────────────────────────────────────── */
 
-function TriggerCard({ visible, arrivalDelay }: { visible: boolean; arrivalDelay: number }) {
+function TriggerCard() {
   return (
-    <div className="relative w-[282px]">
+    <div className="w-[282px]">
       <Card className="overflow-hidden">
         <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
           <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40">
@@ -168,16 +138,15 @@ function TriggerCard({ visible, arrivalDelay }: { visible: boolean; arrivalDelay
           </div>
         </div>
       </Card>
-      <GlowOverlay visible={visible} delay={arrivalDelay} />
     </div>
   );
 }
 
 /* ── ActionCard ──────────────────────────────────────────────────────────── */
 
-function ActionCard({ visible, arrivalDelay }: { visible: boolean; arrivalDelay: number }) {
+function ActionCard() {
   return (
-    <div className="relative w-[174px]">
+    <div className="w-[174px]">
       <Card className="px-4 py-3.5">
         <div className="flex items-center gap-3">
           <IconBox icon={Plus} />
@@ -187,19 +156,17 @@ function ActionCard({ visible, arrivalDelay }: { visible: boolean; arrivalDelay:
           </div>
         </div>
       </Card>
-      <GlowOverlay visible={visible} delay={arrivalDelay} />
     </div>
   );
 }
 
 /* ── StepCard ────────────────────────────────────────────────────────────── */
 
-function StepCard({ title, detail, icon, widthClass, visible, arrivalDelay }: {
+function StepCard({ title, detail, icon, widthClass }: {
   title: string; detail?: string; icon: LucideIcon; widthClass: string;
-  visible: boolean; arrivalDelay: number;
 }) {
   return (
-    <div className={`relative ${widthClass}`}>
+    <div className={widthClass}>
       <Card className="px-4 py-3.5">
         <div className="flex items-center gap-3">
           <IconBox icon={icon} />
@@ -209,7 +176,6 @@ function StepCard({ title, detail, icon, widthClass, visible, arrivalDelay }: {
           </div>
         </div>
       </Card>
-      <GlowOverlay visible={visible} delay={arrivalDelay} />
     </div>
   );
 }
@@ -222,36 +188,36 @@ function DesktopWorkflow({ visible }: { visible: boolean }) {
       <div className="relative mx-auto h-[540px] max-w-[1380px]">
 
         <div className="absolute left-0 top-[116px] z-10">
-          <TriggerCard visible={visible} arrivalDelay={ARRIVE.trigger} />
+          <TriggerCard />
         </div>
         <div className="absolute left-[410px] top-[168px] z-10">
-          <ActionCard visible={visible} arrivalDelay={ARRIVE.action} />
+          <ActionCard />
         </div>
 
         <div className="absolute left-[726px] top-[-12px] z-10">
-          <StepCard title="Suggest migration partner" detail="For your US to EU migration" icon={Lightbulb} widthClass="w-[324px]" visible={visible} arrivalDelay={ARRIVE.suggest} />
+          <StepCard title="Suggest migration partner" detail="For your US to EU migration" icon={Lightbulb} widthClass="w-[324px]" />
         </div>
         <div className="absolute left-[726px] top-[115px] z-10">
-          <StepCard title="List migration partners" detail="TechMigrate GmbH · Nordic Cloud · EuroStack" icon={Users} widthClass="w-[324px]" visible={visible} arrivalDelay={ARRIVE.list} />
+          <StepCard title="List migration partners" detail="TechMigrate GmbH · Nordic Cloud · EuroStack" icon={Users} widthClass="w-[324px]" />
         </div>
         <div className="absolute left-[748px] top-[242px] z-10">
-          <StepCard title="Find migration partner" detail="SeoSoft ApS" icon={UserCheck} widthClass="w-[280px]" visible={visible} arrivalDelay={ARRIVE.find} />
+          <StepCard title="Find migration partner" detail="SeoSoft ApS" icon={UserCheck} widthClass="w-[280px]" />
         </div>
         <div className="absolute left-[748px] top-[369px] z-10">
-          <StepCard title="Connect" detail="Open the migration workspace" icon={Link2} widthClass="w-[280px]" visible={visible} arrivalDelay={ARRIVE.connect} />
+          <StepCard title="Connect" detail="Open the migration workspace" icon={Link2} widthClass="w-[280px]" />
         </div>
 
         <div className="absolute right-0 top-[-12px] z-10">
-          <StepCard title="Migration completed" detail="European tools are now live" icon={CheckCircle2} widthClass="w-[292px]" visible={visible} arrivalDelay={ARRIVE.completed} />
+          <StepCard title="Migration completed" detail="European tools are now live" icon={CheckCircle2} widthClass="w-[292px]" />
         </div>
         <div className="absolute right-0 top-[115px] z-10">
-          <StepCard title="Configuring the new system" detail="Prepare the European stack setup" icon={Settings} widthClass="w-[292px]" visible={visible} arrivalDelay={ARRIVE.configuring} />
+          <StepCard title="Configuring the new system" detail="Prepare the European stack setup" icon={Settings} widthClass="w-[292px]" />
         </div>
         <div className="absolute right-0 top-[242px] z-10">
-          <StepCard title="Migration in progress" detail="Partner updates your stack configuration" icon={Activity} widthClass="w-[292px]" visible={visible} arrivalDelay={ARRIVE.inProgress} />
+          <StepCard title="Migration in progress" detail="Partner updates your stack configuration" icon={Activity} widthClass="w-[292px]" />
         </div>
         <div className="absolute right-0 top-[369px] z-10">
-          <StepCard title="Migration started" detail="Kick off the partner migration work" icon={Rocket} widthClass="w-[292px]" visible={visible} arrivalDelay={ARRIVE.started} />
+          <StepCard title="Migration started" detail="Kick off the partner migration work" icon={Rocket} widthClass="w-[292px]" />
         </div>
 
         {/* SVG lines */}
@@ -301,22 +267,17 @@ function MobileConnector({ visible, delay }: { visible: boolean; delay: number }
 
 /* ── Mobile step card ────────────────────────────────────────────────────── */
 
-function MobileStep({ title, detail, icon, visible, glowDelay }: {
-  title: string; detail?: string; icon: LucideIcon; visible: boolean; glowDelay: number;
-}) {
+function MobileStep({ title, detail, icon }: { title: string; detail?: string; icon: LucideIcon }) {
   return (
-    <div className="relative">
-      <Card className="w-full px-4 py-3.5">
-        <div className="flex items-center gap-3">
-          <IconBox icon={icon} />
-          <div className="min-w-0">
-            <p className="text-[13px] font-semibold text-white">{title}</p>
-            {detail && <p className="mt-0.5 text-[11px] text-white/60">{detail}</p>}
-          </div>
+    <Card className="w-full px-4 py-3.5">
+      <div className="flex items-center gap-3">
+        <IconBox icon={icon} />
+        <div className="min-w-0">
+          <p className="text-[13px] font-semibold text-white">{title}</p>
+          {detail && <p className="mt-0.5 text-[11px] text-white/60">{detail}</p>}
         </div>
-      </Card>
-      <GlowOverlay visible={visible} delay={glowDelay} />
-    </div>
+      </div>
+    </Card>
   );
 }
 
@@ -337,35 +298,23 @@ function MobileWorkflow({ visible }: { visible: boolean }) {
   return (
     <div className="workflow-mobile mt-12 flex-col items-center px-4">
 
-      {/* TriggerCard glows immediately */}
       <div className="flex w-full max-w-[360px] justify-center">
-        <TriggerCard visible={visible} arrivalDelay={0} />
+        <TriggerCard />
       </div>
 
-      {/* connector 0: delay=0, ends at STEP_DUR */}
       <MobileConnector visible={visible} delay={0} />
 
-      {/* ActionCard glows when connector 0 finishes */}
       <div className="flex w-full max-w-[360px] justify-center">
-        <ActionCard visible={visible} arrivalDelay={STEP_DUR} />
+        <ActionCard />
       </div>
 
-      {/* connector 1: delay=STEP_DUR, ends at STEP_DUR*2 */}
       <MobileConnector visible={visible} delay={STEP_DUR} />
 
       <div className="flex w-full max-w-[360px] flex-col">
         {MOBILE_STEPS.map((step, i) => (
           <div key={i}>
-            {/* step i glows when the connector above it finishes: delay = STEP_DUR*(i+2) */}
-            <MobileStep
-              title={step.title}
-              detail={step.detail}
-              icon={step.icon}
-              visible={visible}
-              glowDelay={STEP_DUR * (i + 2)}
-            />
+            <MobileStep title={step.title} detail={step.detail} icon={step.icon} />
             {i < MOBILE_STEPS.length - 1 && (
-              /* connector between step i and i+1: starts when step i glows */
               <MobileConnector visible={visible} delay={STEP_DUR * (i + 2)} />
             )}
           </div>

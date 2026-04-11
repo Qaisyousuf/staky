@@ -25,7 +25,13 @@ export type NotificationType =
   | "INVOICE_SENT"
   | "INVOICE_PAID"
   | "CONFIG_REQUEST_SENT"
-  | "CONFIG_SUBMITTED";
+  | "CONFIG_SUBMITTED"
+  | "PARTNER_APPLICATION"
+  | "PARTNER_APPROVED"
+  | "PARTNER_REJECTED"
+  | "PARTNER_DELETED"
+  | "CONTACT_RECEIVED"
+  | "JOB_APPLICATION_RECEIVED";
 
 export type MigrationRequestStatus =
   | "PENDING"

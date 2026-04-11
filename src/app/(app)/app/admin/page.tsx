@@ -10,6 +10,8 @@ import { UsersTab } from "./tabs/users-tab";
 import { ReportsTab } from "./tabs/reports-tab";
 import { ToolsTab } from "./tabs/tools-tab";
 import { BlogTab } from "./tabs/blog-tab";
+import { ContactTab } from "./tabs/contact-tab";
+import { JobsTab } from "./tabs/jobs-tab";
 import {
   getAdminStats,
   getPendingPosts,
@@ -23,9 +25,11 @@ import {
 } from "@/actions/admin";
 import { adminGetTools, adminGetAlternatives } from "@/actions/tools";
 import { adminGetBlogPosts } from "@/actions/blog";
+import { adminGetContactSubmissions } from "@/actions/contact";
+import { adminGetJobs, adminGetApplications } from "@/actions/jobs";
 
 const VALID_TABS: AdminTab[] = [
-  "overview", "posts", "comments", "requests", "partners", "users", "reports", "tools", "blog",
+  "overview", "posts", "comments", "requests", "partners", "users", "reports", "tools", "blog", "contact", "jobs",
 ];
 
 export default async function AdminPage({
@@ -52,6 +56,8 @@ export default async function AdminPage({
       {tab === "reports" && <ReportsTabLoader />}
       {tab === "tools" && <ToolsTabLoader />}
       {tab === "blog" && <BlogTabLoader />}
+      {tab === "contact" && <ContactTabLoader />}
+      {tab === "jobs" && <JobsTabLoader />}
     </AdminShell>
   );
 }
@@ -114,4 +120,14 @@ async function ToolsTabLoader() {
 async function BlogTabLoader() {
   const posts = await adminGetBlogPosts();
   return <BlogTab posts={posts} />;
+}
+
+async function ContactTabLoader() {
+  const submissions = await adminGetContactSubmissions();
+  return <ContactTab submissions={submissions} />;
+}
+
+async function JobsTabLoader() {
+  const [jobs, applications] = await Promise.all([adminGetJobs(), adminGetApplications()]);
+  return <JobsTab jobs={jobs} applications={applications} />;
 }

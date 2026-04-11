@@ -8,7 +8,7 @@ import {
   Menu, Search, Bell, Mail, Settings, X, Plus,
   Heart, MessageCircle, Reply, UserPlus, ThumbsUp,
   Link2, Bookmark, Share2, BriefcaseBusiness, CircleCheckBig, CircleOff, CircleDot, MessageSquare,
-  ArrowLeftRight, Eye, Handshake, ShieldCheck, ShieldX, Trash2, Receipt, CreditCard, ClipboardList, CheckSquare,
+  ArrowLeftRight, Eye, Handshake, ShieldCheck, ShieldX, Trash2, Receipt, CreditCard, ClipboardList, CheckSquare, Inbox, Briefcase,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { markAllNotificationsRead, markNotificationRead } from "@/actions/social";
@@ -91,6 +91,10 @@ function notifUrl(n: NotificationItem, role?: string): string {
     case "CONFIG_SUBMITTED":
       // Partner receives: go to the lead
       return n.requestId ? `/app/leads/${n.requestId}` : "/app/leads";
+    case "CONTACT_RECEIVED":
+      return "/app/admin?tab=contact";
+    case "JOB_APPLICATION_RECEIVED":
+      return "/app/admin?tab=jobs";
     default:
       return "/app/notifications";
   }
@@ -149,6 +153,8 @@ const TYPE_CFG: Record<string, { icon: React.ElementType; bg: string; fg: string
   INVOICE_PAID:          { icon: CreditCard,    bg: "bg-green-100",  fg: "text-green-600",  action: "confirmed invoice payment" },
   CONFIG_REQUEST_SENT:   { icon: ClipboardList, bg: "bg-blue-100",   fg: "text-blue-600",   action: "sent you a configuration request" },
   CONFIG_SUBMITTED:      { icon: CheckSquare,   bg: "bg-green-100",  fg: "text-green-600",  action: "submitted their configuration" },
+  CONTACT_RECEIVED:          { icon: Inbox,     bg: "bg-blue-100",   fg: "text-blue-600",   action: "sent a contact message" },
+  JOB_APPLICATION_RECEIVED:  { icon: Briefcase, bg: "bg-violet-100", fg: "text-violet-600", action: "submitted a job application" },
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

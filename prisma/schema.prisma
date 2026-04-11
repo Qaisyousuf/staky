@@ -63,6 +63,8 @@ enum NotificationType {
   INVOICE_PAID
   CONFIG_REQUEST_SENT
   CONFIG_SUBMITTED
+  CONTACT_RECEIVED
+  JOB_APPLICATION_RECEIVED
 }
 
 enum InvoiceStatus {
@@ -637,6 +639,55 @@ model ProfileView {
   @@index([profileId, createdAt(sort: Desc)])
   @@index([viewerId])
   @@map("profile_views")
+}
+
+// ─── Contact ─────────────────────────────────────────────────────────────────
+
+model ContactSubmission {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  topic     String
+  message   String   @db.Text
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@map("contact_submissions")
+}
+
+// ─── Careers ─────────────────────────────────────────────────────────────────
+
+model JobPosting {
+  id           String           @id @default(cuid())
+  title        String
+  department   String
+  location     String
+  type         String           @default("Full-time")
+  description  String           @db.Text
+  published    Boolean          @default(false)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  applications JobApplication[]
+
+  @@index([published, createdAt(sort: Desc)])
+  @@map("job_postings")
+}
+
+model JobApplication {
+  id           String     @id @default(cuid())
+  jobId        String
+  job          JobPosting @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  name         String
+  email        String
+  phone        String?
+  linkedinUrl  String?
+  portfolioUrl String?
+  message      String?    @db.Text
+  createdAt    DateTime   @default(now())
+
+  @@index([jobId, createdAt(sort: Desc)])
+  @@map("job_applications")
 }
 
 // ─── Blog ────────────────────────────────────────────────────────────────────

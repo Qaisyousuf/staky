@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 // useRouter also used inside NotifRow below
 import {
   Bell, Heart, MessageCircle, MessageSquare, Reply, UserPlus, ThumbsUp,
-  Link2, Bookmark, Share2, CheckCheck, BriefcaseBusiness, CircleCheckBig, CircleOff, CircleDot, Receipt, CreditCard, ClipboardList, CheckSquare,
+  Link2, Bookmark, Share2, CheckCheck, BriefcaseBusiness, CircleCheckBig, CircleOff, CircleDot, Receipt, CreditCard, ClipboardList, CheckSquare, Inbox, Briefcase,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { markAllNotificationsRead, markNotificationRead } from "@/actions/social";
@@ -62,6 +62,10 @@ function notifUrl(n: Notification, role?: string): string {
       return n.requestId ? `/requests/${n.requestId}` : "/requests";
     case "CONFIG_SUBMITTED":
       return n.requestId ? `/leads/${n.requestId}` : "/leads";
+    case "CONTACT_RECEIVED":
+      return "/admin?tab=contact";
+    case "JOB_APPLICATION_RECEIVED":
+      return "/admin?tab=jobs";
     default:
       return "/notifications";
   }
@@ -94,6 +98,8 @@ const TYPE_CFG: Record<string, {
   INVOICE_PAID:          { icon: CreditCard,    bg: "bg-green-100",   fg: "text-green-600",   action: "confirmed invoice payment",                category: "Requests" },
   CONFIG_REQUEST_SENT:   { icon: ClipboardList, bg: "bg-blue-100",    fg: "text-blue-600",    action: "sent you a configuration request",         category: "Requests" },
   CONFIG_SUBMITTED:      { icon: CheckSquare,   bg: "bg-green-100",   fg: "text-green-600",   action: "submitted their configuration",            category: "Requests" },
+  CONTACT_RECEIVED:         { icon: Inbox,     bg: "bg-blue-100",   fg: "text-blue-600",   action: "sent a contact message",       category: "Admin" },
+  JOB_APPLICATION_RECEIVED: { icon: Briefcase, bg: "bg-violet-100", fg: "text-violet-600", action: "submitted a job application",  category: "Admin" },
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

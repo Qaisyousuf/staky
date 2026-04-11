@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Cookie, Shield, BarChart2, Target } from "lucide-react";
+import { Shield, BarChart2, Target, Settings2, ChevronDown, ChevronUp, Wrench, Loader2 } from "lucide-react";
 import { saveCookieConsent } from "@/actions/cookie-consent";
 
-/* ─── Storage ────────────────────────────────────────────────────────────────── */
+/* ── Storage ─────────────────────────────────────────────────────────────── */
 
 const KEY = "staky-cookie-consent";
 
 export interface CookiePrefs {
   necessary: true;
+  functional: boolean;
   statistics: boolean;
   marketing: boolean;
   savedAt: number;
@@ -20,332 +21,219 @@ function loadPrefs(): CookiePrefs | null {
   try {
     const raw = typeof window !== "undefined" ? localStorage.getItem(KEY) : null;
     return raw ? (JSON.parse(raw) as CookiePrefs) : null;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 function persistPrefs(prefs: CookiePrefs) {
   localStorage.setItem(KEY, JSON.stringify(prefs));
 }
 
-/* ─── Public helper — call from anywhere to reopen the modal ─────────────────── */
-
 export function openCookieSettings() {
   window.dispatchEvent(new CustomEvent("staky:open-cookies"));
 }
 
-/* ─── Toggle component ───────────────────────────────────────────────────────── */
+/* ── Toggle ──────────────────────────────────────────────────────────────── */
 
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
     <button
       role="switch"
       aria-checked={checked}
-      onClick={() => onChange(!checked)}
+      disabled={disabled}
+      onClick={() => !disabled && onChange(!checked)}
       style={{
-        width: 42,
-        height: 24,
-        borderRadius: 999,
-        background: checked ? "#0F6E56" : "#D1D5DB",
-        border: "none",
-        cursor: "pointer",
-        padding: 3,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: checked ? "flex-end" : "flex-start",
-        flexShrink: 0,
-        transition: "background 200ms ease",
-        outline: "none",
+        width: 36, height: 20,
+        background: disabled ? "#D1FAE5" : checked ? "#0F6E56" : "#D1D5DB",
+        borderRadius: 999, border: "none", padding: 0,
+        cursor: disabled ? "not-allowed" : "pointer",
+        position: "relative", flexShrink: 0,
+        transition: "background 200ms",
       }}
     >
       <span style={{
-        width: 18,
-        height: 18,
-        borderRadius: "50%",
-        background: "white",
-        display: "block",
+        position: "absolute", top: 2, left: 2,
+        width: 16, height: 16, borderRadius: "50%", background: "white",
         boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-        transition: "none",
+        transition: "transform 200ms",
+        transform: (checked || disabled) ? "translateX(16px)" : "translateX(0)",
+        display: "block",
       }} />
     </button>
   );
 }
 
-/* ─── Category row ───────────────────────────────────────────────────────────── */
+/* ── Categories ──────────────────────────────────────────────────────────── */
 
-function CategoryRow({
-  icon, title, description, always, checked, onChange,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  always?: boolean;
-  checked?: boolean;
-  onChange?: (v: boolean) => void;
-}) {
-  return (
-    <div style={{
-      background: "#F8FAFC",
-      border: "1px solid #F1F5F9",
-      borderRadius: 12,
-      padding: "14px 16px",
-      display: "flex",
-      alignItems: "flex-start",
-      gap: 12,
-    }}>
-      {/* Icon badge */}
-      <div style={{
-        width: 32,
-        height: 32,
-        borderRadius: 8,
-        background: always ? "#F0FAF5" : "white",
-        border: "1px solid #E2E8F0",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: 0,
-        marginTop: 1,
-      }}>
-        {icon}
-      </div>
+const CATEGORIES = [
+  {
+    key: "necessary" as const,
+    icon: Shield, color: "#0F6E56",
+    title: "Necessary",
+    description: "Login, security, and session management. Cannot be disabled.",
+    always: true,
+  },
+  {
+    key: "functional" as const,
+    icon: Wrench, color: "#6366F1",
+    title: "Functional",
+    description: "Remember your language and display preferences.",
+    always: false,
+  },
+  {
+    key: "statistics" as const,
+    icon: BarChart2, color: "#F59E0B",
+    title: "Analytics",
+    description: "Anonymous usage stats to help us improve the platform.",
+    always: false,
+  },
+  {
+    key: "marketing" as const,
+    icon: Target, color: "#EF4444",
+    title: "Marketing",
+    description: "Relevant content and campaign measurement.",
+    always: false,
+  },
+];
 
-      {/* Text */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: 13, fontWeight: 600, color: "#111827", marginBottom: 3 }}>{title}</p>
-        <p style={{ fontSize: 12, color: "#6B7280", lineHeight: 1.5 }}>{description}</p>
-      </div>
-
-      {/* Control */}
-      <div style={{ flexShrink: 0, paddingTop: 2 }}>
-        {always ? (
-          <span style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: "#0F6E56",
-            background: "#F0FAF5",
-            border: "1px solid #D1FAE5",
-            padding: "3px 9px",
-            borderRadius: 6,
-            whiteSpace: "nowrap",
-          }}>
-            Always on
-          </span>
-        ) : (
-          <Toggle checked={checked ?? false} onChange={onChange ?? (() => {})} />
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ─── Main banner ────────────────────────────────────────────────────────────── */
+/* ── Banner ──────────────────────────────────────────────────────────────── */
 
 export function CookieBanner() {
-  const [visible, setVisible]       = useState(false);
+  const [visible,    setVisible]    = useState(false);
+  const [expanded,   setExpanded]   = useState(true);
+  const [functional, setFunctional] = useState(false);
   const [statistics, setStatistics] = useState(false);
-  const [marketing, setMarketing]   = useState(false);
+  const [marketing,  setMarketing]  = useState(false);
+  const [saving,     setSaving]     = useState<"accept" | "reject" | "save" | null>(null);
 
   useEffect(() => {
-    // Show on first visit (no saved prefs)
     const prefs = loadPrefs();
     if (!prefs) {
-      // Small delay so the page renders first
-      const t = setTimeout(() => setVisible(true), 600);
+      const t = setTimeout(() => setVisible(true), 700);
       return () => clearTimeout(t);
     }
-
-    // Listen for manual reopen (from footer "Cookie Settings" link)
     function handleOpen() {
       const saved = loadPrefs();
+      setFunctional(saved?.functional ?? false);
       setStatistics(saved?.statistics ?? false);
       setMarketing(saved?.marketing ?? false);
+      setExpanded(true);
       setVisible(true);
     }
     window.addEventListener("staky:open-cookies", handleOpen);
     return () => window.removeEventListener("staky:open-cookies", handleOpen);
   }, []);
 
-  function commit(stats: boolean, mkt: boolean) {
-    persistPrefs({ necessary: true, statistics: stats, marketing: mkt, savedAt: Date.now() });
-    // Sync to DB for logged-in users (fire-and-forget — no UX impact if it fails)
+  async function commit(func: boolean, stats: boolean, mkt: boolean, type: "accept" | "reject" | "save") {
+    setSaving(type);
+    await new Promise((r) => setTimeout(r, 600));
+    persistPrefs({ necessary: true, functional: func, statistics: stats, marketing: mkt, savedAt: Date.now() });
     saveCookieConsent({ statistics: stats, marketing: mkt }).catch(() => {});
     setVisible(false);
+    setExpanded(true);
+    setSaving(null);
   }
-
-  const accept = () => commit(true, true);
-  const reject = () => commit(false, false);
-  const save   = () => commit(statistics, marketing);
 
   if (!visible) return null;
 
   return (
-    /* Overlay */
     <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 9999,
-        background: "rgba(0,0,0,0.45)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 16,
-        backdropFilter: "blur(2px)",
-        WebkitBackdropFilter: "blur(2px)",
-        animation: "cookie-fade 200ms ease-out both",
-      }}
+      className="fixed bottom-5 left-1/2 z-[9999] w-full max-w-5xl -translate-x-1/2 px-4"
+      style={{ fontFamily: "-apple-system,'Segoe UI',system-ui,sans-serif" }}
     >
       <style>{`
-        @keyframes cookie-fade {
-          from { opacity: 0; }
-          to   { opacity: 1; }
-        }
-        @keyframes cookie-slide {
-          from { opacity: 0; transform: translateY(12px); }
+        @keyframes banner-slide {
+          from { opacity: 0; transform: translateY(16px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        .cookie-root { animation: banner-slide 320ms cubic-bezier(0.22,1,0.36,1) both; }
       `}</style>
 
-      {/* Modal */}
-      <div
-        style={{
-          background: "white",
-          borderRadius: 20,
-          padding: "28px 28px 24px",
-          maxWidth: 500,
-          width: "100%",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          boxShadow: "0 32px 64px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.05)",
-          animation: "cookie-slide 250ms ease-out both",
-          fontFamily: "-apple-system,'Segoe UI',system-ui,sans-serif",
-        }}
-      >
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 22 }}>
-          <div style={{
-            width: 44,
-            height: 44,
-            borderRadius: 12,
-            background: "#F0FAF5",
-            border: "1px solid #D1FAE5",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}>
-            <Cookie style={{ width: 22, height: 22, color: "#0F6E56" }} />
+      <div className="cookie-root w-full bg-white" style={{ borderRadius: 16, border: "1px solid rgba(0,0,0,0.07)", boxShadow: "0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)" }}>
+        <div className="px-6">
+
+          {/* Expanded panel */}
+          {expanded && (
+            <div className="grid gap-3 border-b border-gray-100 py-6 sm:grid-cols-4">
+              {CATEGORIES.map(({ key, icon: Icon, color, title, description, always }) => {
+                const checked = key === "necessary" ? true : key === "functional" ? functional : key === "statistics" ? statistics : marketing;
+                const onChange = key === "functional" ? setFunctional : key === "statistics" ? setStatistics : setMarketing;
+                return (
+                  <div key={key} className="flex flex-col gap-4 rounded-2xl p-5"
+                    style={{ background: always ? "#F6FAF8" : "#FAFAFA", border: `1px solid ${always ? "rgba(15,110,86,0.1)" : "rgba(0,0,0,0.06)"}` }}>
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl"
+                      style={{ background: `${color}18` }}>
+                      <Icon style={{ width: 16, height: 16, color }} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-[13px] font-bold text-gray-900">{title}</p>
+                      <p className="mt-1.5 text-[12px] leading-[1.6] text-gray-400">{description}</p>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      {always
+                        ? <span className="text-[11px] font-bold text-[#0F6E56]">Always on</span>
+                        : <>
+                            <span className="text-[11px] font-medium text-gray-400">{checked ? "Enabled" : "Disabled"}</span>
+                            <Toggle checked={checked} onChange={onChange} />
+                          </>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Main bar */}
+          <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:gap-4">
+
+            {/* Text */}
+            <div className="flex min-w-0 flex-1 items-center gap-2.5">
+              <Settings2 className="h-4 w-4 shrink-0 text-[#0F6E56]" />
+              <p className="text-[12px] text-gray-500">
+                <span className="font-semibold text-gray-800">Cookies</span> — we use them to improve your experience.{" "}
+                <Link href="/cookies" className="text-[#0F6E56] underline underline-offset-2 hover:no-underline">Policy</Link>
+              </p>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex shrink-0 items-center gap-1.5">
+              <button
+                disabled={!!saving}
+                onClick={() => commit(false, false, false, "reject")}
+                className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3.5 py-2 text-[12px] font-semibold text-gray-600 transition-colors hover:bg-gray-50 disabled:opacity-60"
+              >
+                {saving === "reject" ? <><Loader2 className="h-3 w-3 animate-spin" /> Saving…</> : "Reject all"}
+              </button>
+
+              <button
+                disabled={!!saving}
+                onClick={() => setExpanded((v) => !v)}
+                className="flex items-center gap-1 rounded-lg border border-gray-200 px-3.5 py-2 text-[12px] font-semibold text-gray-600 transition-colors hover:bg-gray-50 disabled:opacity-60"
+              >
+                Customise
+                {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
+              </button>
+
+              {expanded && (
+                <button
+                  disabled={!!saving}
+                  onClick={() => commit(functional, statistics, marketing, "save")}
+                  className="flex items-center gap-1.5 rounded-lg border border-[#0F6E56] px-3.5 py-2 text-[12px] font-semibold text-[#0F6E56] transition-colors hover:bg-[#EAF3EE] disabled:opacity-60"
+                >
+                  {saving === "save" ? <><Loader2 className="h-3 w-3 animate-spin" /> Saving…</> : "Save"}
+                </button>
+              )}
+
+              <button
+                disabled={!!saving}
+                onClick={() => commit(true, true, true, "accept")}
+                className="flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[12px] font-semibold text-white transition-all hover:-translate-y-px disabled:opacity-60"
+                style={{ background: "#0F6E56", boxShadow: "0 1px 0 rgba(255,255,255,0.12) inset, 0 2px 6px rgba(15,110,86,0.3)" }}
+              >
+                {saving === "accept" ? <><Loader2 className="h-3 w-3 animate-spin" /> Saving…</> : "Accept all"}
+              </button>
+            </div>
           </div>
-          <div>
-            <h2 style={{ fontSize: 17, fontWeight: 700, color: "#111827", marginBottom: 5, lineHeight: 1.2 }}>
-              We use cookies
-            </h2>
-            <p style={{ fontSize: 13, color: "#6B7280", lineHeight: 1.55 }}>
-              We use cookies to improve your experience, analyse traffic, and personalise content. You can customise your preferences below.
-            </p>
-          </div>
-        </div>
 
-        {/* Category rows */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 22 }}>
-          <CategoryRow
-            icon={<Shield style={{ width: 15, height: 15, color: "#0F6E56" }} />}
-            title="Necessary"
-            description="Essential for the website to function. These cannot be disabled."
-            always
-          />
-          <CategoryRow
-            icon={<BarChart2 style={{ width: 15, height: 15, color: "#6B7280" }} />}
-            title="Statistics"
-            description="Help us understand how visitors interact with the site so we can improve it."
-            checked={statistics}
-            onChange={setStatistics}
-          />
-          <CategoryRow
-            icon={<Target style={{ width: 15, height: 15, color: "#6B7280" }} />}
-            title="Marketing"
-            description="Used to show you relevant content and ads based on your interests."
-            checked={marketing}
-            onChange={setMarketing}
-          />
-        </div>
-
-        {/* Action buttons */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {/* Accept all — primary */}
-          <button
-            onClick={accept}
-            style={{
-              width: "100%",
-              padding: "12px",
-              background: "#0F6E56",
-              color: "white",
-              border: "none",
-              borderRadius: 10,
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-              letterSpacing: "0.01em",
-            }}
-          >
-            Accept all cookies
-          </button>
-
-          {/* Save preferences — secondary */}
-          <button
-            onClick={save}
-            style={{
-              width: "100%",
-              padding: "12px",
-              background: "white",
-              color: "#111827",
-              border: "1.5px solid #E2E8F0",
-              borderRadius: 10,
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Save my preferences
-          </button>
-
-          {/* Reject all — tertiary (equal prominence per GDPR/Datatilsynet rules) */}
-          <button
-            onClick={reject}
-            style={{
-              width: "100%",
-              padding: "10px",
-              background: "transparent",
-              color: "#6B7280",
-              border: "none",
-              borderRadius: 10,
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: "pointer",
-            }}
-          >
-            Reject all non-essential cookies
-          </button>
-        </div>
-
-        {/* Legal links */}
-        <div style={{
-          marginTop: 16,
-          paddingTop: 16,
-          borderTop: "1px solid #F1F5F9",
-          display: "flex",
-          justifyContent: "center",
-          gap: 20,
-          fontSize: 12,
-          color: "#9CA3AF",
-        }}>
-          <Link href="/cookies" style={{ color: "#9CA3AF", textDecoration: "underline", textUnderlineOffset: 2 }}>
-            Cookie Policy
-          </Link>
-          <Link href="/privacy" style={{ color: "#9CA3AF", textDecoration: "underline", textUnderlineOffset: 2 }}>
-            Privacy Policy
-          </Link>
         </div>
       </div>
     </div>
