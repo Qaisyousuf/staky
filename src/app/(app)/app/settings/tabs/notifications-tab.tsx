@@ -78,7 +78,7 @@ function NotifRow({
 
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)] overflow-hidden">
       {/* Column headers (first group only via sticky approach — shown once via layout) */}
       <div className="px-5 pt-4 pb-2 flex items-center justify-between">
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{title}</p>
@@ -188,7 +188,7 @@ export function NotificationsTab({ settings }: { settings: NotifSettings }) {
       </Group>
 
       {/* Email digest */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="bg-white rounded-2xl p-5" style={{ border: "1.5px solid rgba(0,0,0,0.06)", boxShadow: "0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04)" }}>
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Email digest frequency</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {DIGEST_OPTIONS.map((opt) => (
@@ -212,7 +212,7 @@ export function NotificationsTab({ settings }: { settings: NotifSettings }) {
       </div>
 
       {/* Save bar */}
-      <div className="sticky bottom-0 flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white/90 backdrop-blur px-5 py-3 shadow-sm">
+      <div className="sticky bottom-0 flex items-center justify-between gap-4 rounded-2xl border border-[rgba(0,0,0,0.06)] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)] bg-white/90 backdrop-blur px-5 py-3 shadow-sm">
         {error ? (
           <p className="text-sm text-red-600 flex items-center gap-1.5"><AlertCircle className="h-4 w-4 shrink-0" />{error}</p>
         ) : saved ? (

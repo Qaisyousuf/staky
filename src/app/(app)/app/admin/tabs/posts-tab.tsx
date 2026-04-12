@@ -44,10 +44,10 @@ export function PostsTab({
           <Link
             key={f.id}
             href={`/app/admin?tab=posts${f.id !== "all" ? `&filter=${f.id}` : ""}`}
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+            className={`px-3.5 py-1.5 text-[12px] font-semibold rounded-xl transition-all ${
               currentFilter === f.id
-                ? "bg-[#0F6E56] text-white"
-                : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
+                ? "bg-[#0F6E56] text-white shadow-sm"
+                : "bg-white border border-gray-200 text-gray-600 hover:bg-[#FAFAF9]"
             }`}
           >
             {f.label}
@@ -57,13 +57,13 @@ export function PostsTab({
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-2xl overflow-hidden border border-[rgba(0,0,0,0.06)] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)]">
         {posts.length === 0 ? (
           <div className="px-5 py-12 text-center text-sm text-gray-400">No posts found</div>
         ) : (
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-[rgba(0,0,0,0.04)]">
             {/* Header */}
-            <div className="hidden lg:grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 px-5 py-2.5 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wide">
+            <div className="hidden lg:grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 px-5 py-2.5 bg-[#F7F9FC] text-[10px] font-bold text-[#9BA39C] uppercase tracking-widest">
               <span>Author</span>
               <span>Post</span>
               <span>Engagement</span>
@@ -72,7 +72,7 @@ export function PostsTab({
             </div>
 
             {posts.map((post) => (
-              <div key={post.id} className="px-5 py-4 hover:bg-gray-50 flex flex-col lg:grid lg:grid-cols-[auto_1fr_auto_auto_auto] gap-3 lg:gap-4 lg:items-center">
+              <div key={post.id} className="px-5 py-4 hover:bg-[#FAFAF9] flex flex-col lg:grid lg:grid-cols-[auto_1fr_auto_auto_auto] gap-3 lg:gap-4 lg:items-center">
                 {/* Author */}
                 <div className="flex items-center gap-2 shrink-0">
                   {post.author.image ? (

@@ -35,13 +35,13 @@ export function PartnersTab({ partners }: { partners: Partner[] }) {
         )}
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-2xl overflow-hidden border border-[rgba(0,0,0,0.06)] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)]">
         {partners.length === 0 ? (
           <div className="px-5 py-12 text-center text-sm text-gray-400">No partner accounts yet</div>
         ) : (
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-[rgba(0,0,0,0.04)]">
             {/* Header */}
-            <div className="hidden lg:grid grid-cols-[auto_auto_auto_auto_auto_auto_auto] gap-4 px-5 py-2.5 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wide">
+            <div className="hidden lg:grid grid-cols-[auto_auto_auto_auto_auto_auto_auto] gap-4 px-5 py-2.5 bg-[#F7F9FC] text-[10px] font-bold text-[#9BA39C] uppercase tracking-widest">
               <span>Company</span>
               <span>Country</span>
               <span>Rating</span>
@@ -54,7 +54,7 @@ export function PartnersTab({ partners }: { partners: Partner[] }) {
             {partners.map((partner) => (
               <div
                 key={partner.id}
-                className={`px-5 py-4 hover:bg-gray-50 flex flex-col lg:grid lg:grid-cols-[auto_auto_auto_auto_auto_auto_auto] gap-3 lg:gap-4 lg:items-center ${
+                className={`px-5 py-4 hover:bg-[#FAFAF9] flex flex-col lg:grid lg:grid-cols-[auto_auto_auto_auto_auto_auto_auto] gap-3 lg:gap-4 lg:items-center ${
                   !partner.approved ? "bg-amber-50/20" : ""
                 }`}
               >

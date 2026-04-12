@@ -35,13 +35,13 @@ export function RequestsTab({ requests, partners }: { requests: Request[]; partn
     <div className="space-y-4">
       <span className="text-xs text-gray-500">{requests.length} total requests</span>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-2xl overflow-hidden border border-[rgba(0,0,0,0.06)] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)]">
         {requests.length === 0 ? (
           <div className="px-5 py-12 text-center text-sm text-gray-400">No migration requests yet</div>
         ) : (
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-[rgba(0,0,0,0.04)]">
             {/* Header */}
-            <div className="hidden xl:grid grid-cols-[auto_auto_1fr_auto_auto_auto_auto] gap-4 px-5 py-2.5 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wide">
+            <div className="hidden xl:grid grid-cols-[auto_auto_1fr_auto_auto_auto_auto] gap-4 px-5 py-2.5 bg-[#F7F9FC] text-[10px] font-bold text-[#9BA39C] uppercase tracking-widest">
               <span>User</span>
               <span>Switch</span>
               <span>Description</span>
@@ -54,7 +54,7 @@ export function RequestsTab({ requests, partners }: { requests: Request[]; partn
             {requests.map((req) => {
               const status = STATUS_CONFIG[req.status] ?? { label: req.status, cls: "bg-gray-100 text-gray-500" };
               return (
-                <div key={req.id} className="px-5 py-4 hover:bg-gray-50 flex flex-col xl:grid xl:grid-cols-[auto_auto_1fr_auto_auto_auto_auto] gap-3 xl:gap-4 xl:items-center">
+                <div key={req.id} className="px-5 py-4 hover:bg-[#FAFAF9] flex flex-col xl:grid xl:grid-cols-[auto_auto_1fr_auto_auto_auto_auto] gap-3 xl:gap-4 xl:items-center">
                   {/* User */}
                   <div className="flex items-center gap-2 shrink-0">
                     {req.user.image ? (

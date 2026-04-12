@@ -214,11 +214,17 @@ export async function applyAsPartner(data: ApplyAsPartnerData): Promise<PartnerM
     },
   });
 
-  // Upgrade user role to PARTNER
-  await prisma.user.update({
+  // Upgrade user role to PARTNER — but never downgrade an existing ADMIN
+  const currentUser = await prisma.user.findUnique({
     where: { id: session.user.id },
-    data: { role: "PARTNER" },
+    select: { role: true },
   });
+  if (currentUser?.role !== "ADMIN") {
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { role: "PARTNER" },
+    });
+  }
 
   const { createNotification } = await import("@/lib/notifications");
 

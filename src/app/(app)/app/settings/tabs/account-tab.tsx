@@ -191,7 +191,7 @@ export function AccountTab({ email, createdAt }: { email: string; createdAt: str
       </div>
 
       {/* Account info */}
-      <section className="bg-white rounded-xl border border-gray-200 p-5">
+      <section className="bg-white rounded-2xl p-5" style={{ border: "1.5px solid rgba(0,0,0,0.06)", boxShadow: "0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04)" }}>
         <div className="flex items-center gap-2 mb-4">
           <ShieldCheck className="h-4 w-4 text-gray-400" />
           <h3 className="text-sm font-semibold text-gray-900">Account details</h3>
@@ -209,7 +209,7 @@ export function AccountTab({ email, createdAt }: { email: string; createdAt: str
       </section>
 
       {/* Change password */}
-      <section className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+      <section className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)] p-5 space-y-4">
         <div className="flex items-center gap-2 mb-1">
           <KeyRound className="h-4 w-4 text-gray-400" />
           <h3 className="text-sm font-semibold text-gray-900">Change password</h3>

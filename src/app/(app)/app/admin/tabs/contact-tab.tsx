@@ -98,7 +98,7 @@ export function ContactTab({ submissions }: { submissions: ContactSubmission[] }
             <p className="text-sm text-gray-400">No contact submissions yet</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-[rgba(0,0,0,0.04)]">
             {/* Column headers */}
             <div className="hidden grid-cols-[20px_1fr_1fr_auto_auto_auto_auto] gap-4 bg-gray-50 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400 lg:grid">
               <span />
@@ -115,7 +115,7 @@ export function ContactTab({ submissions }: { submissions: ContactSubmission[] }
                 <div
                   key={sub.id}
                   onClick={() => setExpanded(expanded === sub.id ? null : sub.id)}
-                  className={`flex cursor-pointer flex-col gap-3 px-5 py-4 transition-colors hover:bg-gray-50 lg:grid lg:grid-cols-[20px_1fr_1fr_auto_auto_auto_auto] lg:items-center lg:gap-4 ${
+                  className={`flex cursor-pointer flex-col gap-3 px-5 py-4 transition-colors hover:bg-[#FAFAF9] lg:grid lg:grid-cols-[20px_1fr_1fr_auto_auto_auto_auto] lg:items-center lg:gap-4 ${
                     !sub.read ? "bg-[#0F6E56]/[0.02]" : ""
                   }`}
                 >

@@ -296,7 +296,7 @@ function ApplicationForm({ onSuccess }: { onSuccess: () => void }) {
       {/* Country selector */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Country of registration</label>
-        <div className="inline-flex rounded-xl border border-gray-200 bg-gray-50 p-1 gap-1">
+        <div className="inline-flex rounded-2xl border border-[rgba(0,0,0,0.06)] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)] bg-gray-50 p-1 gap-1">
           {(["dk", "fr"] as RegCountry[]).map((c) => {
             const conf = COUNTRY_CONFIG[c];
             return (
@@ -516,7 +516,7 @@ function PendingState({ onResubmit }: { onResubmit: () => void }) {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)] p-5">
         <h3 className="text-sm font-bold text-gray-900 mb-3">What happens next?</h3>
         <div className="space-y-3">
           {[
@@ -598,7 +598,7 @@ function ApprovedState({ partner }: { partner: PartnerInfo }) {
       </div>
 
       {/* Company logo */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+      <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)] p-5 space-y-4">
         <h3 className="text-sm font-bold text-gray-900">Company logo</h3>
         <LogoEditor
           logoUrl={logoUrl}
@@ -626,7 +626,7 @@ function ApprovedState({ partner }: { partner: PartnerInfo }) {
       </div>
 
       {/* Partner details */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)] p-5">
         <h3 className="text-sm font-bold text-gray-900 mb-3">Partner details</h3>
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>

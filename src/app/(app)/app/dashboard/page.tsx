@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
-  Layers, Users, Handshake, Star, Inbox, FileText,
+  Layers, Handshake, Star, Inbox, FileText,
   TrendingUp, ArrowRight, Plus, Compass, PenSquare,
-  ThumbsUp, MessageCircle, Bookmark, Clock,
+  Heart, MessageCircle, Bookmark, Clock,
   CheckCircle2, CircleDot, XCircle, AlertCircle,
   Building2, BadgeCheck, BarChart3, Eye, UserPlus,
-  Zap,
+  Zap, MapPin, Settings,
 } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -30,36 +30,10 @@ function getInitials(name: string | null | undefined) {
   return name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 }
 
+const F = "-apple-system, 'Segoe UI', system-ui, sans-serif";
+
 // ─── Metric card ──────────────────────────────────────────────────────────────
 
-function MetricCard({ icon: Icon, value, label, href, accent = "green" }: {
-  icon: React.ElementType;
-  value: number | string;
-  label: string;
-  href?: string;
-  accent?: "green" | "blue" | "amber" | "purple";
-}) {
-  const c = {
-    green:  { bg: "bg-green-50",  icon: "text-[#0F6E56]",  border: "border-green-100",  val: "text-[#0F6E56]"  },
-    blue:   { bg: "bg-blue-50",   icon: "text-[#2A5FA5]",  border: "border-blue-100",   val: "text-[#2A5FA5]"  },
-    amber:  { bg: "bg-amber-50",  icon: "text-amber-600",  border: "border-amber-100",  val: "text-amber-700"  },
-    purple: { bg: "bg-purple-50", icon: "text-purple-600", border: "border-purple-100", val: "text-purple-700" },
-  }[accent];
-
-  const inner = (
-    <div className="group bg-white rounded-2xl border border-gray-200 px-5 py-4 flex items-center gap-4 hover:border-gray-300 hover:shadow-md transition-all">
-      <span className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border", c.bg, c.border)}>
-        <Icon className={cn("h-5 w-5", c.icon)} />
-      </span>
-      <div>
-        <p className={cn("text-2xl font-black leading-none", c.val)}>{value}</p>
-        <p className="text-xs text-gray-500 mt-0.5 font-medium">{label}</p>
-      </div>
-      {href && <ArrowRight className="h-4 w-4 text-gray-300 ml-auto group-hover:text-gray-500 transition-colors" />}
-    </div>
-  );
-  return href ? <Link href={href}>{inner}</Link> : inner;
-}
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 
@@ -83,6 +57,25 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+// ─── Tool logo box ────────────────────────────────────────────────────────────
+
+function ToolLogoBox({ tool }: { tool: DbTool | null | undefined }) {
+  if (!tool) return <div className="h-8 w-8 rounded-lg bg-[#E8E3D9] shrink-0" />;
+  if (tool.logoUrl) {
+    return (
+      <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center shrink-0" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.10), 0 0 0 1px rgba(0,0,0,0.06)" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={tool.logoUrl} alt={tool.name} className="h-5 w-5 object-contain" />
+      </div>
+    );
+  }
+  return (
+    <div className="h-8 w-8 rounded-lg flex items-center justify-center text-white text-[9px] font-black shrink-0" style={{ backgroundColor: tool.color }}>
+      {tool.abbr}
+    </div>
+  );
+}
+
 // ─── Post card ────────────────────────────────────────────────────────────────
 
 type DashboardPost = {
@@ -99,46 +92,51 @@ function PostCard({ post }: { post: DashboardPost }) {
 
   return (
     <Link href={`/app/feed?post=${post.id}`}>
-      <article className={cn(
-        "bg-white rounded-2xl border border-gray-200 p-4 hover:border-gray-300 hover:shadow-md transition-all cursor-pointer",
-        isPartner && "border-l-4 border-l-[#2A5FA5]"
-      )}>
-        <div className="flex items-start gap-3 mb-3">
-          {post.author.image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={post.author.image} alt={post.author.name ?? ""}
-              className={cn("h-9 w-9 object-cover shrink-0", isPartner ? "rounded-xl" : "rounded-full")} />
-          ) : (
-            <div className={cn(
-              "h-9 w-9 flex items-center justify-center bg-[#0F6E56] text-white text-xs font-bold shrink-0 select-none",
-              isPartner ? "rounded-xl" : "rounded-full"
-            )}>
-              {getInitials(post.author.name)}
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-gray-900 truncate">{post.author.name}</p>
-            <p className="text-xs text-gray-400 truncate">
-              {post.author.title}{post.author.company && ` · ${post.author.company}`}
-            </p>
-          </div>
-          <span className="text-[10px] text-gray-400 shrink-0">{timeAgo(post.createdAt)}</span>
+      <article
+        className="group flex flex-col rounded-2xl bg-white overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_20px_56px_rgba(27,43,31,0.10)] cursor-pointer"
+        style={{ border: isPartner ? "1.5px solid rgba(42,95,165,0.18)" : "1.5px solid rgba(0,0,0,0.06)", boxShadow: "0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04)" }}
+      >
+        {/* Switch header — green band */}
+        <div
+          className="px-4 py-3.5 flex items-center gap-2"
+          style={{ background: isPartner ? "#F0F5FA" : "#F4FAF7", borderBottom: `1px solid ${isPartner ? "rgba(42,95,165,0.08)" : "rgba(15,110,86,0.08)"}` }}
+        >
+          <ToolLogoBox tool={fromData} />
+          <span className="text-[12px] font-medium text-[#4D5D52] truncate flex-1">{fromData?.name ?? post.fromTool}</span>
+          <ArrowRight className={cn("h-3.5 w-3.5 shrink-0 mx-0.5", isPartner ? "text-[#2A5FA5]" : "text-[#0F6E56]")} />
+          <span className={cn("text-[12px] font-medium truncate flex-1 text-right", isPartner ? "text-[#2A5FA5]" : "text-[#0F6E56]")}>{toData?.name ?? post.toTool}</span>
+          <ToolLogoBox tool={toData} />
         </div>
 
-        {(fromData || toData) && (
-          <div className="inline-flex items-center gap-2 mb-3 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5">
-            <ToolIcon toolData={fromData ?? undefined} size="sm" />
-            <ArrowRight className="h-3 w-3 text-gray-300 shrink-0" />
-            <ToolIcon toolData={toData ?? undefined} size="sm" />
-            <span className="text-xs text-gray-600 font-medium">{toData?.name}</span>
+        <div className="p-5 flex flex-col flex-1">
+          {/* Story */}
+          <p className="flex-1 line-clamp-3 text-[13px] leading-[1.75] text-[#5C6B5E] mb-4">
+            &ldquo;{post.story}&rdquo;
+          </p>
+
+          {/* Author + engagement */}
+          <div className="flex items-center gap-2.5 pt-3 border-t border-[#F0EDE8]">
+            {post.author.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={post.author.image} alt={post.author.name ?? ""}
+                className={cn("h-7 w-7 object-cover shrink-0", isPartner ? "rounded-lg" : "rounded-full")} />
+            ) : (
+              <div className={cn(
+                "h-7 w-7 flex items-center justify-center bg-[#0F6E56] text-white text-[10px] font-bold shrink-0 select-none",
+                isPartner ? "rounded-lg" : "rounded-full"
+              )}>
+                {getInitials(post.author.name)}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-[12px] font-semibold text-[#1B2B1F] truncate leading-tight">{post.author.name ?? "Member"}</p>
+              <p className="text-[10px] text-[#9BA39C]">{timeAgo(post.createdAt)}</p>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="flex items-center gap-1 text-[11px] text-[#9BA39C]"><Heart className="h-3 w-3" />{post._count.likes}</span>
+              <span className="flex items-center gap-1 text-[11px] text-[#9BA39C]"><MessageCircle className="h-3 w-3" />{post._count.comments}</span>
+            </div>
           </div>
-        )}
-
-        <p className="text-sm text-gray-600 leading-relaxed line-clamp-2 mb-3">{post.story}</p>
-
-        <div className="flex items-center gap-4 text-xs text-gray-400">
-          <span className="flex items-center gap-1"><ThumbsUp className="h-3.5 w-3.5" />{post._count.likes}</span>
-          <span className="flex items-center gap-1"><MessageCircle className="h-3.5 w-3.5" />{post._count.comments}</span>
         </div>
       </article>
     </Link>
@@ -147,12 +145,18 @@ function PostCard({ post }: { post: DashboardPost }) {
 
 // ─── Section header ───────────────────────────────────────────────────────────
 
-function SectionHeader({ title, action }: { title: string; action?: { href: string; label: string } }) {
+function SectionHeader({ title, action, blue }: { title: string; action?: { href: string; label: string }; blue?: boolean }) {
   return (
     <div className="flex items-center justify-between mb-3">
-      <h2 className="text-sm font-bold text-gray-900">{title}</h2>
+      <h2 className="text-[13px] font-bold text-[#1B2B1F]">{title}</h2>
       {action && (
-        <Link href={action.href} className="flex items-center gap-1 text-xs font-medium text-[#0F6E56] hover:underline">
+        <Link
+          href={action.href}
+          className={cn(
+            "flex items-center gap-1 text-[11px] font-semibold hover:underline",
+            blue ? "text-[#2A5FA5]" : "text-[#0F6E56]"
+          )}
+        >
           {action.label}<ArrowRight className="h-3 w-3" />
         </Link>
       )}
@@ -165,8 +169,12 @@ function SectionHeader({ title, action }: { title: string; action?: { href: stri
 async function UserDashboard({ userId, userName, activeMode, hasPartner }: { userId: string; userName: string | null | undefined; activeMode: string; hasPartner: boolean }) {
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-  const [stackCount, followingCount, connectionCount, stackItems, profileViewsCount, recentViewers, topAlts] =
+  const [userProfile, stackCount, followingCount, connectionCount, stackItems, profileViewsCount, recentViewers, topAlts] =
     await Promise.all([
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true, image: true, title: true, company: true, bio: true, location: true },
+      }),
       prisma.stackItem.count({ where: { stack: { userId, mode: activeMode } } }),
       prisma.follow.count({ where: { followerId: userId } }),
       prisma.connection.count({ where: { OR: [{ userId }, { targetId: userId }] } }),
@@ -222,85 +230,145 @@ async function UserDashboard({ userId, userName, activeMode, hasPartner }: { use
   });
   const toolBySlug = new Map(feedDbTools.map((t) => [t.slug, t]));
 
-  const firstName = userName?.split(" ")[0] ?? "there";
+  const AVATAR_COLORS = ["#0F6E56", "#2A5FA5", "#7C5CBF", "#B85C38", "#1F6B85", "#8A5C1F"];
+  const avatarColor = AVATAR_COLORS[(userProfile?.name?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
+
+  const CARD_SHADOW = "0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04)";
+  const CARD_BORDER = "1.5px solid rgba(0,0,0,0.06)";
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-4 px-4 lg:px-0" style={{ fontFamily: F }}>
 
-      {/* Welcome banner */}
-      <div className="rounded-2xl border border-gray-200 bg-white px-6 py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <p className="text-[#0F6E56] text-xs font-semibold uppercase tracking-widest mb-1">Dashboard</p>
-          <h1 className="text-2xl font-black text-gray-900">Welcome back, {firstName} 👋</h1>
-          <p className="text-gray-500 text-sm mt-1">Here&apos;s what&apos;s happening with your EU migration journey.</p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {!hasPartner && (
-            <Link
-              href="/app/settings?tab=partner"
-              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 text-sm font-semibold px-4 py-2.5 transition-colors"
+      {/* ── Profile hero card ─────────────────────────────────────────────────── */}
+      <div
+        className="relative flex flex-col rounded-2xl bg-white overflow-hidden"
+        style={{ border: CARD_BORDER, boxShadow: CARD_SHADOW }}
+      >
+        {/* Colour band */}
+        <div className="h-28 sm:h-32 w-full shrink-0" style={{ background: `linear-gradient(135deg, ${avatarColor}40, ${avatarColor}18)` }} />
+
+        {/* Avatar row */}
+        <div className="px-6 -mt-12 flex items-end justify-between gap-4">
+          {userProfile?.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={userProfile.image}
+              alt={userProfile.name ?? ""}
+              className="h-24 w-24 rounded-2xl ring-4 ring-white object-cover shrink-0"
+            />
+          ) : (
+            <div
+              className="h-24 w-24 rounded-2xl ring-4 ring-white flex items-center justify-center text-white text-[22px] font-black shrink-0 select-none"
+              style={{ backgroundColor: avatarColor }}
             >
-              <Handshake className="h-4 w-4 text-gray-400" />
-              Become a partner
-            </Link>
+              {getInitials(userProfile?.name ?? userName)}
+            </div>
           )}
-          <Link
-            href="/app/feed"
-            className="inline-flex items-center gap-2 rounded-xl bg-[#0F6E56] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#0d5f4a] transition-colors shadow-sm"
-          >
-            <PenSquare className="h-4 w-4" />
-            Write a story
-          </Link>
+          {/* Action buttons — aligned to bottom of avatar */}
+          <div className="flex items-center gap-2 pb-1 flex-wrap justify-end">
+            {!hasPartner && (
+              <Link
+                href="/app/settings?tab=partner"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[rgba(0,0,0,0.08)] bg-white hover:bg-[#F7F9FC] text-[#5C6B5E] text-[12px] font-semibold px-3.5 py-2 transition-colors"
+                style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+              >
+                <Handshake className="h-3.5 w-3.5 text-[#9BA39C]" />
+                Become a partner
+              </Link>
+            )}
+            <Link
+              href="/app/settings"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#0F6E56] hover:bg-[#0d5f4a] text-white text-[12px] font-semibold px-3.5 py-2 transition-colors"
+              style={{ boxShadow: "0 1px 4px rgba(15,110,86,0.25)" }}
+            >
+              <Settings className="h-3.5 w-3.5" />
+              Edit profile
+            </Link>
+          </div>
+        </div>
+
+        {/* Profile info */}
+        <div className="px-6 pt-4 pb-5">
+          <p className="text-[18px] font-black text-[#1B2B1F] leading-tight">{userProfile?.name ?? userName ?? "Member"}</p>
+          {(userProfile?.title || userProfile?.company) && (
+            <p className="text-[13px] text-[#6B7B6E] mt-0.5">
+              {[userProfile.title, userProfile.company].filter(Boolean).join(" · ")}
+            </p>
+          )}
+          {userProfile?.location && (
+            <p className="mt-2 flex items-center gap-1.5 text-[12px] text-[#9BA39C]">
+              <MapPin className="h-3.5 w-3.5 shrink-0" style={{ color: avatarColor }} />
+              {userProfile.location}
+            </p>
+          )}
+          {userProfile?.bio && (
+            <p className="mt-3 text-[13px] leading-relaxed text-[#5C6B5E] line-clamp-2 max-w-[560px]">{userProfile.bio}</p>
+          )}
+
+          {/* Stats strip */}
+          <div className="mt-5 flex flex-wrap gap-6 pt-4 border-t border-[#F0EDE8]">
+            {[
+              { value: stackCount,        label: "Stack tools",    href: "/app/my-stack",      color: "#0F6E56" },
+              { value: followingCount,    label: "Following",       href: "/app/network",       color: "#2A5FA5" },
+              { value: connectionCount,   label: "Connected",       href: "/app/network",       color: "#7C5CBF" },
+              { value: profileViewsCount, label: "Profile views",   href: "/app/profile/views", color: "#B85C38" },
+            ].map(({ value, label, href, color }) => (
+              <Link key={label} href={href} className="group flex flex-col items-start gap-0.5 hover:opacity-80 transition-opacity">
+                <span className="text-[22px] font-black leading-none" style={{ color }}>{value}</span>
+                <span className="text-[11px] text-[#9BA39C] font-medium group-hover:text-[#5C6B5E] transition-colors">{label}</span>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <MetricCard icon={Layers}    value={stackCount}        label="Stack tools"          href="/app/my-stack"       accent="green"  />
-        <MetricCard icon={Users}     value={followingCount}    label="Following"             href="/app/network"        accent="blue"   />
-        <MetricCard icon={Handshake} value={connectionCount}   label="Connections"           href="/app/network"        accent="purple" />
-        <MetricCard icon={Eye}       value={profileViewsCount} label="Profile views (7d)"    href="/app/profile/views"  accent="amber"  />
-      </div>
-
-      {/* Quick actions */}
+      {/* ── Quick actions ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {([
-          { href: "/app/my-stack",  icon: Plus,      label: "Add to stack",  desc: "Manage EU tools",       bg: "bg-green-50",  text: "text-[#0F6E56]",  border: "hover:border-green-300"  },
-          { href: "/app/discover",  icon: Compass,   label: "Browse tools",  desc: "Find alternatives",     bg: "bg-blue-50",   text: "text-[#2A5FA5]",  border: "hover:border-blue-300"   },
-          { href: "/app/partners",  icon: Handshake, label: "Find partner",  desc: "Get migration help",    bg: "bg-purple-50", text: "text-purple-600", border: "hover:border-purple-300" },
-          { href: "/app/feed",  icon: PenSquare, label: "Write story",   desc: "Share experience",      bg: "bg-amber-50",  text: "text-amber-600",  border: "hover:border-amber-300"  },
-        ] as const).map(({ href, icon: Icon, label, desc, bg, text, border }) => (
+          { href: "/app/my-stack",  icon: Plus,      label: "Add to stack",  desc: "Manage EU tools",    iconBg: "bg-[#E8F5F1]",  iconColor: "text-[#0F6E56]"  },
+          { href: "/app/discover",  icon: Compass,   label: "Browse tools",  desc: "Find alternatives",  iconBg: "bg-[#EBF1FA]",  iconColor: "text-[#2A5FA5]"  },
+          { href: "/app/partners",  icon: Handshake, label: "Find partner",  desc: "Get migration help", iconBg: "bg-purple-50",  iconColor: "text-purple-600" },
+          { href: "/app/feed",      icon: PenSquare, label: "Write story",   desc: "Share experience",   iconBg: "bg-amber-50",   iconColor: "text-amber-600"  },
+        ] as const).map(({ href, icon: Icon, label, desc, iconBg, iconColor }) => (
           <Link key={href} href={href}
-            className={cn("group bg-white rounded-2xl border border-gray-200 p-4 transition-all hover:shadow-sm", border)}
+            className="group bg-white rounded-xl p-4 flex flex-col items-center text-center transition-all duration-200 hover:-translate-y-0.5"
+            style={{ border: CARD_BORDER, boxShadow: CARD_SHADOW }}
           >
-            <span className={cn("inline-flex h-9 w-9 items-center justify-center rounded-xl mb-3", bg)}>
-              <Icon className={cn("h-4 w-4", text)} />
+            <span className={cn("inline-flex h-10 w-10 items-center justify-center rounded-xl mb-3", iconBg)}>
+              <Icon className={cn("h-4 w-4", iconColor)} />
             </span>
-            <p className="text-sm font-bold text-gray-900">{label}</p>
-            <p className="text-[11px] text-gray-400 mt-0.5">{desc}</p>
+            <p className="text-[12px] font-bold text-[#1B2B1F]">{label}</p>
+            <p className="text-[11px] text-[#9BA39C] mt-0.5">{desc}</p>
           </Link>
         ))}
       </div>
 
-      {/* Main content grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      {/* ── Main content grid ────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_292px] gap-4">
 
         {/* Feed */}
-        <div className="lg:col-span-2 space-y-3">
+        <div>
           <SectionHeader
             title={stackItems.length > 0 ? "From your stack" : "Recent stories"}
             action={{ href: "/app/feed", label: "View all" }}
           />
           {feedPosts.length > 0 ? (
-            feedPosts.map((post) => <PostCard key={post.id} post={{ ...post, fromToolData: toolBySlug.get(post.fromTool) ?? null, toToolData: toolBySlug.get(post.toTool) ?? null }} />)
+            <div className="flex flex-col gap-5">
+              {feedPosts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={{ ...post, fromToolData: toolBySlug.get(post.fromTool) ?? null, toToolData: toolBySlug.get(post.toTool) ?? null }}
+                />
+              ))}
+            </div>
           ) : (
-            <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-10 text-center">
-              <FileText className="h-8 w-8 text-gray-300 mx-auto mb-3" />
-              <p className="text-sm font-semibold text-gray-700">No stories yet</p>
-              <p className="text-xs text-gray-400 mt-1 mb-4">
+            <div className="bg-white rounded-2xl p-10 text-center" style={{ border: "1.5px dashed rgba(0,0,0,0.09)", boxShadow: CARD_SHADOW }}>
+              <FileText className="h-8 w-8 text-[#9BA39C] mx-auto mb-3" />
+              <p className="text-[13px] font-semibold text-[#1B2B1F]">No stories yet</p>
+              <p className="text-[12px] text-[#9BA39C] mt-1 mb-4">
                 {stackItems.length > 0 ? "No posts about your stack tools yet." : "Be the first to share your migration story."}
               </p>
-              <Link href="/app/feed" className="inline-flex items-center gap-2 rounded-xl bg-[#0F6E56] hover:bg-[#0d5f4a] text-white text-xs font-semibold px-4 py-2 transition-colors">
+              <Link href="/app/feed" className="inline-flex items-center gap-2 rounded-xl bg-[#0F6E56] hover:bg-[#0d5f4a] text-white text-[12px] font-semibold px-4 py-2 transition-colors">
                 <PenSquare className="h-3.5 w-3.5" />Write a story
               </Link>
             </div>
@@ -308,22 +376,54 @@ async function UserDashboard({ userId, userName, activeMode, hasPartner }: { use
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-4">
+        <div className="space-y-3">
+
+          {/* Who viewed your profile */}
+          <div className="bg-white rounded-2xl p-4" style={{ border: CARD_BORDER, boxShadow: CARD_SHADOW }}>
+            <SectionHeader title="Who viewed your profile" action={{ href: "/app/profile/views", label: "See all" }} />
+            {recentViewers.length > 0 ? (
+              <div className="space-y-3">
+                {recentViewers.slice(0, 4).map((v) => (
+                  <Link key={v.id} href={`/app/profile/${v.viewerId}`} className="flex items-center gap-3 group">
+                    {v.viewer?.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={v.viewer.image} alt={v.viewer.name ?? ""} className="h-8 w-8 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <div className="h-8 w-8 rounded-full bg-[#0F6E56] flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                        {getInitials(v.viewer?.name)}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[12px] font-semibold text-[#1B2B1F] truncate group-hover:text-[#0F6E56] transition-colors">
+                        {v.viewer?.name ?? "Anonymous"}
+                      </p>
+                      <p className="text-[10px] text-[#9BA39C] truncate">{v.viewer?.title ?? "Staky member"}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-5">
+                <Eye className="h-6 w-6 text-[#9BA39C] mx-auto mb-2" />
+                <p className="text-[12px] text-[#9BA39C]">No profile views yet</p>
+              </div>
+            )}
+          </div>
 
           {/* Your stack */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-4">
+          <div className="bg-white rounded-2xl p-4" style={{ border: CARD_BORDER, boxShadow: CARD_SHADOW }}>
             <SectionHeader title="Your stack" action={{ href: "/app/my-stack", label: "Manage" }} />
             {stackItems.length > 0 ? (
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-x-5 gap-y-5">
                 {stackItems.map((item) => {
                   const dbTool = toolByName.get(item.toolName.toLowerCase());
                   return dbTool ? (
-                    <div key={item.id} className="flex flex-col items-center gap-1">
+                    <div key={item.id} className="flex flex-col items-center gap-1.5">
                       <ToolIcon toolData={dbTool} size="md" />
-                      <span className="text-[9px] text-gray-400 max-w-[40px] text-center truncate">{dbTool.name}</span>
+                      <span className="text-[9px] text-[#9BA39C] max-w-[44px] text-center truncate leading-tight">{dbTool.name}</span>
                     </div>
                   ) : (
-                    <span key={item.id} className="inline-flex items-center rounded-lg bg-gray-100 px-2.5 py-1.5 text-xs font-medium text-gray-600">
+                    <span key={item.id} className="inline-flex items-center rounded-lg bg-[#F7F9FC] px-2.5 py-1.5 text-[11px] font-medium text-[#5C6B5E]">
                       {item.toolName}
                     </span>
                   );
@@ -331,9 +431,9 @@ async function UserDashboard({ userId, userName, activeMode, hasPartner }: { use
               </div>
             ) : (
               <div className="text-center py-5">
-                <Layers className="h-7 w-7 text-gray-200 mx-auto mb-2" />
-                <p className="text-xs text-gray-500 mb-3">Your stack is empty</p>
-                <Link href="/app/my-stack" className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#0F6E56] hover:underline">
+                <Layers className="h-7 w-7 text-[#9BA39C] mx-auto mb-2" />
+                <p className="text-[12px] text-[#5C6B5E] mb-3">Your stack is empty</p>
+                <Link href="/app/my-stack" className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#0F6E56] hover:underline">
                   <Plus className="h-3.5 w-3.5" />Add tools
                 </Link>
               </div>
@@ -341,19 +441,19 @@ async function UserDashboard({ userId, userName, activeMode, hasPartner }: { use
           </div>
 
           {/* Suggested switches */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-4">
+          <div className="bg-white rounded-2xl p-4" style={{ border: CARD_BORDER, boxShadow: CARD_SHADOW }}>
             <SectionHeader title="Suggested switches" action={{ href: "/app/discover", label: "See all" }} />
-            <div className="space-y-0">
+            <div>
               {topAlts.map((alt) => (
                 <Link key={alt.id} href={`/app/discover?category=${encodeURIComponent(alt.category)}`}
-                  className="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0 -mx-4 px-4 hover:bg-gray-50 transition-colors rounded-lg"
+                  className="flex items-center gap-3 py-2.5 border-b border-[#F0EDE8] last:border-0 -mx-4 px-4 hover:bg-[#F7F9FC] transition-colors"
                 >
                   <ToolIcon toolData={alt.fromTool} size="sm" />
-                  <ArrowRight className="h-3 w-3 text-gray-300 shrink-0" />
+                  <ArrowRight className="h-3 w-3 text-[#9BA39C] shrink-0" />
                   <ToolIcon toolData={alt.toTool} size="sm" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-gray-700 truncate">{alt.toTool.name}</p>
-                    <p className="text-[10px] text-gray-400">{alt.switcherCount.toLocaleString()} switched</p>
+                    <p className="text-[12px] font-semibold text-[#1B2B1F] truncate">{alt.toTool.name}</p>
+                    <p className="text-[10px] text-[#9BA39C]">{alt.switcherCount.toLocaleString()} switched</p>
                   </div>
                   <Zap className="h-3.5 w-3.5 text-amber-400 shrink-0" />
                 </Link>
@@ -361,41 +461,9 @@ async function UserDashboard({ userId, userName, activeMode, hasPartner }: { use
             </div>
           </div>
 
-          {/* Profile viewers */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-4">
-            <SectionHeader title="Who viewed your profile" action={{ href: "/app/profile/views", label: "See all" }} />
-            {recentViewers.length > 0 ? (
-              <div className="space-y-3">
-                {recentViewers.slice(0, 3).map((v) => (
-                  <Link key={v.id} href={`/app/profile/${v.viewerId}`} className="flex items-center gap-3 group">
-                    {v.viewer?.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={v.viewer.image} alt={v.viewer.name ?? ""} className="h-8 w-8 rounded-full object-cover shrink-0" />
-                    ) : (
-                      <div className="h-8 w-8 rounded-full bg-[#0F6E56] flex items-center justify-center text-white text-xs font-bold shrink-0">
-                        {getInitials(v.viewer?.name)}
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-gray-900 truncate group-hover:text-[#0F6E56] transition-colors">
-                        {v.viewer?.name ?? "Anonymous"}
-                      </p>
-                      <p className="text-[10px] text-gray-400 truncate">{v.viewer?.title ?? "Staky member"}</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-5">
-                <Eye className="h-6 w-6 text-gray-200 mx-auto mb-2" />
-                <p className="text-xs text-gray-400">No profile views yet</p>
-              </div>
-            )}
-          </div>
-
           {/* Grow network */}
           {suggestedUsers.length > 0 && (
-            <div className="bg-white rounded-2xl border border-gray-200 p-4">
+            <div className="bg-white rounded-2xl p-4" style={{ border: CARD_BORDER, boxShadow: CARD_SHADOW }}>
               <SectionHeader title="Grow your network" action={{ href: "/app/network", label: "View all" }} />
               <div className="space-y-3">
                 {suggestedUsers.slice(0, 3).map((u) => (
@@ -404,18 +472,18 @@ async function UserDashboard({ userId, userName, activeMode, hasPartner }: { use
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={u.image} alt={u.name ?? ""} className="h-8 w-8 rounded-full object-cover shrink-0" />
                     ) : (
-                      <div className="h-8 w-8 rounded-full bg-[#0F6E56] flex items-center justify-center text-white text-xs font-bold shrink-0">
+                      <div className="h-8 w-8 rounded-full bg-[#0F6E56] flex items-center justify-center text-white text-[10px] font-bold shrink-0">
                         {getInitials(u.name)}
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <Link href={`/app/profile/${u.id}`} className="text-xs font-semibold text-gray-900 hover:text-[#0F6E56] truncate block transition-colors">
+                      <Link href={`/app/profile/${u.id}`} className="text-[12px] font-semibold text-[#1B2B1F] hover:text-[#0F6E56] truncate block transition-colors">
                         {u.name ?? "Anonymous"}
                       </Link>
-                      <p className="text-[10px] text-gray-400 truncate">{u.title ?? u.company ?? "Staky member"}</p>
+                      <p className="text-[10px] text-[#9BA39C] truncate">{u.title ?? u.company ?? "Staky member"}</p>
                     </div>
                     <Link href={`/app/profile/${u.id}`}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-green-50 text-[#0F6E56] hover:bg-green-100 transition-colors shrink-0"
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-[#E8F5F1] text-[#0F6E56] hover:bg-green-100 transition-colors shrink-0"
                     >
                       <UserPlus className="h-3 w-3" />View
                     </Link>
@@ -432,7 +500,7 @@ async function UserDashboard({ userId, userName, activeMode, hasPartner }: { use
 
 // ─── Partner Dashboard ────────────────────────────────────────────────────────
 
-async function PartnerDashboard({ userId, userName }: { userId: string; userName: string | null | undefined }) {
+async function PartnerDashboard({ userId }: { userId: string }) {
   const partner = await prisma.partner.findUnique({ where: { userId } });
 
   const [newLeadsCount, activeProjectsCount, followerCount, recentLeads, myPosts] = await Promise.all([
@@ -464,170 +532,204 @@ async function PartnerDashboard({ userId, userName }: { userId: string; userName
   });
   const partnerToolBySlug = new Map(partnerDbTools.map((t) => [t.slug, t]));
 
-  const firstName = userName?.split(" ")[0] ?? "Partner";
+  const companyInitials = (partner?.companyName ?? "P")
+    .split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+
+  const CARD_SHADOW = "0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04)";
+  const CARD_BORDER = "1.5px solid rgba(0,0,0,0.06)";
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-4 px-4 lg:px-0" style={{ fontFamily: F }}>
 
-      {/* Company banner */}
-      <div className="rounded-2xl border border-blue-100 bg-white px-6 py-6">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          {/* Left — company identity */}
-          <div className="flex items-start gap-4">
-            {/* Company logo / initials */}
-            {partner?.logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={partner.logoUrl}
-                alt={partner.companyName}
-                className="h-14 w-14 rounded-xl object-cover shrink-0 border border-gray-200"
-              />
-            ) : (
-              <div className="h-14 w-14 rounded-xl bg-[#2A5FA5] flex items-center justify-center text-white text-lg font-black shrink-0 select-none">
-                {partner?.companyName
-                  ?.split(" ")
-                  .map((w) => w[0])
-                  .slice(0, 2)
-                  .join("")
-                  .toUpperCase() ?? "P"}
-              </div>
-            )}
+      {/* ── Company hero card ──────────────────────────────────────────────────── */}
+      <div
+        className="relative flex flex-col rounded-2xl bg-white overflow-hidden"
+        style={{ border: CARD_BORDER, boxShadow: CARD_SHADOW }}
+      >
+        {/* Blue gradient band */}
+        <div className="h-28 sm:h-32 w-full shrink-0" style={{ background: "linear-gradient(135deg, #2A5FA540, #2A5FA518)" }} />
 
-            <div>
-              {/* Label row */}
-              <div className="flex items-center gap-2 mb-0.5">
-                <p className="text-[#2A5FA5] text-[10px] font-bold uppercase tracking-widest">
-                  Partner Dashboard
-                </p>
-                {partner?.approved && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-100 px-2 py-0.5 text-[10px] font-semibold text-[#2A5FA5]">
-                    <BadgeCheck className="h-3 w-3" />Verified
-                  </span>
-                )}
-              </div>
-
-              {/* Company name */}
-              <h1 className="text-2xl font-black text-gray-900 leading-tight">
-                {partner?.companyName ?? firstName}
-              </h1>
-
-              {/* Country + rating + projects */}
-              <div className="flex flex-wrap items-center gap-2 mt-2">
-                {partner?.country && (
-                  <span className="inline-flex items-center gap-1 text-xs text-gray-500">
-                    <Building2 className="h-3.5 w-3.5 text-gray-300 shrink-0" />
-                    {partner.country}
-                  </span>
-                )}
-                {partner?.country && <span className="text-gray-200 text-xs">·</span>}
-                <span className="inline-flex items-center gap-1 text-xs text-gray-500">
-                  <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400 shrink-0" />
-                  <span className="font-semibold text-gray-700">
-                    {partner?.rating && partner.rating > 0 ? partner.rating.toFixed(1) : "No rating"}
-                  </span>
-                </span>
-                <span className="text-gray-200 text-xs">·</span>
-                <span className="text-xs text-gray-500">
-                  <span className="font-semibold text-gray-700">{partner?.projectCount ?? 0}</span> projects
-                </span>
-              </div>
-
-              {/* Specialty chips */}
-              {partner && (partner.specialty ?? []).length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2.5">
-                  {(partner.specialty ?? []).slice(0, 4).map((s) => (
-                    <span
-                      key={s}
-                      className="inline-flex items-center rounded-full bg-blue-50 border border-blue-100 px-2.5 py-0.5 text-[10px] font-medium text-[#2A5FA5]"
-                    >
-                      {s}
-                    </span>
-                  ))}
-                  {(partner.specialty ?? []).length > 4 && (
-                    <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-[10px] font-medium text-gray-500">
-                      +{(partner.specialty ?? []).length - 4} more
-                    </span>
-                  )}
-                </div>
-              )}
+        {/* Logo row */}
+        <div className="px-6 -mt-12 flex items-end justify-between gap-4">
+          {partner?.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={partner.logoUrl}
+              alt={partner.companyName}
+              className="h-24 w-24 rounded-2xl ring-4 ring-white object-cover shrink-0"
+            />
+          ) : (
+            <div
+              className="h-24 w-24 rounded-2xl ring-4 ring-white flex items-center justify-center text-white text-[22px] font-black shrink-0 select-none"
+              style={{ background: "linear-gradient(135deg, #2A5FA5 0%, #1a3d6e 100%)" }}
+            >
+              {companyInitials}
             </div>
+          )}
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-2 pb-1 flex-wrap justify-end">
+            <Link
+              href="/app/my-posts"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[rgba(0,0,0,0.08)] bg-white hover:bg-[#F7F9FC] text-[#5C6B5E] text-[12px] font-semibold px-3.5 py-2 transition-colors"
+              style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+            >
+              <FileText className="h-3.5 w-3.5 text-[#9BA39C]" />
+              New post
+            </Link>
+            <Link
+              href="/app/leads"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#2A5FA5] hover:bg-[#244d8a] text-white text-[12px] font-semibold px-3.5 py-2 transition-colors"
+              style={{ boxShadow: "0 1px 4px rgba(42,95,165,0.25)" }}
+            >
+              <Inbox className="h-3.5 w-3.5" />
+              View leads
+            </Link>
+          </div>
+        </div>
+
+        {/* Company info */}
+        <div className="px-6 pt-4 pb-5">
+          {/* Name + verified badge */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-[18px] font-black text-[#1B2B1F] leading-tight">
+              {partner?.companyName ?? "Your Company"}
+            </p>
+            {partner?.approved && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#EBF1FA] px-2 py-0.5 text-[10px] font-bold text-[#2A5FA5]">
+                <BadgeCheck className="h-3 w-3" />Verified partner
+              </span>
+            )}
           </div>
 
-          {/* Right — actions */}
-          <div className="flex gap-2 shrink-0 sm:mt-1">
-            <Link href="/app/my-posts"
-              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-sm font-semibold px-4 py-2.5 transition-colors"
-            >
-              <FileText className="h-4 w-4" />New post
-            </Link>
-            <Link href="/app/leads"
-              className="inline-flex items-center gap-2 rounded-xl bg-[#2A5FA5] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#244d8a] transition-colors shadow-sm"
-            >
-              <Inbox className="h-4 w-4" />View leads
-            </Link>
+          {/* Country · rating · projects */}
+          <div className="flex flex-wrap items-center gap-2 mt-1.5">
+            {partner?.country && (
+              <>
+                <span className="inline-flex items-center gap-1 text-[12px] text-[#5C6B5E]">
+                  <Building2 className="h-3.5 w-3.5 text-[#9BA39C] shrink-0" />
+                  {partner.country}
+                </span>
+                <span className="text-[#C8D0CA] text-[12px]">·</span>
+              </>
+            )}
+            <span className="inline-flex items-center gap-1 text-[12px] text-[#5C6B5E]">
+              <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400 shrink-0" />
+              <span className="font-semibold text-[#1B2B1F]">
+                {partner?.rating && partner.rating > 0 ? partner.rating.toFixed(1) : "No rating"}
+              </span>
+            </span>
+            <span className="text-[#C8D0CA] text-[12px]">·</span>
+            <span className="text-[12px] text-[#5C6B5E]">
+              <span className="font-semibold text-[#1B2B1F]">{partner?.projectCount ?? 0}</span> projects
+            </span>
+          </div>
+
+          {/* Specialty chips */}
+          {partner && (partner.specialty ?? []).length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {(partner.specialty ?? []).slice(0, 5).map((s) => (
+                <span
+                  key={s}
+                  className="inline-flex items-center rounded-full bg-[#EBF1FA] px-2.5 py-0.5 text-[10px] font-medium text-[#2A5FA5]"
+                  style={{ border: "1px solid rgba(42,95,165,0.12)" }}
+                >
+                  {s}
+                </span>
+              ))}
+              {(partner.specialty ?? []).length > 5 && (
+                <span className="inline-flex items-center rounded-full bg-[#F7F9FC] px-2.5 py-0.5 text-[10px] font-medium text-[#5C6B5E]">
+                  +{(partner.specialty ?? []).length - 5} more
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Stats strip */}
+          <div className="mt-5 flex flex-wrap gap-6 pt-4 border-t border-[#F0EDE8]">
+            {[
+              { value: newLeadsCount,       label: "New leads",       href: "/app/leads", color: "#B85C38" },
+              { value: activeProjectsCount, label: "Active projects",  href: "/app/leads", color: "#0F6E56" },
+              { value: partner?.rating && partner.rating > 0 ? partner.rating.toFixed(1) : "—", label: "Rating", href: undefined, color: "#B89C38" },
+              { value: followerCount,       label: "Followers",        href: undefined,    color: "#2A5FA5" },
+            ].map(({ value, label, href, color }) => {
+              const inner = (
+                <span key={label} className="group flex flex-col items-start gap-0.5">
+                  <span className="text-[22px] font-black leading-none" style={{ color }}>{value}</span>
+                  <span className="text-[11px] text-[#9BA39C] font-medium group-hover:text-[#5C6B5E] transition-colors">{label}</span>
+                </span>
+              );
+              return href ? (
+                <Link key={label} href={href} className="hover:opacity-80 transition-opacity">{inner}</Link>
+              ) : <span key={label}>{inner}</span>;
+            })}
           </div>
         </div>
       </div>
 
-      {/* Pending approval */}
+      {/* Pending approval banner */}
       {partner && !partner.approved && (
-        <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
+        <div className="flex items-center gap-3 rounded-2xl px-5 py-4" style={{ background: "#FFFBEB", border: "1.5px solid rgba(245,158,11,0.2)" }}>
           <AlertCircle className="h-5 w-5 text-amber-500 shrink-0" />
           <div>
-            <p className="text-sm font-bold text-amber-800">Approval pending</p>
-            <p className="text-xs text-amber-600 mt-0.5">Your partner profile is under review. You&apos;ll be notified once approved.</p>
+            <p className="text-[13px] font-bold text-amber-800">Approval pending</p>
+            <p className="text-[12px] text-amber-600 mt-0.5">Your partner profile is under review. You&apos;ll be notified once approved.</p>
           </div>
         </div>
       )}
 
-      {/* Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <MetricCard icon={Inbox}      value={newLeadsCount}       label="New leads"       href="/app/leads"  accent="amber"  />
-        <MetricCard icon={TrendingUp} value={activeProjectsCount} label="Active projects" href="/app/leads"  accent="green"  />
-        <MetricCard icon={Star}       value={partner?.rating ? partner.rating.toFixed(1) : "—"} label="Rating" accent="amber" />
-        <MetricCard icon={Users}      value={followerCount}       label="Followers"                     accent="blue"   />
-      </div>
+      {/* ── Content grid ──────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_292px] gap-4">
+        <div className="space-y-4">
 
-      {/* Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <div className="lg:col-span-2 space-y-5">
-
-          {/* Leads */}
-          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/60">
-              <h2 className="text-sm font-bold text-gray-900">Recent leads</h2>
-              <Link href="/app/leads" className="flex items-center gap-1 text-xs font-medium text-[#2A5FA5] hover:underline">
+          {/* Recent leads */}
+          <div
+            className="bg-white rounded-2xl overflow-hidden"
+            style={{ border: CARD_BORDER, boxShadow: CARD_SHADOW }}
+          >
+            <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+              <div>
+                <h2 className="text-[13px] font-bold text-[#1B2B1F]">Recent leads</h2>
+                <p className="text-[11px] text-[#9BA39C] mt-0.5">{recentLeads.length} migration request{recentLeads.length !== 1 ? "s" : ""}</p>
+              </div>
+              <Link href="/app/leads" className="flex items-center gap-1 text-[11px] font-semibold text-[#2A5FA5] hover:underline">
                 All leads<ArrowRight className="h-3 w-3" />
               </Link>
             </div>
             {recentLeads.length > 0 ? (
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y" style={{ borderColor: "rgba(0,0,0,0.04)" }}>
                 {recentLeads.map((lead) => {
-                  const fromName = partnerToolBySlug.get(lead.fromTool)?.name ?? lead.fromTool;
-                  const toName   = partnerToolBySlug.get(lead.toTool)?.name ?? lead.toTool;
+                  const fromData = partnerToolBySlug.get(lead.fromTool);
+                  const toData   = partnerToolBySlug.get(lead.toTool);
                   return (
                     <Link key={lead.id} href={`/app/leads/${lead.id}`}
-                      className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 transition-colors"
+                      className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#FAFAF9] transition-colors"
                     >
                       {lead.user.image ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={lead.user.image} alt={lead.user.name ?? ""} className="h-9 w-9 rounded-full object-cover shrink-0" />
                       ) : (
-                        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold shrink-0">
+                        <div className="h-9 w-9 rounded-full bg-[#EBF1FA] flex items-center justify-center text-[#2A5FA5] text-[11px] font-bold shrink-0">
                           {getInitials(lead.user.name)}
-                        </span>
+                        </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 truncate">{lead.user.name ?? lead.user.email}</p>
+                        <p className="text-[13px] font-semibold text-[#1B2B1F] truncate">{lead.user.name ?? lead.user.email}</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="text-[10px] text-gray-400">{fromName}</span>
-                          <ArrowRight className="h-2.5 w-2.5 text-gray-300 shrink-0" />
-                          <span className="text-[10px] font-semibold text-[#0F6E56]">{toName}</span>
+                          {fromData ? (
+                            <ToolLogoBox tool={fromData as DbTool} />
+                          ) : null}
+                          <span className="text-[10px] text-[#9BA39C]">{fromData?.name ?? lead.fromTool}</span>
+                          <ArrowRight className="h-2.5 w-2.5 text-[#9BA39C] shrink-0" />
+                          <span className="text-[10px] font-semibold text-[#2A5FA5]">{toData?.name ?? lead.toTool}</span>
+                          {toData ? (
+                            <ToolLogoBox tool={toData as DbTool} />
+                          ) : null}
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
                         <StatusBadge status={lead.status} />
-                        <span className="text-[10px] text-gray-400">{timeAgo(lead.createdAt)}</span>
+                        <span className="text-[10px] text-[#9BA39C]">{timeAgo(lead.createdAt)}</span>
                       </div>
                     </Link>
                   );
@@ -635,51 +737,63 @@ async function PartnerDashboard({ userId, userName }: { userId: string; userName
               </div>
             ) : (
               <div className="text-center py-12">
-                <Inbox className="h-8 w-8 text-gray-200 mx-auto mb-3" />
-                <p className="text-sm font-semibold text-gray-700">No leads yet</p>
-                <p className="text-xs text-gray-400 mt-1">{partner?.approved ? "Leads appear when businesses request your help." : "Leads come in once your profile is approved."}</p>
+                <Inbox className="h-8 w-8 text-[#9BA39C] mx-auto mb-3" />
+                <p className="text-[13px] font-semibold text-[#1B2B1F]">No leads yet</p>
+                <p className="text-[12px] text-[#9BA39C] mt-1">
+                  {partner?.approved ? "Leads appear when businesses request your help." : "Leads come in once your profile is approved."}
+                </p>
               </div>
             )}
           </div>
 
           {/* Post performance */}
-          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/60">
-              <h2 className="text-sm font-bold text-gray-900">Post performance</h2>
-              <Link href="/app/my-posts" className="flex items-center gap-1 text-xs font-medium text-[#2A5FA5] hover:underline">
+          <div
+            className="bg-white rounded-2xl overflow-hidden"
+            style={{ border: CARD_BORDER, boxShadow: CARD_SHADOW }}
+          >
+            <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+              <div>
+                <h2 className="text-[13px] font-bold text-[#1B2B1F]">Post performance</h2>
+                <p className="text-[11px] text-[#9BA39C] mt-0.5">{myPosts.length} published post{myPosts.length !== 1 ? "s" : ""}</p>
+              </div>
+              <Link href="/app/my-posts" className="flex items-center gap-1 text-[11px] font-semibold text-[#2A5FA5] hover:underline">
                 All posts<ArrowRight className="h-3 w-3" />
               </Link>
             </div>
             {myPosts.length > 0 ? (
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y" style={{ borderColor: "rgba(0,0,0,0.04)" }}>
                 {myPosts.map((post) => {
                   const fromData = partnerToolBySlug.get(post.fromTool);
                   const toData   = partnerToolBySlug.get(post.toTool);
                   const total    = post._count.likes + post._count.comments + post._count.recommendations;
                   const max      = Math.max(...myPosts.map((p) => p._count.likes + p._count.comments + p._count.recommendations), 1);
                   return (
-                    <div key={post.id} className="px-5 py-4">
-                      <div className="flex items-start gap-3 mb-3">
-                        <div className="flex items-center gap-1 shrink-0 mt-0.5">
-                          {fromData && <ToolIcon toolData={fromData} size="sm" />}
-                          <ArrowRight className="h-3 w-3 text-gray-300" />
-                          {toData && <ToolIcon toolData={toData} size="sm" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-700 leading-relaxed line-clamp-2">{post.story}</p>
-                          <p className="text-[10px] text-gray-400 mt-1">{timeAgo(post.createdAt)}</p>
-                        </div>
+                    <div key={post.id} className="px-5 py-4 hover:bg-[#FAFAF9] transition-colors">
+                      {/* Tool path + story */}
+                      <div
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl mb-3"
+                        style={{ background: "#F0F5FA", border: "1px solid rgba(42,95,165,0.08)" }}
+                      >
+                        {fromData && <ToolLogoBox tool={fromData as DbTool} />}
+                        <span className="text-[11px] font-medium text-[#5C6B5E] truncate flex-1">{fromData?.name ?? post.fromTool}</span>
+                        <ArrowRight className="h-3 w-3 text-[#2A5FA5] shrink-0" />
+                        <span className="text-[11px] font-semibold text-[#2A5FA5] truncate flex-1 text-right">{toData?.name ?? post.toTool}</span>
+                        {toData && <ToolLogoBox tool={toData as DbTool} />}
                       </div>
+                      <p className="text-[13px] text-[#5C6B5E] leading-relaxed line-clamp-2 mb-3">
+                        &ldquo;{post.story}&rdquo;
+                      </p>
+                      {/* Engagement bar */}
                       <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-3 text-xs text-gray-500">
-                          <span className="flex items-center gap-1"><ThumbsUp className="h-3.5 w-3.5 text-gray-400" />{post._count.likes}</span>
-                          <span className="flex items-center gap-1"><MessageCircle className="h-3.5 w-3.5 text-gray-400" />{post._count.comments}</span>
-                          <span className="flex items-center gap-1"><Bookmark className="h-3.5 w-3.5 text-gray-400" />{post._count.recommendations}</span>
+                        <div className="flex items-center gap-3 text-[11px] text-[#9BA39C]">
+                          <span className="flex items-center gap-1"><Heart className="h-3.5 w-3.5" />{post._count.likes}</span>
+                          <span className="flex items-center gap-1"><MessageCircle className="h-3.5 w-3.5" />{post._count.comments}</span>
+                          <span className="flex items-center gap-1"><Bookmark className="h-3.5 w-3.5" />{post._count.recommendations}</span>
                         </div>
-                        <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-[#2A5FA5] rounded-full" style={{ width: `${(total / max) * 100}%` }} />
+                        <div className="flex-1 h-1.5 bg-[#F0EDE8] rounded-full overflow-hidden">
+                          <div className="h-full rounded-full transition-all" style={{ width: `${(total / max) * 100}%`, background: "#2A5FA5" }} />
                         </div>
-                        <span className="text-[10px] font-semibold text-gray-500 shrink-0">{total}</span>
+                        <span className="text-[10px] font-semibold text-[#5C6B5E] shrink-0">{total} engagements</span>
                       </div>
                     </div>
                   );
@@ -687,10 +801,10 @@ async function PartnerDashboard({ userId, userName }: { userId: string; userName
               </div>
             ) : (
               <div className="text-center py-12">
-                <BarChart3 className="h-8 w-8 text-gray-200 mx-auto mb-3" />
-                <p className="text-sm font-semibold text-gray-700">No posts yet</p>
-                <p className="text-xs text-gray-400 mt-1 mb-4">Share migration stories to attract leads.</p>
-                <Link href="/app/my-posts" className="inline-flex items-center gap-1.5 rounded-xl bg-[#2A5FA5] hover:bg-[#244d8a] text-white text-xs font-semibold px-4 py-2 transition-colors">
+                <BarChart3 className="h-8 w-8 text-[#9BA39C] mx-auto mb-3" />
+                <p className="text-[13px] font-semibold text-[#1B2B1F]">No posts yet</p>
+                <p className="text-[12px] text-[#9BA39C] mt-1 mb-4">Share migration stories to attract leads.</p>
+                <Link href="/app/my-posts" className="inline-flex items-center gap-1.5 rounded-xl bg-[#2A5FA5] hover:bg-[#244d8a] text-white text-[12px] font-semibold px-4 py-2 transition-colors">
                   <PenSquare className="h-3.5 w-3.5" />Write first post
                 </Link>
               </div>
@@ -698,25 +812,27 @@ async function PartnerDashboard({ userId, userName }: { userId: string; userName
           </div>
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-4">
+        {/* ── Sidebar ─────────────────────────────────────────────────────────── */}
+        <div className="space-y-3">
 
           {/* Quick actions */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-4">
-            <h3 className="text-sm font-bold text-gray-900 mb-3">Quick actions</h3>
-            <div className="space-y-1">
+          <div className="bg-white rounded-2xl p-4" style={{ border: CARD_BORDER, boxShadow: CARD_SHADOW }}>
+            <h3 className="text-[13px] font-bold text-[#1B2B1F] mb-3">Quick actions</h3>
+            <div className="space-y-0.5">
               {([
-                { href: "/app/leads",           icon: Inbox,     label: "Manage leads"         },
-                { href: "/app/my-posts",        icon: PenSquare, label: "Write a post"          },
-                { href: "/app/company-profile", icon: Building2, label: "Edit company profile"  },
-                { href: "/app/discover",        icon: Compass,   label: "Browse alternatives"   },
-              ] as const).map(({ href, icon: Icon, label }) => (
+                { href: "/app/leads",           icon: Inbox,     label: "Manage leads",         iconBg: "#EBF1FA", iconColor: "#2A5FA5" },
+                { href: "/app/my-posts",        icon: PenSquare, label: "Write a post",          iconBg: "#EAF3EE", iconColor: "#0F6E56" },
+                { href: "/app/settings?tab=company", icon: Building2, label: "Edit company profile", iconBg: "#F3EFFE", iconColor: "#7C5CBF" },
+                { href: "/app/discover",        icon: Compass,   label: "Browse alternatives",   iconBg: "#FEF3EC", iconColor: "#B85C38" },
+              ] as const).map(({ href, icon: Icon, label, iconBg, iconColor }) => (
                 <Link key={href} href={href}
-                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors group"
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] text-[#5C6B5E] hover:bg-[#F7F9F8] hover:text-[#1B2B1F] transition-all group"
                 >
-                  <Icon className="h-4 w-4 text-gray-400 group-hover:text-[#2A5FA5] transition-colors shrink-0" />
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg shrink-0 transition-colors" style={{ background: iconBg }}>
+                    <Icon className="h-3.5 w-3.5" style={{ color: iconColor }} />
+                  </div>
                   <span className="flex-1 font-medium">{label}</span>
-                  <ArrowRight className="h-3.5 w-3.5 text-gray-300 group-hover:text-[#2A5FA5] transition-colors" />
+                  <ArrowRight className="h-3.5 w-3.5 text-[#C8D0CA] group-hover:text-[#9BA39C] transition-colors" />
                 </Link>
               ))}
             </div>
@@ -724,14 +840,15 @@ async function PartnerDashboard({ userId, userName }: { userId: string; userName
 
           {/* Specialties */}
           {partner && (partner.specialty ?? []).length > 0 && (
-            <div className="bg-white rounded-2xl border border-gray-200 p-4">
+            <div className="bg-white rounded-2xl p-4" style={{ border: CARD_BORDER, boxShadow: CARD_SHADOW }}>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-gray-900">Your specialties</h3>
-                <Link href="/app/company-profile" className="text-xs text-[#2A5FA5] hover:underline">Edit</Link>
+                <h3 className="text-[13px] font-bold text-[#1B2B1F]">Your specialties</h3>
+                <Link href="/app/settings?tab=company" className="text-[11px] font-semibold text-[#2A5FA5] hover:underline">Edit</Link>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {(partner.specialty ?? []).map((spec) => (
-                  <span key={spec} className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-[#2A5FA5]">
+                  <span key={spec} className="inline-flex items-center rounded-full bg-[#EBF1FA] px-2.5 py-1 text-[11px] font-medium text-[#2A5FA5]"
+                    style={{ border: "1px solid rgba(42,95,165,0.12)" }}>
                     {spec}
                   </span>
                 ))}
@@ -741,18 +858,18 @@ async function PartnerDashboard({ userId, userName }: { userId: string; userName
 
           {/* Profile visibility */}
           {partner && (
-            <div className="bg-white rounded-2xl border border-gray-200 p-4">
-              <h3 className="text-sm font-bold text-gray-900 mb-3">Profile visibility</h3>
+            <div className="bg-white rounded-2xl p-4" style={{ border: CARD_BORDER, boxShadow: CARD_SHADOW }}>
+              <h3 className="text-[13px] font-bold text-[#1B2B1F] mb-3">Profile status</h3>
               <div className="space-y-2.5">
                 {[
-                  { label: "Status",         value: partner.approved  ? "✓ Approved"    : "Pending review",  ok: partner.approved  },
-                  { label: "Featured",       value: partner.featured  ? "✓ Featured"    : "Not featured",    ok: partner.featured  },
-                  { label: "Total projects", value: String(partner.projectCount),                            ok: true              },
-                  { label: "Pricing",        value: partner.pricing ?? "—",                                  ok: !!partner.pricing },
+                  { label: "Approval",      value: partner.approved  ? "Approved"       : "Pending",       ok: partner.approved  },
+                  { label: "Featured",      value: partner.featured  ? "Featured"       : "Not featured",  ok: partner.featured  },
+                  { label: "Projects done", value: String(partner.projectCount),                           ok: true              },
+                  { label: "Pricing",       value: partner.pricing ?? "—",                                 ok: !!partner.pricing },
                 ].map(({ label, value, ok }) => (
-                  <div key={label} className="flex items-center justify-between">
-                    <span className="text-xs text-gray-400">{label}</span>
-                    <span className={cn("text-xs font-semibold", ok ? "text-[#0F6E56]" : "text-gray-400")}>{value}</span>
+                  <div key={label} className="flex items-center justify-between py-1.5 border-b border-[rgba(0,0,0,0.04)] last:border-0">
+                    <span className="text-[11px] text-[#9BA39C]">{label}</span>
+                    <span className="text-[11px] font-semibold" style={{ color: ok ? "#0F6E56" : "#9BA39C" }}>{value}</span>
                   </div>
                 ))}
               </div>
@@ -787,6 +904,6 @@ export default async function DashboardPage() {
 
   const isPartnerMode = partnerApproved && activeMode === "partner";
   return isPartnerMode
-    ? <PartnerDashboard userId={userId} userName={name} />
+    ? <PartnerDashboard userId={userId} />
     : <UserDashboard userId={userId} userName={name} activeMode={activeMode} hasPartner={hasPartner} />;
 }

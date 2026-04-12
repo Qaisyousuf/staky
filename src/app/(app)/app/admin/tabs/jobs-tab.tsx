@@ -76,7 +76,7 @@ function JobForm({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
       <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl border border-gray-100 overflow-hidden">
-        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+        <div className="flex items-center justify-between border-b border-[rgba(0,0,0,0.05)] px-6 py-4">
           <h3 className="text-[15px] font-bold text-gray-900">{initial.id ? "Edit posting" : "New job posting"}</h3>
           <button onClick={onClose} className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100">
             <X className="h-4 w-4" />
@@ -117,7 +117,7 @@ function JobForm({
             <span className="text-[13px] font-medium text-gray-700">{form.published ? "Published" : "Draft"}</span>
           </label>
           <div className="flex gap-2 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-gray-200 py-2.5 text-[13px] font-semibold text-gray-600 hover:bg-gray-50">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-gray-200 py-2.5 text-[13px] font-semibold text-gray-600 hover:bg-[#FAFAF9]">Cancel</button>
             <button type="submit" disabled={isPending}
               className="flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-semibold text-white disabled:opacity-60"
               style={{ background: "#0F6E56" }}>
@@ -140,7 +140,7 @@ function ApplicationRow({ app }: { app: Application }) {
   return (
     <div className="border-t border-gray-50">
       <div
-        className="flex cursor-pointer items-center justify-between gap-4 px-5 py-3.5 hover:bg-gray-50"
+        className="flex cursor-pointer items-center justify-between gap-4 px-5 py-3.5 hover:bg-[#FAFAF9]"
         onClick={() => setExpanded((v) => !v)}
       >
         <div className="min-w-0">
@@ -250,12 +250,12 @@ export function JobsTab({ jobs, applications }: { jobs: Job[]; applications: App
               <p className="text-sm text-gray-400">No job postings yet.</p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-50">
+            <div className="divide-y divide-[rgba(0,0,0,0.04)]">
               <div className="hidden grid-cols-[1fr_auto_auto_auto_auto_auto] gap-4 bg-gray-50 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400 lg:grid">
                 <span>Role</span><span>Dept</span><span>Location</span><span>Apps</span><span>Status</span><span>Actions</span>
               </div>
               {jobs.map((job) => (
-                <div key={job.id} className="flex flex-col gap-3 px-5 py-4 hover:bg-gray-50 lg:grid lg:grid-cols-[1fr_auto_auto_auto_auto_auto] lg:items-center lg:gap-4">
+                <div key={job.id} className="flex flex-col gap-3 px-5 py-4 hover:bg-[#FAFAF9] lg:grid lg:grid-cols-[1fr_auto_auto_auto_auto_auto] lg:items-center lg:gap-4">
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-gray-900 truncate">{job.title}</p>
                     <p className="text-xs text-gray-400 mt-0.5">{job.type}</p>

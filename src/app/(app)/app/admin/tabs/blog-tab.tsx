@@ -339,7 +339,7 @@ function PostModal({ mode, initial, onClose, onSave, saving }: ModalProps) {
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 backdrop-blur-[2px] p-4">
       <div className="relative my-8 w-full max-w-2xl rounded-[20px] bg-white shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+        <div className="flex items-center justify-between border-b border-[rgba(0,0,0,0.05)] px-6 py-4">
           <div className="flex items-center gap-2.5">
             <BookOpen className="h-5 w-5 text-[#0F6E56]" />
             <h2 className="text-[16px] font-semibold text-gray-900">
@@ -464,7 +464,7 @@ function PostModal({ mode, initial, onClose, onSave, saving }: ModalProps) {
               Content
             </label>
             <div className="mb-2 overflow-hidden rounded-[14px] border border-gray-200 bg-white">
-              <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 bg-gray-50 px-3 py-2.5">
+              <div className="flex flex-wrap items-center gap-2 border-b border-[rgba(0,0,0,0.05)] bg-gray-50 px-3 py-2.5">
                 {[
                   { label: "H2", icon: Heading2, action: () => prefixLines("## ", "Section heading") },
                   { label: "H3", icon: Heading3, action: () => prefixLines("### ", "Subheading") },
@@ -489,8 +489,8 @@ function PostModal({ mode, initial, onClose, onSave, saving }: ModalProps) {
                 ))}
               </div>
               <div>
-                <div className="border-b border-gray-100">
-                  <div className="border-b border-gray-100 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">
+                <div className="border-b border-[rgba(0,0,0,0.05)]">
+                  <div className="border-b border-[rgba(0,0,0,0.05)] px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">
                     Write
                   </div>
                   <textarea
@@ -503,7 +503,7 @@ function PostModal({ mode, initial, onClose, onSave, saving }: ModalProps) {
                   />
                 </div>
                 <div className="bg-[#FBFCFA]">
-                  <div className="border-b border-gray-100 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">
+                  <div className="border-b border-[rgba(0,0,0,0.05)] px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">
                     Preview
                   </div>
                   <div className="max-h-[376px] overflow-y-auto px-4 py-3">
@@ -581,7 +581,7 @@ function PostModal({ mode, initial, onClose, onSave, saving }: ModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-[10px] border border-gray-200 px-5 py-2.5 text-[14px] font-medium text-gray-600 transition-colors hover:bg-gray-50"
+              className="rounded-[10px] border border-gray-200 px-5 py-2.5 text-[14px] font-medium text-gray-600 transition-colors hover:bg-[#FAFAF9]"
             >
               Cancel
             </button>
@@ -706,7 +706,7 @@ export function BlogTab({ posts: initialPosts }: { posts: BlogPostRow[] }) {
       {/* Table card */}
       <div className="rounded-[16px] bg-white border border-gray-100 shadow-sm overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(0,0,0,0.05)] bg-gray-50">
           <h2 className="text-[14px] font-semibold text-gray-800">All posts</h2>
           <button
             onClick={openCreate}
@@ -724,9 +724,9 @@ export function BlogTab({ posts: initialPosts }: { posts: BlogPostRow[] }) {
             <p className="text-[13px] text-gray-400 mt-1">Create your first post to get started.</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-[rgba(0,0,0,0.04)]">
             {posts.map((post) => (
-              <div key={post.id} className="flex items-start gap-4 px-5 py-4 hover:bg-gray-50/50 transition-colors">
+              <div key={post.id} className="flex items-start gap-4 px-5 py-4 hover:bg-[#FAFAF9]/50 transition-colors">
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -802,7 +802,7 @@ export function BlogTab({ posts: initialPosts }: { posts: BlogPostRow[] }) {
                       </button>
                       <button
                         onClick={() => setConfirmDeleteId(null)}
-                        className="rounded-lg border border-gray-200 px-2 py-1 text-[11px] font-medium text-gray-500 hover:bg-gray-50"
+                        className="rounded-lg border border-gray-200 px-2 py-1 text-[11px] font-medium text-gray-500 hover:bg-[#FAFAF9]"
                       >
                         Cancel
                       </button>

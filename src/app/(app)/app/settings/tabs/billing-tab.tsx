@@ -86,7 +86,7 @@ function PlanCard({
   return (
     <div
       className={cn(
-        "relative flex flex-col rounded-xl border-2 p-5 transition-shadow",
+        "relative flex flex-col rounded-2xl border-2 p-5 transition-all duration-200 hover:-translate-y-0.5",
         isCurrent ? "border-[#0F6E56] shadow-sm" : plan.border,
         isCurrent && "ring-2 ring-[#0F6E56]/10"
       )}
@@ -173,7 +173,7 @@ export function BillingTab({ plan }: { plan: string }) {
       </div>
 
       {/* Billing info */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="bg-white rounded-2xl p-5" style={{ border: "1.5px solid rgba(0,0,0,0.06)", boxShadow: "0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04)" }}>
         <h3 className="text-sm font-semibold text-gray-900 mb-3">Billing information</h3>
         <p className="text-sm text-gray-500 leading-relaxed">
           Paid plans are billed monthly. You can cancel at any time and your access will

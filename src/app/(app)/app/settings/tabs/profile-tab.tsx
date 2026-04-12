@@ -425,7 +425,7 @@ export function ProfileTab({ user, activeMode }: { user: SettingsUser; activeMod
   return (
     <div className="space-y-4">
       {/* Cover photo */}
-      <section className="bg-white rounded-xl border border-gray-200 p-5">
+      <section className="bg-white rounded-2xl p-5" style={{ border: "1.5px solid rgba(0,0,0,0.06)", boxShadow: "0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04)" }}>
         <h2 className="text-sm font-semibold text-gray-900 mb-1">Cover photo</h2>
         <p className="text-xs text-gray-400 mb-4">
           Displayed at the top of your public profile · JPG, PNG, WebP · max 8 MB
@@ -437,7 +437,7 @@ export function ProfileTab({ user, activeMode }: { user: SettingsUser; activeMod
       </section>
 
       {/* Avatar */}
-      <section className="bg-white rounded-xl border border-gray-200 p-5">
+      <section className="bg-white rounded-2xl p-5" style={{ border: "1.5px solid rgba(0,0,0,0.06)", boxShadow: "0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04)" }}>
         <h2 className="text-sm font-semibold text-gray-900 mb-1">Profile photo</h2>
         <p className="text-xs text-gray-400 mb-5">
           Your photo is shown on your posts, comments, and profile page
@@ -450,7 +450,7 @@ export function ProfileTab({ user, activeMode }: { user: SettingsUser; activeMod
       </section>
 
       {/* Personal info */}
-      <section className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+      <section className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)] p-5 space-y-4">
         <h2 className="text-sm font-semibold text-gray-900">Personal information</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Full name">
@@ -489,7 +489,7 @@ export function ProfileTab({ user, activeMode }: { user: SettingsUser; activeMod
       </section>
 
       {/* Work info */}
-      <section className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+      <section className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)] p-5 space-y-4">
         <h2 className="text-sm font-semibold text-gray-900">Work</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Job title">
@@ -502,7 +502,7 @@ export function ProfileTab({ user, activeMode }: { user: SettingsUser; activeMod
       </section>
 
       {/* Social links */}
-      <section className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+      <section className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)] p-5 space-y-4">
         <h2 className="text-sm font-semibold text-gray-900">Social links</h2>
         {[
           { key: "linkedin", icon: Link2,  placeholder: "https://linkedin.com/in/yourprofile", label: "LinkedIn" },
@@ -527,7 +527,7 @@ export function ProfileTab({ user, activeMode }: { user: SettingsUser; activeMod
 
       {/* Interests */}
       {!isPartner && (
-        <section className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+        <section className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)] p-5 space-y-3">
           <h2 className="text-sm font-semibold text-gray-900">Interests &amp; expertise</h2>
           <p className="text-xs text-gray-400">Used to personalise your feed and recommendations</p>
           <TagInput
@@ -542,7 +542,7 @@ export function ProfileTab({ user, activeMode }: { user: SettingsUser; activeMod
 
       {/* Partner info (read-only link) */}
       {isPartner && user.partner && (
-        <section className="bg-white rounded-xl border border-gray-200 p-5">
+        <section className="bg-white rounded-2xl p-5" style={{ border: "1.5px solid rgba(0,0,0,0.06)", boxShadow: "0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04)" }}>
           <div className="flex items-center justify-between">
             <div className="flex items-start gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 shrink-0">
@@ -571,7 +571,7 @@ export function ProfileTab({ user, activeMode }: { user: SettingsUser; activeMod
       )}
 
       {/* Save bar */}
-      <div className="sticky bottom-0 flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white/90 backdrop-blur px-5 py-3 shadow-sm">
+      <div className="sticky bottom-0 flex items-center justify-between gap-4 rounded-2xl border border-[rgba(0,0,0,0.06)] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)] bg-white/90 backdrop-blur px-5 py-3 shadow-sm">
         {error ? (
           <p className="text-sm text-red-600 flex items-center gap-1.5"><AlertCircle className="h-4 w-4 shrink-0" />{error}</p>
         ) : saved ? (

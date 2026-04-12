@@ -344,8 +344,8 @@ export function ToolsTab({
             />
           )}
 
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="bg-white rounded-2xl overflow-hidden border border-[rgba(0,0,0,0.06)] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)]">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[rgba(0,0,0,0.05)]">
               <span className="text-sm font-medium text-gray-700">All tools</span>
               {!showToolForm && (
                 <button
@@ -410,8 +410,8 @@ export function ToolsTab({
             />
           )}
 
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="bg-white rounded-2xl overflow-hidden border border-[rgba(0,0,0,0.06)] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)]">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[rgba(0,0,0,0.05)]">
               <span className="text-sm font-medium text-gray-700">All alternatives</span>
               {!showAltForm && (
                 <button
@@ -481,7 +481,7 @@ function ToolForm({
   onCancel: () => void;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
+    <div className="bg-white rounded-2xl p-5 border border-[rgba(0,0,0,0.06)] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)]">
       <h3 className="text-sm font-semibold text-gray-900 mb-5">
         {isEditing ? "Edit Tool" : "Add Tool"}
       </h3>
@@ -558,7 +558,7 @@ function ToolForm({
                       ? o === "eu"
                         ? "bg-blue-50 border-[#2A5FA5] text-[#2A5FA5]"
                         : "bg-red-50 border-red-400 text-red-600"
-                      : "border-gray-200 text-gray-500 hover:bg-gray-50"
+                      : "border-gray-200 text-gray-500 hover:bg-[#FAFAF9]"
                   )}
                 >
                   {o}
@@ -734,7 +734,7 @@ function AlternativeForm({
   onCancel: () => void;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
+    <div className="bg-white rounded-2xl p-5 border border-[rgba(0,0,0,0.06)] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)]">
       <h3 className="text-sm font-semibold text-gray-900 mb-5">
         {isEditing ? "Edit Alternative" : "Add Alternative"}
       </h3>

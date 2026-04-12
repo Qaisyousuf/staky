@@ -315,7 +315,7 @@ export function UserActions({
             const map = { USER: "makeUser", PARTNER: "makePartner", ADMIN: "makeAdmin" } as const;
             act(map[v]);
           }}
-          className="text-xs border border-gray-200 rounded-md px-2 py-1 text-gray-600 bg-white hover:bg-gray-50 cursor-pointer disabled:opacity-50 appearance-none pr-6"
+          className="text-xs border border-gray-200 rounded-md px-2 py-1 text-gray-600 bg-white hover:bg-[#FAFAF9] cursor-pointer disabled:opacity-50 appearance-none pr-6"
         >
           <option value="USER">USER</option>
           <option value="PARTNER">PARTNER</option>

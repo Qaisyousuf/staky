@@ -63,11 +63,11 @@ export function ReportsTab({ data }: { data: ReportsData }) {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* User Growth */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white rounded-2xl p-5 border border-[rgba(0,0,0,0.06)] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)]">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-semibold text-gray-900">User Growth</h3>
@@ -82,7 +82,7 @@ export function ReportsTab({ data }: { data: ReportsData }) {
         </div>
 
         {/* Post Activity */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white rounded-2xl p-5 border border-[rgba(0,0,0,0.06)] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)]">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-semibold text-gray-900">Post Activity</h3>
@@ -100,14 +100,14 @@ export function ReportsTab({ data }: { data: ReportsData }) {
       {/* Bottom row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Top Posts */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100">
+        <div className="bg-white rounded-2xl overflow-hidden border border-[rgba(0,0,0,0.06)] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)]">
+          <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.05)]">
             <h3 className="text-sm font-semibold text-gray-900">Top Posts by Engagement</h3>
           </div>
           {data.topPosts.length === 0 ? (
             <div className="px-5 py-8 text-center text-sm text-gray-400">No posts yet</div>
           ) : (
-            <div className="divide-y divide-gray-50">
+            <div className="divide-y divide-[rgba(0,0,0,0.04)]">
               {data.topPosts.map((post, i) => {
                 const engagement = post._count.likes + post._count.recommendations + post._count.comments;
                 const pct = Math.round((engagement / maxEngagement) * 100);
@@ -146,14 +146,14 @@ export function ReportsTab({ data }: { data: ReportsData }) {
         </div>
 
         {/* Partner Leaderboard */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100">
+        <div className="bg-white rounded-2xl overflow-hidden border border-[rgba(0,0,0,0.06)] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)]">
+          <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.05)]">
             <h3 className="text-sm font-semibold text-gray-900">Partner Leaderboard</h3>
           </div>
           {data.partnerLeaderboard.length === 0 ? (
             <div className="px-5 py-8 text-center text-sm text-gray-400">No approved partners yet</div>
           ) : (
-            <div className="divide-y divide-gray-50">
+            <div className="divide-y divide-[rgba(0,0,0,0.04)]">
               {data.partnerLeaderboard.map((partner, i) => (
                 <div key={partner.id} className="px-5 py-3 flex items-center gap-3">
                   <span className="text-sm font-bold text-gray-300 w-5 text-right shrink-0">#{i + 1}</span>
