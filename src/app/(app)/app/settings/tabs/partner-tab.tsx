@@ -9,7 +9,7 @@ import {
   Search, BadgeCheck, AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { applyAsPartner, lookupCVR, setActiveMode, updatePartnerLogo } from "@/actions/partner-mode";
+import { applyAsPartner, lookupCVR, lookupSIREN, setActiveMode, updatePartnerLogo } from "@/actions/partner-mode";
 
 interface PartnerInfo {
   companyName: string;
@@ -156,12 +156,45 @@ type CvrInfo = {
   email: string | null;
   phone: string | null;
   startdate: string | null;
+  nonDiffusible?: boolean;
+};
+
+type RegCountry = "dk" | "fr";
+
+const COUNTRY_CONFIG: Record<RegCountry, {
+  label: string;
+  flag: string;
+  numberLabel: string;
+  placeholder: string;
+  maxLength: number;
+  hint: string;
+  registry: string;
+}> = {
+  dk: {
+    label: "Denmark",
+    flag: "🇩🇰",
+    numberLabel: "CVR number",
+    placeholder: "12345678",
+    maxLength: 8,
+    hint: "Verified against the Danish Business Register (virk.dk).",
+    registry: "Danish Business Register",
+  },
+  fr: {
+    label: "France",
+    flag: "🇫🇷",
+    numberLabel: "SIREN / SIRET",
+    placeholder: "123456789 or 12345678901234",
+    maxLength: 14,
+    hint: "Enter your 9-digit SIREN or 14-digit SIRET. Verified against the French SIRENE register.",
+    registry: "French Business Register (SIRENE)",
+  },
 };
 
 function ApplicationForm({ onSuccess }: { onSuccess: () => void }) {
   const [isPending, startTransition] = useTransition();
   const [isLookingUp, startLookup] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [regCountry, setRegCountry] = useState<RegCountry>("dk");
   const [cvrStatus, setCvrStatus] = useState<"idle" | "valid" | "invalid">("idle");
   const [cvrInfo, setCvrInfo] = useState<CvrInfo | null>(null);
   const [cvrError, setCvrError] = useState<string>("");
@@ -177,38 +210,63 @@ function ApplicationForm({ onSuccess }: { onSuccess: () => void }) {
 
   const inputClass = "w-full py-2.5 px-3 text-sm rounded-lg border border-gray-200 bg-white outline-none transition-colors focus:border-[#0F6E56]";
 
-  const handleCvrLookup = () => {
+  const cfg = COUNTRY_CONFIG[regCountry];
+
+  const resetLookup = () => {
     setCvrStatus("idle");
     setCvrInfo(null);
     setCvrError("");
+  };
+
+  const handleCountrySwitch = (c: RegCountry) => {
+    setRegCountry(c);
+    setForm((f) => ({ ...f, cvr: "", country: c === "dk" ? "Denmark" : "France" }));
+    resetLookup();
+  };
+
+  const handleLookup = () => {
+    resetLookup();
     startLookup(async () => {
-      const result = await lookupCVR(form.cvr);
+      const result = regCountry === "dk"
+        ? await lookupCVR(form.cvr)
+        : await lookupSIREN(form.cvr);
+
       if (result.status === "found") {
+        const isNonDiffusible = !result.name; // empty name = non-diffusible company
         setCvrStatus("valid");
-        setCvrInfo(result);
-        // Auto-fill known fields; suggest industry as specialty
-        setForm((f) => ({
-          ...f,
-          companyName: result.name,
-          country: result.city ? `${result.city}, Denmark` : "Denmark",
-          specialty: f.specialty || result.industrydesc || "",
-          website: f.website || (result.email ? `https://${result.email.split("@")[1] ?? ""}` : ""),
-        }));
+        setCvrInfo({ ...result, nonDiffusible: isNonDiffusible });
+        if (!isNonDiffusible) {
+          const defaultCountry = regCountry === "dk"
+            ? (result.city ? `${result.city}, Denmark` : "Denmark")
+            : (result.city ? `${result.city}, France` : "France");
+          setForm((f) => ({
+            ...f,
+            companyName: f.companyName || result.name,
+            country: f.country === (regCountry === "dk" ? "Denmark" : "France") ? defaultCountry : f.country,
+            specialty: f.specialty || result.industrydesc || "",
+            website: f.website || (result.email ? `https://${result.email.split("@")[1] ?? ""}` : ""),
+          }));
+        }
+        // Non-diffusible: SIREN verified but data is private — user fills form manually
       } else if (result.status === "not_found") {
         setCvrStatus("invalid");
-        setCvrError("CVR not found in the Danish Business Register.");
+        setCvrError(`${regCountry === "dk" ? "CVR" : "SIREN/SIRET"} not found in the ${cfg.registry}.`);
       } else {
         setCvrStatus("invalid");
-        setCvrError("Could not reach the CVR registry. Please try again.");
+        setCvrError("Could not reach the business registry. Please try again.");
       }
     });
   };
+
+  const isLookupReady = regCountry === "dk"
+    ? form.cvr.length === 8
+    : (form.cvr.length === 9 || form.cvr.length === 14);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      const result = await applyAsPartner(form);
+      const result = await applyAsPartner({ ...form, registrationCountry: regCountry });
       if (result.status === "error") {
         setError(result.message);
       } else {
@@ -224,7 +282,7 @@ function ApplicationForm({ onSuccess }: { onSuccess: () => void }) {
         <div>
           <p className="text-sm font-semibold text-[#2A5FA5]">Become a Migration Partner</p>
           <p className="text-xs text-blue-600 mt-0.5">
-            Enter your Danish CVR number to verify your business. Valid companies are instantly approved.
+            Verify your business with your national business number. Valid companies are instantly approved.
           </p>
         </div>
       </div>
@@ -235,24 +293,48 @@ function ApplicationForm({ onSuccess }: { onSuccess: () => void }) {
         </div>
       )}
 
-      {/* CVR lookup */}
+      {/* Country selector */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Country of registration</label>
+        <div className="inline-flex rounded-xl border border-gray-200 bg-gray-50 p-1 gap-1">
+          {(["dk", "fr"] as RegCountry[]).map((c) => {
+            const conf = COUNTRY_CONFIG[c];
+            return (
+              <button
+                key={c}
+                type="button"
+                onClick={() => handleCountrySwitch(c)}
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                  regCountry === c
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                )}
+              >
+                <span>{conf.flag}</span>
+                {conf.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Business number lookup */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          CVR number <span className="text-red-400">*</span>
+          {cfg.numberLabel} <span className="text-red-400">*</span>
         </label>
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             <input
               type="text"
-              placeholder="12345678"
-              maxLength={8}
+              placeholder={cfg.placeholder}
+              maxLength={cfg.maxLength}
               value={form.cvr}
               onChange={(e) => {
                 setForm((f) => ({ ...f, cvr: e.target.value.replace(/\D/g, "") }));
-                setCvrStatus("idle");
-                setCvrInfo(null);
-                setCvrError("");
+                resetLookup();
               }}
               className={cn(
                 inputClass, "pl-9 font-mono tracking-widest",
@@ -264,8 +346,8 @@ function ApplicationForm({ onSuccess }: { onSuccess: () => void }) {
           </div>
           <button
             type="button"
-            onClick={handleCvrLookup}
-            disabled={isLookingUp || form.cvr.length !== 8}
+            onClick={handleLookup}
+            disabled={isLookingUp || !isLookupReady}
             className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
           >
             {isLookingUp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
@@ -273,8 +355,8 @@ function ApplicationForm({ onSuccess }: { onSuccess: () => void }) {
           </button>
         </div>
 
-        {/* CVR result card */}
-        {cvrStatus === "valid" && cvrInfo && (
+        {/* Lookup result card */}
+        {cvrStatus === "valid" && cvrInfo && !cvrInfo.nonDiffusible && (
           <div className="mt-2 rounded-xl border border-green-200 bg-green-50/50 px-4 py-3 space-y-2">
             <div className="flex items-center gap-2">
               <BadgeCheck className="h-4 w-4 text-green-600 shrink-0" />
@@ -291,15 +373,24 @@ function ApplicationForm({ onSuccess }: { onSuccess: () => void }) {
             <p className="text-[11px] text-green-700">Fields below have been pre-filled — review and adjust if needed.</p>
           </div>
         )}
+        {cvrStatus === "valid" && cvrInfo?.nonDiffusible && (
+          <div className="mt-2 rounded-xl border border-green-200 bg-green-50/50 px-4 py-3">
+            <div className="flex items-center gap-2 mb-1">
+              <BadgeCheck className="h-4 w-4 text-green-600 shrink-0" />
+              <span className="text-sm font-semibold text-green-800">Business number verified</span>
+            </div>
+            <p className="text-[11px] text-green-700 leading-relaxed">
+              Your SIREN is registered in the French registry. Company details are not publicly listed (non-diffusible) — please fill in your company information below manually.
+            </p>
+          </div>
+        )}
         {cvrStatus === "invalid" && (
           <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600">
             <AlertCircle className="h-3.5 w-3.5 shrink-0" /> {cvrError}
           </p>
         )}
         {cvrStatus === "idle" && (
-          <p className="mt-1 text-[11px] text-gray-400">
-            Verified against the Danish Business Register (virk.dk). Fields are auto-filled after lookup.
-          </p>
+          <p className="mt-1 text-[11px] text-gray-400">{cfg.hint}</p>
         )}
       </div>
 
@@ -312,7 +403,7 @@ function ApplicationForm({ onSuccess }: { onSuccess: () => void }) {
           <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
           <input
             type="text"
-            placeholder="Auto-filled after CVR lookup"
+            placeholder={cvrStatus === "valid" && cvrInfo?.nonDiffusible ? "Enter your company name" : "Auto-filled after lookup"}
             value={form.companyName}
             onChange={(e) => setForm((f) => ({ ...f, companyName: e.target.value }))}
             className={`${inputClass} pl-9`}
@@ -401,7 +492,7 @@ function ApplicationForm({ onSuccess }: { onSuccess: () => void }) {
         className="inline-flex items-center gap-2 rounded-xl bg-[#2A5FA5] hover:bg-[#244d8a] text-white text-sm font-semibold px-5 py-2.5 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Handshake className="h-4 w-4" />}
-        {isPending ? "Verifying &amp; activating…" : "Submit application"}
+        {isPending ? "Verifying & activating…" : "Submit application"}
       </button>
     </form>
   );

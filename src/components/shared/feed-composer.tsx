@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import {
   X,
   ArrowRight,
-  Plus,
   Loader2,
   Image as ImageIcon,
   FileText,
@@ -14,24 +13,23 @@ import {
   Users,
   Link2,
   Trash2,
+  ChevronDown,
 } from "lucide-react";
 import { ToolIcon, type DbTool } from "@/components/shared/tool-icon";
 import {
   ACCEPTED_POST_IMAGE_TYPES,
-  MAX_POST_HASHTAGS,
   MAX_POST_IMAGE_COUNT,
   MAX_POST_IMAGE_SIZE_BYTES,
   normalizeUrl,
-  parseHashtags,
 } from "@/lib/post-utils";
 
-type ComposerTool = { slug: string; name: string; logoUrl?: string | null; color: string; abbr: string };
-
-type ImageDraft = {
-  file: File;
-  previewUrl: string;
-  key: string;
+type ComposerAlt = {
+  id: string;
+  fromTool: { slug: string; name: string; logoUrl?: string | null; color: string; abbr: string };
+  toTool:   { slug: string; name: string; logoUrl?: string | null; color: string; abbr: string };
 };
+
+type ImageDraft = { file: File; previewUrl: string; key: string };
 
 function PostModal({
   userName,
@@ -40,8 +38,7 @@ function PostModal({
   isPartnerMode,
   partnerName,
   partnerLogoUrl,
-  usTools,
-  euTools,
+  alternatives,
   onClose,
 }: {
   userName: string;
@@ -50,8 +47,7 @@ function PostModal({
   isPartnerMode?: boolean;
   partnerName?: string | null;
   partnerLogoUrl?: string | null;
-  usTools: ComposerTool[];
-  euTools: ComposerTool[];
+  alternatives: ComposerAlt[];
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -59,130 +55,73 @@ function PostModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imagesRef = useRef<ImageDraft[]>([]);
 
-  const [fromTool, setFromTool] = useState("");
-  const [toTool, setToTool] = useState("");
+  const [selectedAltId, setSelectedAltId] = useState("");
   const [story, setStory] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState("");
   const [images, setImages] = useState<ImageDraft[]>([]);
   const [error, setError] = useState("");
   const [uploadError, setUploadError] = useState("");
   const [isPending, setIsPending] = useState(false);
 
-  useEffect(() => {
-    imagesRef.current = images;
-  }, [images]);
+  const selectedAlt = alternatives.find((a) => a.id === selectedAltId) ?? null;
 
+  useEffect(() => { imagesRef.current = images; }, [images]);
   useEffect(() => {
-    return () => {
-      for (const image of imagesRef.current) {
-        URL.revokeObjectURL(image.previewUrl);
-      }
-    };
+    return () => { for (const img of imagesRef.current) URL.revokeObjectURL(img.previewUrl); };
   }, []);
-
-  function validateImageFile(file: File) {
-    if (!ACCEPTED_POST_IMAGE_TYPES.has(file.type)) {
-      return "Images must be JPG, PNG, or WebP.";
-    }
-    if (file.size > MAX_POST_IMAGE_SIZE_BYTES) {
-      return `Each image must be under ${Math.round(MAX_POST_IMAGE_SIZE_BYTES / (1024 * 1024))}MB.`;
-    }
-    return null;
-  }
 
   function handleImageSelection(fileList: FileList | null) {
     if (!fileList?.length) return;
-
     setUploadError("");
-
     const nextFiles = Array.from(fileList);
     if (images.length + nextFiles.length > MAX_POST_IMAGE_COUNT) {
       setUploadError(`You can attach up to ${MAX_POST_IMAGE_COUNT} images.`);
       return;
     }
-
-    const invalidFile = nextFiles.find(validateImageFile);
-    if (invalidFile) {
-      setUploadError(validateImageFile(invalidFile) ?? "Invalid image.");
-      return;
+    for (const file of nextFiles) {
+      if (!ACCEPTED_POST_IMAGE_TYPES.has(file.type)) { setUploadError("Images must be JPG, PNG, or WebP."); return; }
+      if (file.size > MAX_POST_IMAGE_SIZE_BYTES) { setUploadError(`Each image must be under ${Math.round(MAX_POST_IMAGE_SIZE_BYTES / (1024 * 1024))}MB.`); return; }
     }
-
     const drafts = nextFiles.map((file) => ({
       file,
       previewUrl: URL.createObjectURL(file),
       key: `${file.name}-${file.size}-${crypto.randomUUID()}`,
     }));
-
-    setImages((current) => [...current, ...drafts]);
+    setImages((c) => [...c, ...drafts]);
   }
 
   function removeImage(key: string) {
-    setImages((current) => {
-      const image = current.find((item) => item.key === key);
-      if (image) URL.revokeObjectURL(image.previewUrl);
-      return current.filter((item) => item.key !== key);
+    setImages((c) => {
+      const img = c.find((i) => i.key === key);
+      if (img) URL.revokeObjectURL(img.previewUrl);
+      return c.filter((i) => i.key !== key);
     });
   }
 
-  function addTag() {
-    const normalized = tagInput.trim().toLowerCase().replace(/^#/, "").replace(/\s+/g, "-");
-    if (!normalized || tags.includes(normalized) || tags.length >= MAX_POST_HASHTAGS) return;
-    setTags((current) => [...current, normalized]);
-    setTagInput("");
-  }
-
   async function handleSubmit() {
-    setError("");
-    setUploadError("");
-
+    setError(""); setUploadError("");
     const normalizedLinkUrl = normalizeUrl(linkUrl);
-    const hashtagCount = parseHashtags(story).length;
-
-    if (!fromTool) return setError("Select the tool you're switching from.");
-    if (!toTool) return setError("Select the EU tool you're switching to.");
-    if (fromTool === toTool) return setError("From and To tools must be different.");
-    if (!story.trim() && images.length === 0 && !normalizedLinkUrl) {
-      return setError("Add text, an image, or a link before posting.");
-    }
-    if (linkUrl.trim() && !normalizedLinkUrl) {
-      return setError("Enter a valid http:// or https:// link.");
-    }
-    if (hashtagCount > MAX_POST_HASHTAGS) {
-      return setError(`Use up to ${MAX_POST_HASHTAGS} hashtags.`);
-    }
+    if (linkUrl.trim() && !normalizedLinkUrl) return setError("Enter a valid http:// or https:// link.");
+    if (!story.trim() && images.length === 0 && !normalizedLinkUrl) return setError("Add text, an image, or a link before posting.");
 
     setIsPending(true);
-
     try {
       const formData = new FormData();
-      formData.set("fromTool", fromTool);
-      formData.set("toTool", toTool);
+      formData.set("fromTool", selectedAlt?.fromTool.slug ?? "");
+      formData.set("toTool", selectedAlt?.toTool.slug ?? "");
       formData.set("story", story);
       formData.set("linkUrl", normalizedLinkUrl ?? "");
-      formData.set("tags", JSON.stringify(tags));
+      formData.set("tags", "[]");
+      for (const img of images) formData.append("images", img.file);
 
-      for (const image of images) {
-        formData.append("images", image.file);
-      }
-
-      const response = await fetch("/api/posts", {
-        method: "POST",
-        body: formData,
-      });
-
-      const payload = (await response.json()) as { error?: string };
-      if (!response.ok) {
-        const message = payload.error ?? "Unable to create post.";
-        if (message.toLowerCase().includes("image")) {
-          setUploadError(message);
-        } else {
-          setError(message);
-        }
+      const res = await fetch("/api/posts", { method: "POST", body: formData });
+      const payload = await res.json() as { error?: string };
+      if (!res.ok) {
+        const msg = payload.error ?? "Unable to create post.";
+        if (msg.toLowerCase().includes("image")) setUploadError(msg);
+        else setError(msg);
         return;
       }
-
       router.refresh();
       onClose();
     } catch {
@@ -197,230 +136,116 @@ function PostModal({
       <div
         ref={overlayRef}
         className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
-        onClick={(event) => event.target === overlayRef.current && onClose()}
+        onClick={(e) => e.target === overlayRef.current && onClose()}
       />
-
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-        <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl pointer-events-auto overflow-hidden">
+        <div className="w-full max-w-xl rounded-2xl bg-white shadow-2xl pointer-events-auto overflow-hidden">
+
+          {/* Header */}
           <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-            <h2 className="text-base font-semibold text-gray-900">Create a post</h2>
-            <button
-              onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-            >
+            <div className="flex items-center gap-3">
+              {isPartnerMode ? (
+                partnerLogoUrl
+                  ? <img src={partnerLogoUrl} alt="" className="h-9 w-9 rounded-xl object-cover shrink-0" /> // eslint-disable-line @next/next/no-img-element
+                  : <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#2A5FA5] text-xs font-bold text-white shrink-0">{(partnerName ?? "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}</span>
+              ) : userImage
+                ? <img src={userImage} alt="" className="h-9 w-9 rounded-full object-cover shrink-0" /> // eslint-disable-line @next/next/no-img-element
+                : <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#0F6E56] text-xs font-bold text-white shrink-0">{userInitials}</span>
+              }
+              <div>
+                <p className="text-sm font-semibold text-gray-900">{isPartnerMode ? (partnerName ?? userName) : userName}</p>
+                <p className="text-[11px] text-gray-400">{isPartnerMode ? "Posting as partner" : "Share with everyone"}</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600">
               <X className="h-4 w-4" />
             </button>
           </div>
 
-          <div className="max-h-[78vh] space-y-5 overflow-y-auto px-5 py-4">
-            <div className="flex items-center gap-3">
-              {isPartnerMode ? (
-                partnerLogoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={partnerLogoUrl} alt={partnerName ?? ""} className="h-10 w-10 rounded-xl object-cover shrink-0" />
-                ) : (
-                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#2A5FA5] text-sm font-bold text-white shrink-0 select-none">
-                    {(partnerName ?? "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
-                  </span>
-                )
-              ) : userImage ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={userImage} alt={userName} className="h-10 w-10 rounded-full object-cover shrink-0" />
-              ) : (
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#0F6E56] text-sm font-bold text-white shrink-0">
-                  {userInitials}
-                </span>
-              )}
-              <div>
-                <p className="text-sm font-semibold text-gray-900">{isPartnerMode ? (partnerName ?? userName) : userName}</p>
-                {isPartnerMode ? (
-                  <span className="inline-flex items-center rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-[#2A5FA5]">
-                    Migration Partner
-                  </span>
-                ) : (
-                  <p className="text-xs text-gray-400">Share with everyone</p>
-                )}
-              </div>
-            </div>
+          <div className="max-h-[76vh] space-y-4 overflow-y-auto px-5 py-4">
 
-            <div className="flex items-center gap-3">
-              <div className="flex-1">
-                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                  Switching from
-                </label>
-                <div className="relative">
-                  <select
-                    value={fromTool}
-                    onChange={(event) => setFromTool(event.target.value)}
-                    className="w-full appearance-none rounded-xl border border-gray-200 bg-white py-2.5 pl-3 pr-8 text-sm text-gray-700 transition-colors focus:border-[#0F6E56] focus:outline-none"
-                  >
-                    <option value="">Select tool…</option>
-                    {usTools.map((tool) => (
-                      <option key={tool.slug} value={tool.slug}>
-                        {tool.name}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">▾</span>
-                </div>
-              </div>
-
-              <div className="shrink-0 pt-5">
-                {fromTool && toTool ? (
-                  <div className="flex items-center gap-1.5">
-                    <ToolIcon toolData={usTools.find((t) => t.slug === fromTool) as DbTool | undefined} slug={fromTool} size="sm" />
-                    <ArrowRight className="h-3.5 w-3.5 text-gray-400" />
-                    <ToolIcon toolData={euTools.find((t) => t.slug === toTool) as DbTool | undefined} slug={toTool} size="sm" />
-                  </div>
-                ) : (
-                  <ArrowRight className="h-4 w-4 text-gray-300" />
-                )}
-              </div>
-
-              <div className="flex-1">
-                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                  Switching to (EU)
-                </label>
-                <div className="relative">
-                  <select
-                    value={toTool}
-                    onChange={(event) => setToTool(event.target.value)}
-                    className="w-full appearance-none rounded-xl border border-gray-200 bg-white py-2.5 pl-3 pr-8 text-sm text-gray-700 transition-colors focus:border-[#0F6E56] focus:outline-none"
-                  >
-                    <option value="">Select EU tool…</option>
-                    {euTools.map((tool) => (
-                      <option key={tool.slug} value={tool.slug}>
-                        {tool.name}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">▾</span>
-                </div>
-              </div>
-            </div>
-
+            {/* Single alternatives dropdown — first */}
             <div>
-              <textarea
-                value={story}
-                onChange={(event) => setStory(event.target.value)}
-                placeholder="Share your migration story — what you switched, how it went, what you learned…"
-                rows={6}
-                className="w-full resize-none rounded-xl border border-gray-200 px-4 py-3 text-sm leading-relaxed text-gray-700 transition-colors placeholder:text-gray-400 focus:border-[#0F6E56] focus:outline-none"
-              />
-              <div className="mt-1 flex items-center justify-between gap-3">
-                <p className="text-[11px] text-gray-400">
-                  Write your migration story.
-                </p>
-                <p className="text-[10px] text-gray-400">{story.length} chars</p>
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                Tags <span className="normal-case font-normal text-gray-400">(up to 5)</span>
+              <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+                Migration path <span className="normal-case font-normal text-gray-400">(optional)</span>
               </label>
-              {tags.length > 0 && (
-                <div className="mb-2 flex flex-wrap gap-1.5">
-                  {tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center gap-1 rounded-full bg-gray-100 py-0.5 pl-2.5 pr-1.5 text-xs font-medium text-gray-600"
-                    >
-                      #{tag}
-                      <button
-                        type="button"
-                        onClick={() => setTags((current) => current.filter((item) => item !== tag))}
-                        className="flex h-4 w-4 items-center justify-center rounded-full transition-colors hover:bg-gray-300"
-                      >
-                        <X className="h-2.5 w-2.5" />
-                      </button>
-                    </span>
+              <div className="relative">
+                {/* Preview icons when selected */}
+                {selectedAlt && (
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 z-10">
+                    <ToolIcon toolData={selectedAlt.fromTool as DbTool} size="sm" plain className="h-4 w-4 object-contain" />
+                    <ArrowRight className="h-3 w-3 text-[#0F6E56]" />
+                    <ToolIcon toolData={selectedAlt.toTool as DbTool} size="sm" plain className="h-4 w-4 object-contain" />
+                  </span>
+                )}
+                <select
+                  value={selectedAltId}
+                  onChange={(e) => setSelectedAltId(e.target.value)}
+                  className={`w-full appearance-none rounded-xl border border-gray-200 bg-white py-2.5 pr-9 text-[13px] text-gray-700 transition-colors focus:border-[#0F6E56] focus:outline-none ${selectedAlt ? "pl-[86px]" : "pl-3"}`}
+                >
+                  <option value="">No migration path selected</option>
+                  {alternatives.map((alt) => (
+                    <option key={alt.id} value={alt.id}>
+                      {alt.fromTool.name} → {alt.toTool.name}
+                    </option>
                   ))}
-                </div>
-              )}
-              {tags.length < MAX_POST_HASHTAGS && (
-                <div className="flex gap-2">
-                  <input
-                    value={tagInput}
-                    onChange={(event) => setTagInput(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === ",") {
-                        event.preventDefault();
-                        addTag();
-                      }
-                    }}
-                    placeholder="e.g. gdpr, self-hosted, cost-saving"
-                    className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 transition-colors placeholder:text-gray-400 focus:border-[#0F6E56] focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={addTag}
-                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 text-gray-500 transition-colors hover:bg-gray-50"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </button>
-                </div>
-              )}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              </div>
             </div>
 
+            {/* Story textarea — after dropdown */}
+            <textarea
+              value={story}
+              onChange={(e) => setStory(e.target.value)}
+              placeholder={isPartnerMode ? "Share your migration expertise…" : "Share your migration story…"}
+              rows={5}
+              className="w-full resize-none rounded-xl border border-gray-200 px-4 py-3 text-[14px] leading-relaxed text-gray-700 transition-colors placeholder:text-gray-400 focus:border-[#0F6E56] focus:outline-none"
+            />
+
+            {/* Link */}
             <div>
-              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                Add a link
+              <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+                Add a link <span className="normal-case font-normal">(optional)</span>
               </label>
               <div className="relative">
                 <Link2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 <input
                   value={linkUrl}
-                  onChange={(event) => setLinkUrl(event.target.value)}
+                  onChange={(e) => setLinkUrl(e.target.value)}
                   placeholder="https://example.com/migration-guide"
-                  className="w-full rounded-xl border border-gray-200 py-2.5 pl-9 pr-3 text-sm text-gray-700 transition-colors placeholder:text-gray-400 focus:border-[#0F6E56] focus:outline-none"
+                  className="w-full rounded-xl border border-gray-200 py-2.5 pl-9 pr-3 text-[13px] text-gray-700 transition-colors placeholder:text-gray-400 focus:border-[#0F6E56] focus:outline-none"
                 />
               </div>
             </div>
 
+            {/* Images */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                    Images
-                  </p>
-                  <p className="text-[11px] text-gray-400">
-                    JPG, PNG, or WebP up to {Math.round(MAX_POST_IMAGE_SIZE_BYTES / (1024 * 1024))}MB each
-                  </p>
-                </div>
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+                  Images <span className="normal-case font-normal text-gray-400">JPG, PNG, WebP · max {Math.round(MAX_POST_IMAGE_SIZE_BYTES / (1024 * 1024))}MB each</span>
+                </p>
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-[12px] font-medium text-gray-600 hover:bg-gray-50"
                 >
-                  <ImageIcon className="h-4 w-4 text-blue-500" />
-                  Add image
+                  <ImageIcon className="h-3.5 w-3.5 text-blue-500" />
+                  Add photo
                 </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-                  multiple
-                  className="hidden"
-                  onChange={(event) => {
-                    handleImageSelection(event.target.files);
-                    event.target.value = "";
-                  }}
-                />
+                <input ref={fileInputRef} type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" multiple className="hidden"
+                  onChange={(e) => { handleImageSelection(e.target.files); e.target.value = ""; }} />
               </div>
 
               {images.length > 0 && (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {images.map((image) => (
-                    <div key={image.key} className="relative overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {images.map((img) => (
+                    <div key={img.key} className="relative overflow-hidden rounded-xl border border-gray-100">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={image.previewUrl} alt="" className="aspect-[4/3] w-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => removeImage(image.key)}
-                        className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/65 text-white transition-colors hover:bg-black/80"
-                      >
-                        <Trash2 className="h-4 w-4" />
+                      <img src={img.previewUrl} alt="" className="w-full object-cover" style={{ maxHeight: 160 }} />
+                      <button type="button" onClick={() => removeImage(img.key)}
+                        className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80">
+                        <Trash2 className="h-3 w-3" />
                       </button>
                     </div>
                   ))}
@@ -429,41 +254,24 @@ function PostModal({
             </div>
 
             {(error || uploadError) && (
-              <div className="space-y-2">
-                {error && (
-                  <p className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-500">
-                    {error}
-                  </p>
-                )}
-                {uploadError && (
-                  <p className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-500">
-                    {uploadError}
-                  </p>
-                )}
+              <div className="space-y-1.5">
+                {error && <p className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-[12px] text-red-500">{error}</p>}
+                {uploadError && <p className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-[12px] text-red-500">{uploadError}</p>}
               </div>
             )}
           </div>
 
-          <div className="flex items-center justify-end gap-2 border-t border-gray-100 bg-gray-50 px-5 py-4">
-            <button
-              onClick={onClose}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-200"
-            >
+          {/* Footer */}
+          <div className="flex items-center justify-end gap-2 border-t border-gray-100 bg-gray-50/60 px-5 py-3">
+            <button onClick={onClose} className="rounded-lg px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100">
               Cancel
             </button>
             <button
               onClick={handleSubmit}
               disabled={isPending}
-              className="flex items-center gap-2 rounded-lg bg-[#0F6E56] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0d5f4a] disabled:opacity-60"
+              className="flex items-center gap-2 rounded-xl bg-[#0F6E56] px-5 py-2 text-sm font-semibold text-white hover:bg-[#0d5f4a] disabled:opacity-60"
             >
-              {isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Posting…
-                </>
-              ) : (
-                "Post"
-              )}
+              {isPending ? <><Loader2 className="h-4 w-4 animate-spin" />Posting…</> : "Post"}
             </button>
           </div>
         </div>
@@ -479,8 +287,7 @@ export function FeedComposer({
   isPartnerMode,
   partnerName,
   partnerLogoUrl,
-  usTools = [],
-  euTools = [],
+  alternatives = [],
 }: {
   userName: string;
   userInitials: string;
@@ -488,65 +295,45 @@ export function FeedComposer({
   isPartnerMode?: boolean;
   partnerName?: string | null;
   partnerLogoUrl?: string | null;
-  usTools?: ComposerTool[];
-  euTools?: ComposerTool[];
+  alternatives?: ComposerAlt[];
+  // Legacy props kept for compatibility — unused
+  usTools?: unknown[];
+  euTools?: unknown[];
 }) {
   const [open, setOpen] = useState(false);
-
   const partnerInitials = (partnerName ?? "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
 
   return (
     <>
       <div
-        className="mb-4 rounded-[24px] bg-white p-4"
-        style={{ border: "1.5px solid rgba(0,0,0,0.04)", boxShadow: "0 1px 2px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04)" }}
+        className="mb-3 rounded-2xl bg-white p-4"
+        style={{ border: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04)" }}
       >
-        <div className="mb-3 flex items-center gap-3">
+        <div className="flex items-center gap-3">
           {isPartnerMode ? (
-            partnerLogoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={partnerLogoUrl} alt={partnerName ?? ""} className="h-10 w-10 rounded-xl object-cover shrink-0 select-none" />
-            ) : (
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#2A5FA5] text-xs font-bold text-white shrink-0 select-none">
-                {partnerInitials}
-              </span>
-            )
-          ) : userImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={userImage} alt={userName} className="h-10 w-10 rounded-full object-cover shrink-0 select-none" />
-          ) : (
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#0F6E56] text-xs font-bold text-white shrink-0 select-none">
-              {userInitials}
-            </span>
-          )}
+            partnerLogoUrl
+              ? <img src={partnerLogoUrl} alt="" className="h-10 w-10 rounded-xl object-cover shrink-0 select-none" /> // eslint-disable-line @next/next/no-img-element
+              : <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#2A5FA5] text-xs font-bold text-white shrink-0 select-none">{partnerInitials}</span>
+          ) : userImage
+            ? <img src={userImage} alt="" className="h-10 w-10 rounded-full object-cover shrink-0 select-none" /> // eslint-disable-line @next/next/no-img-element
+            : <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#0F6E56] text-xs font-bold text-white shrink-0 select-none">{userInitials}</span>
+          }
           <button
             onClick={() => setOpen(true)}
-            className="flex-1 rounded-full border border-[#e1dbcf] bg-[#fbfaf6] px-4 py-3 text-left text-sm text-[#8a9288] transition-colors hover:border-[#d5cebe] hover:bg-white"
+            className="flex-1 rounded-full border border-[#e1dbcf] bg-[#fbfaf6] px-4 py-2.5 text-left text-[14px] text-[#8a9288] transition-colors hover:border-[#d5cebe] hover:bg-white"
           >
             {isPartnerMode ? `Post as ${partnerName ?? "your company"}…` : "Share your EU migration story…"}
           </button>
         </div>
-        <div className="flex items-center gap-1 border-t border-[#eee7db] pt-3">
-          <button
-            onClick={() => setOpen(true)}
-            className="flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-[#667065] transition-colors hover:bg-[#fbfaf6] hover:text-[#1B2B1F]"
-          >
-            <ImageIcon className="h-4 w-4 text-blue-400" />
-            Photo
+        <div className="mt-3 flex items-center gap-1 border-t border-[#eee7db] pt-3">
+          <button onClick={() => setOpen(true)} className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-[#667065] hover:bg-[#fbfaf6] hover:text-[#1B2B1F]">
+            <ImageIcon className="h-4 w-4 text-blue-400" /> Photo
           </button>
-          <button
-            onClick={() => setOpen(true)}
-            className="flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-[#667065] transition-colors hover:bg-[#fbfaf6] hover:text-[#1B2B1F]"
-          >
-            <FileText className="h-4 w-4 text-orange-400" />
-            Story
+          <button onClick={() => setOpen(true)} className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-[#667065] hover:bg-[#fbfaf6] hover:text-[#1B2B1F]">
+            <FileText className="h-4 w-4 text-orange-400" /> Story
           </button>
-          <button
-            onClick={() => setOpen(true)}
-            className="flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-[#667065] transition-colors hover:bg-[#fbfaf6] hover:text-[#1B2B1F]"
-          >
-            <Globe className="h-4 w-4 text-green-500" />
-            EU Tool
+          <button onClick={() => setOpen(true)} className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-[#667065] hover:bg-[#fbfaf6] hover:text-[#1B2B1F]">
+            <Globe className="h-4 w-4 text-green-500" /> EU Tool
           </button>
         </div>
       </div>
@@ -559,8 +346,7 @@ export function FeedComposer({
           isPartnerMode={isPartnerMode}
           partnerName={partnerName}
           partnerLogoUrl={partnerLogoUrl}
-          usTools={usTools}
-          euTools={euTools}
+          alternatives={alternatives}
           onClose={() => setOpen(false)}
         />
       )}
@@ -571,41 +357,29 @@ export function FeedComposer({
 export function FeedComposerGuest() {
   return (
     <div
-      className="mb-4 rounded-[24px] bg-white p-4"
-      style={{ border: "1.5px solid rgba(0,0,0,0.04)", boxShadow: "0 1px 2px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04)" }}
+      className="mb-3 rounded-2xl bg-white p-4"
+      style={{ border: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04)" }}
     >
-      <div className="mb-3 flex items-center gap-3">
+      <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#e1dbcf] bg-[#fbfaf6] shrink-0">
           <Users className="h-5 w-5 text-gray-400" />
         </div>
         <Link
           href="/signup"
-          className="flex-1 rounded-full border border-[#e1dbcf] bg-[#fbfaf6] px-4 py-3 text-sm text-[#8a9288] transition-colors hover:border-[#d5cebe] hover:bg-white"
+          className="flex-1 rounded-full border border-[#e1dbcf] bg-[#fbfaf6] px-4 py-2.5 text-[14px] text-[#8a9288] hover:border-[#d5cebe] hover:bg-white"
         >
           Share your EU migration story…
         </Link>
       </div>
-      <div className="flex items-center gap-1 border-t border-[#eee7db] pt-3">
-        <Link
-          href="/signup"
-          className="flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-[#667065] transition-colors hover:bg-[#fbfaf6] hover:text-[#1B2B1F]"
-        >
-          <ImageIcon className="h-4 w-4 text-blue-400" />
-          Photo
+      <div className="mt-3 flex items-center gap-1 border-t border-[#eee7db] pt-3">
+        <Link href="/signup" className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-[#667065] hover:bg-[#fbfaf6] hover:text-[#1B2B1F]">
+          <ImageIcon className="h-4 w-4 text-blue-400" /> Photo
         </Link>
-        <Link
-          href="/signup"
-          className="flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-[#667065] transition-colors hover:bg-[#fbfaf6] hover:text-[#1B2B1F]"
-        >
-          <FileText className="h-4 w-4 text-orange-400" />
-          Story
+        <Link href="/signup" className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-[#667065] hover:bg-[#fbfaf6] hover:text-[#1B2B1F]">
+          <FileText className="h-4 w-4 text-orange-400" /> Story
         </Link>
-        <Link
-          href="/signup"
-          className="flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-[#667065] transition-colors hover:bg-[#fbfaf6] hover:text-[#1B2B1F]"
-        >
-          <Globe className="h-4 w-4 text-green-500" />
-          EU Tool
+        <Link href="/signup" className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-[#667065] hover:bg-[#fbfaf6] hover:text-[#1B2B1F]">
+          <Globe className="h-4 w-4 text-green-500" /> EU Tool
         </Link>
       </div>
     </div>

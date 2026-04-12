@@ -164,8 +164,7 @@ export function validatePostInput({
   fromTool: string;
   toTool: string;
 }) {
-  if (!fromTool || !toTool) throw new Error("Both tools are required.");
-  if (fromTool === toTool) throw new Error("From and To tools must be different.");
+  if (fromTool && toTool && fromTool === toTool) throw new Error("From and To tools must be different.");
 
   const cleanStory = sanitizePostText(story);
   const hashtags = parseHashtags(cleanStory);

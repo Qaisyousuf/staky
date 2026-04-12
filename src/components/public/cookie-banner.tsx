@@ -148,31 +148,31 @@ export function CookieBanner() {
         .cookie-root { animation: banner-slide 320ms cubic-bezier(0.22,1,0.36,1) both; }
       `}</style>
 
-      <div className="cookie-root w-full bg-white" style={{ borderRadius: 16, border: "1px solid rgba(0,0,0,0.07)", boxShadow: "0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)" }}>
-        <div className="px-6">
+      <div className="cookie-root w-full bg-white" style={{ borderRadius: 16, border: "1px solid rgba(0,0,0,0.07)", boxShadow: "0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)", maxHeight: "90vh", overflowY: "auto" }}>
+        <div className="px-4 sm:px-6">
 
           {/* Expanded panel */}
           {expanded && (
-            <div className="grid gap-3 border-b border-gray-100 py-6 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2.5 border-b border-gray-100 py-4 sm:grid-cols-4 sm:gap-3 sm:py-6">
               {CATEGORIES.map(({ key, icon: Icon, color, title, description, always }) => {
                 const checked = key === "necessary" ? true : key === "functional" ? functional : key === "statistics" ? statistics : marketing;
                 const onChange = key === "functional" ? setFunctional : key === "statistics" ? setStatistics : setMarketing;
                 return (
-                  <div key={key} className="flex flex-col gap-4 rounded-2xl p-5"
+                  <div key={key} className="flex flex-col gap-3 rounded-xl p-3.5 sm:rounded-2xl sm:p-5 sm:gap-4"
                     style={{ background: always ? "#F6FAF8" : "#FAFAFA", border: `1px solid ${always ? "rgba(15,110,86,0.1)" : "rgba(0,0,0,0.06)"}` }}>
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl"
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg sm:h-9 sm:w-9 sm:rounded-xl"
                       style={{ background: `${color}18` }}>
-                      <Icon style={{ width: 16, height: 16, color }} />
+                      <Icon style={{ width: 15, height: 15, color }} />
                     </div>
                     <div className="flex-1">
-                      <p className="text-[13px] font-bold text-gray-900">{title}</p>
-                      <p className="mt-1.5 text-[12px] leading-[1.6] text-gray-400">{description}</p>
+                      <p className="text-[12px] font-bold text-gray-900 sm:text-[13px]">{title}</p>
+                      <p className="mt-1 text-[11px] leading-[1.5] text-gray-400 sm:mt-1.5 sm:text-[12px] sm:leading-[1.6]">{description}</p>
                     </div>
                     <div className="flex items-center justify-between">
                       {always
                         ? <span className="text-[11px] font-bold text-[#0F6E56]">Always on</span>
                         : <>
-                            <span className="text-[11px] font-medium text-gray-400">{checked ? "Enabled" : "Disabled"}</span>
+                            <span className="text-[11px] font-medium text-gray-400">{checked ? "On" : "Off"}</span>
                             <Toggle checked={checked} onChange={onChange} />
                           </>}
                     </div>
@@ -183,54 +183,97 @@ export function CookieBanner() {
           )}
 
           {/* Main bar */}
-          <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:gap-4">
-
+          <div className="py-3.5 sm:py-4">
             {/* Text */}
-            <div className="flex min-w-0 flex-1 items-center gap-2.5">
+            <div className="flex items-center gap-2.5 mb-3 sm:hidden">
               <Settings2 className="h-4 w-4 shrink-0 text-[#0F6E56]" />
               <p className="text-[12px] text-gray-500">
                 <span className="font-semibold text-gray-800">Cookies</span> — we use them to improve your experience.{" "}
-                <Link href="/cookies" className="text-[#0F6E56] underline underline-offset-2 hover:no-underline">Policy</Link>
+                <Link href="/cookies" className="text-[#0F6E56] underline underline-offset-2">Policy</Link>
               </p>
             </div>
 
-            {/* Buttons */}
-            <div className="flex shrink-0 items-center gap-1.5">
-              <button
-                disabled={!!saving}
-                onClick={() => commit(false, false, false, "reject")}
-                className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3.5 py-2 text-[12px] font-semibold text-gray-600 transition-colors hover:bg-gray-50 disabled:opacity-60"
-              >
-                {saving === "reject" ? <><Loader2 className="h-3 w-3 animate-spin" /> Saving…</> : "Reject all"}
-              </button>
-
-              <button
-                disabled={!!saving}
-                onClick={() => setExpanded((v) => !v)}
-                className="flex items-center gap-1 rounded-lg border border-gray-200 px-3.5 py-2 text-[12px] font-semibold text-gray-600 transition-colors hover:bg-gray-50 disabled:opacity-60"
-              >
-                Customise
-                {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
-              </button>
-
-              {expanded && (
+            {/* Mobile buttons: 2×2 grid + full-width accept */}
+            <div className="flex flex-col gap-2 sm:hidden">
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   disabled={!!saving}
-                  onClick={() => commit(functional, statistics, marketing, "save")}
-                  className="flex items-center gap-1.5 rounded-lg border border-[#0F6E56] px-3.5 py-2 text-[12px] font-semibold text-[#0F6E56] transition-colors hover:bg-[#EAF3EE] disabled:opacity-60"
+                  onClick={() => commit(false, false, false, "reject")}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 py-2.5 text-[12px] font-semibold text-gray-600 transition-colors hover:bg-gray-50 disabled:opacity-60"
                 >
-                  {saving === "save" ? <><Loader2 className="h-3 w-3 animate-spin" /> Saving…</> : "Save"}
+                  {saving === "reject" ? <><Loader2 className="h-3 w-3 animate-spin" />Saving…</> : "Reject all"}
                 </button>
-              )}
-
+                <button
+                  disabled={!!saving}
+                  onClick={() => setExpanded((v) => !v)}
+                  className="flex items-center justify-center gap-1 rounded-xl border border-gray-200 py-2.5 text-[12px] font-semibold text-gray-600 transition-colors hover:bg-gray-50 disabled:opacity-60"
+                >
+                  Customise
+                  {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
+                </button>
+                {expanded && (
+                  <button
+                    disabled={!!saving}
+                    onClick={() => commit(functional, statistics, marketing, "save")}
+                    className="flex items-center justify-center gap-1.5 rounded-xl border border-[#0F6E56] py-2.5 text-[12px] font-semibold text-[#0F6E56] transition-colors hover:bg-[#EAF3EE] disabled:opacity-60 col-span-2"
+                  >
+                    {saving === "save" ? <><Loader2 className="h-3 w-3 animate-spin" />Saving…</> : "Save preferences"}
+                  </button>
+                )}
+              </div>
               <button
                 disabled={!!saving}
                 onClick={() => commit(true, true, true, "accept")}
-                className="flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[12px] font-semibold text-white transition-all hover:-translate-y-px disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-[12px] font-semibold text-white transition-all disabled:opacity-60"
                 style={{ background: "#0F6E56", boxShadow: "0 1px 0 rgba(255,255,255,0.12) inset, 0 2px 6px rgba(15,110,86,0.3)" }}
               >
-                {saving === "accept" ? <><Loader2 className="h-3 w-3 animate-spin" /> Saving…</> : "Accept all"}
+                {saving === "accept" ? <><Loader2 className="h-3 w-3 animate-spin" />Saving…</> : "Accept all"}
               </button>
+            </div>
+
+            {/* Desktop bar: original layout */}
+            <div className="hidden sm:flex sm:items-center sm:gap-4">
+              <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                <Settings2 className="h-4 w-4 shrink-0 text-[#0F6E56]" />
+                <p className="text-[12px] text-gray-500">
+                  <span className="font-semibold text-gray-800">Cookies</span> — we use them to improve your experience.{" "}
+                  <Link href="/cookies" className="text-[#0F6E56] underline underline-offset-2 hover:no-underline">Policy</Link>
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <button
+                  disabled={!!saving}
+                  onClick={() => commit(false, false, false, "reject")}
+                  className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3.5 py-2 text-[12px] font-semibold text-gray-600 transition-colors hover:bg-gray-50 disabled:opacity-60"
+                >
+                  {saving === "reject" ? <><Loader2 className="h-3 w-3 animate-spin" /> Saving…</> : "Reject all"}
+                </button>
+                <button
+                  disabled={!!saving}
+                  onClick={() => setExpanded((v) => !v)}
+                  className="flex items-center gap-1 rounded-lg border border-gray-200 px-3.5 py-2 text-[12px] font-semibold text-gray-600 transition-colors hover:bg-gray-50 disabled:opacity-60"
+                >
+                  Customise
+                  {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
+                </button>
+                {expanded && (
+                  <button
+                    disabled={!!saving}
+                    onClick={() => commit(functional, statistics, marketing, "save")}
+                    className="flex items-center gap-1.5 rounded-lg border border-[#0F6E56] px-3.5 py-2 text-[12px] font-semibold text-[#0F6E56] transition-colors hover:bg-[#EAF3EE] disabled:opacity-60"
+                  >
+                    {saving === "save" ? <><Loader2 className="h-3 w-3 animate-spin" /> Saving…</> : "Save"}
+                  </button>
+                )}
+                <button
+                  disabled={!!saving}
+                  onClick={() => commit(true, true, true, "accept")}
+                  className="flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[12px] font-semibold text-white transition-all hover:-translate-y-px disabled:opacity-60"
+                  style={{ background: "#0F6E56", boxShadow: "0 1px 0 rgba(255,255,255,0.12) inset, 0 2px 6px rgba(15,110,86,0.3)" }}
+                >
+                  {saving === "accept" ? <><Loader2 className="h-3 w-3 animate-spin" /> Saving…</> : "Accept all"}
+                </button>
+              </div>
             </div>
           </div>
 

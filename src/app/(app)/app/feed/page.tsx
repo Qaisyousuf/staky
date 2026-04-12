@@ -70,10 +70,14 @@ export default async function AppFeedPage({
         toTool:   { select: { name: true, logoUrl: true, color: true, abbr: true, country: true } },
       },
     }),
-    prisma.softwareTool.findMany({
+    prisma.softwareAlternative.findMany({
       where: { published: true },
-      select: { slug: true, name: true, origin: true, logoUrl: true, color: true, abbr: true },
-      orderBy: { name: "asc" },
+      orderBy: { switcherCount: "desc" },
+      select: {
+        id: true,
+        fromTool: { select: { slug: true, name: true, logoUrl: true, color: true, abbr: true } },
+        toTool:   { select: { slug: true, name: true, logoUrl: true, color: true, abbr: true } },
+      },
     }),
   ]);
 
@@ -116,8 +120,7 @@ export default async function AppFeedPage({
       suggestedUsers={suggestedUsers}
       stackTools={stackTools}
       trendingAlts={trendingAlts}
-      composerUsTools={composerTools.filter((t) => t.origin === "us")}
-      composerEuTools={composerTools.filter((t) => t.origin === "eu")}
+      composerAlternatives={composerTools}
     />
   );
 }

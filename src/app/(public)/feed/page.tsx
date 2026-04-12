@@ -1,10 +1,8 @@
 import Link from "next/link";
-import Image from "next/image";
 import {
   ArrowRight,
   Compass,
   Handshake,
-  Star,
   Users,
   LayoutDashboard,
   PenSquare,
@@ -43,6 +41,14 @@ async function LeftSidebar() {
     boxShadow: "0 1px 2px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04)",
   };
 
+  // Always fetch image from DB — JWT image can be stale or missing
+  let dbImage: string | null = null;
+  if (session?.user?.id) {
+    const dbUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { image: true } });
+    dbImage = dbUser?.image ?? null;
+  }
+  const profileImage = dbImage;
+
   return (
     <aside className="sticky top-6 space-y-3">
       {/* Profile card */}
@@ -56,10 +62,10 @@ async function LeftSidebar() {
         <div className="px-4 pb-5">
           <div className="-mt-7 mb-3">
             {isLoggedIn ? (
-              session.user.image ? (
+              profileImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={session.user.image}
+                  src={profileImage}
                   alt={session.user.name ?? ""}
                   className="h-14 w-14 rounded-full object-cover border-4 border-white shadow-sm"
                 />
@@ -80,16 +86,24 @@ async function LeftSidebar() {
               <p className="text-sm font-semibold text-gray-900 leading-tight truncate">
                 {session.user.name}
               </p>
-              <p className="text-xs text-gray-400 mt-0.5 mb-4 truncate">
+              <p className="text-xs text-gray-400 mt-0.5 truncate">
                 {session.user.email}
               </p>
-              <Link
-                href="/dashboard"
-                className="flex w-full items-center justify-center gap-2 rounded-full bg-[#0F6E56] py-2.5 text-xs font-semibold text-white transition-colors hover:bg-[#0d5f4a]"
-              >
-                <LayoutDashboard className="h-3.5 w-3.5" />
-                Go to Dashboard
-              </Link>
+              <div className="mt-4 flex gap-2">
+                <Link
+                  href="/app/feed"
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-[#0F6E56] py-2 text-xs font-semibold text-white transition-colors hover:bg-[#0d5f4a]"
+                >
+                  <LayoutDashboard className="h-3.5 w-3.5" />
+                  My feed
+                </Link>
+                <Link
+                  href="/app/my-stack"
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-[#ddd7ca] py-2 text-xs font-semibold text-gray-700 transition-colors hover:bg-[#fbfaf6]"
+                >
+                  My stack
+                </Link>
+              </div>
             </>
           ) : (
             <>
@@ -151,7 +165,7 @@ async function LeftSidebar() {
 // ─── Right sidebar ─────────────────────────────────────────────────────────────
 
 async function RightSidebar() {
-  const [topAlts, topPartner] = await Promise.all([
+  const [topAlts, topPartners] = await Promise.all([
     prisma.softwareAlternative.findMany({
       where: { published: true },
       orderBy: { switcherCount: "desc" },
@@ -161,14 +175,11 @@ async function RightSidebar() {
         toTool:   { select: { name: true, logoUrl: true, color: true, abbr: true, country: true } },
       },
     }),
-    prisma.partner.findFirst({
+    prisma.partner.findMany({
       where: { approved: true },
       orderBy: { rating: "desc" },
-      select: {
-        id: true, companyName: true, country: true, description: true,
-        logoUrl: true, rating: true, projectCount: true,
-        specialty: true,
-      },
+      take: 5,
+      select: { id: true, companyName: true, country: true, logoUrl: true },
     }),
   ]);
   const cardStyle = {
@@ -207,68 +218,41 @@ async function RightSidebar() {
         </Link>
       </div>
 
-      {/* Featured partner */}
-      {topPartner && (
+      {/* Migration partners list */}
+      {topPartners.length > 0 && (
         <div className="rounded-[24px] bg-white p-4" style={cardStyle}>
-          <div className="flex items-start gap-3 mb-3">
-            {topPartner.logoUrl ? (
-              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
-                <Image
-                  src={topPartner.logoUrl}
-                  alt={`${topPartner.companyName} logo`}
-                  width={26}
-                  height={26}
-                  className="h-auto w-auto max-h-[70%] max-w-[70%] object-contain"
-                />
-              </span>
-            ) : (
-              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white bg-[#2A5FA5]">
-                {topPartner.companyName.slice(0, 2).toUpperCase()}
-              </span>
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 leading-tight truncate">
-                {topPartner.companyName}
-              </p>
-              <p className="text-[11px] text-gray-400 mt-0.5">{topPartner.country}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5 mb-3">
-            <div className="flex">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Star
-                  key={i}
-                  className={`h-3 w-3 ${
-                    i < Math.floor(topPartner.rating)
-                      ? "text-amber-400 fill-amber-400"
-                      : "text-gray-200 fill-gray-200"
-                  }`}
-                />
-              ))}
-            </div>
-            <span className="text-xs font-semibold text-gray-700">{topPartner.rating.toFixed(1)}</span>
-            <span className="text-[10px] text-gray-400">({topPartner.projectCount})</span>
-          </div>
-          {topPartner.description && (
-            <p className="text-xs text-gray-500 leading-relaxed mb-3 line-clamp-2">
-              {topPartner.description}
-            </p>
-          )}
-          <div className="flex flex-wrap gap-1 mb-4">
-            {(topPartner.specialty as string[]).slice(0, 3).map((spec) => (
-              <span
-                key={spec}
-                className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-[#2A5FA5]"
-              >
-                {spec}
-              </span>
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-400">
+            Migration Partners
+          </p>
+          <div className="space-y-1">
+            {topPartners.map((p) => (
+              <div key={p.id} className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-[#faf8f4] transition-colors">
+                {p.logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={p.logoUrl} alt={p.companyName} className="h-8 w-8 shrink-0 rounded-lg object-contain" />
+                ) : (
+                  <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#2A5FA5] text-[10px] font-bold text-white">
+                    {p.companyName.slice(0, 2).toUpperCase()}
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px] font-semibold text-gray-800 leading-tight">{p.companyName}</p>
+                  {p.country && <p className="text-[11px] text-gray-400">{p.country}</p>}
+                </div>
+                <Link
+                  href="/partners"
+                  className="shrink-0 rounded-full bg-[#2A5FA5] px-3 py-1 text-[11px] font-semibold text-white hover:bg-[#244d8a] transition-colors"
+                >
+                  Help
+                </Link>
+              </div>
             ))}
           </div>
           <Link
             href="/partners"
-            className="block w-full text-center rounded-lg bg-[#2A5FA5] hover:bg-[#244d8a] text-white text-xs font-medium py-2 transition-colors"
+            className="mt-3 flex items-center gap-1 text-[11px] font-medium text-[#2A5FA5] hover:underline"
           >
-            Request help
+            View all partners →
           </Link>
         </div>
       )}
@@ -298,14 +282,16 @@ export default async function PublicFeedPage({
 
   const activeTag = searchParams.tag?.trim().toLowerCase() || undefined;
 
-  // Fetch composer tools (all published tools, split by origin for FeedComposer dropdowns)
-  const composerTools = await prisma.softwareTool.findMany({
+  // Fetch published alternatives for the composer dropdown
+  const composerAlts = await prisma.softwareAlternative.findMany({
     where: { published: true },
-    select: { slug: true, name: true, origin: true, logoUrl: true, color: true, abbr: true },
-    orderBy: { name: "asc" },
+    orderBy: { switcherCount: "desc" },
+    select: {
+      id: true,
+      fromTool: { select: { slug: true, name: true, logoUrl: true, color: true, abbr: true } },
+      toTool:   { select: { slug: true, name: true, logoUrl: true, color: true, abbr: true } },
+    },
   });
-  const composerUsTools = composerTools.filter((t) => t.origin === "us");
-  const composerEuTools = composerTools.filter((t) => t.origin === "eu");
 
   // Fetch posts with counts
   const rawPosts = await prisma.alternativePost.findMany({
@@ -412,7 +398,7 @@ export default async function PublicFeedPage({
 
           <main className="min-w-0">
             {isLoggedIn ? (
-              <FeedComposer userName={userName} userInitials={userInitials} userImage={userImage} usTools={composerUsTools} euTools={composerEuTools} />
+              <FeedComposer userName={userName} userInitials={userInitials} userImage={userImage} alternatives={composerAlts} />
             ) : (
               <FeedComposerGuest />
             )}

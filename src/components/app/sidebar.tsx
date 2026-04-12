@@ -48,7 +48,7 @@ interface SidebarProps {
 const MAIN_NAV = [
   { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/app/discover", label: "Discover", icon: Compass },
-  { href: "/app/feed", label: "Feed", icon: Rss },
+  { href: "/app/feed", label: "Community", icon: Rss },
   { href: "/app/my-stack", label: "My Stack", icon: Layers },
   { href: "/app/partners", label: "Partners", icon: Users },
   { href: "/app/requests", label: "Requests", icon: ClipboardList },

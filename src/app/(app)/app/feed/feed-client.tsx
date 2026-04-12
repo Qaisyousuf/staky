@@ -58,8 +58,7 @@ interface FeedClientProps {
   suggestedUsers: SuggestedUser[];
   stackTools: DbTool[];
   trendingAlts: { id: string; category: string; switcherCount: number; fromTool: DbTool; toTool: DbTool }[];
-  composerUsTools: { slug: string; name: string; logoUrl?: string | null; color: string; abbr: string }[];
-  composerEuTools: { slug: string; name: string; logoUrl?: string | null; color: string; abbr: string }[];
+  composerAlternatives: { id: string; fromTool: { slug: string; name: string; logoUrl?: string | null; color: string; abbr: string }; toTool: { slug: string; name: string; logoUrl?: string | null; color: string; abbr: string } }[];
 }
 
 // ─── Filter tabs ──────────────────────────────────────────────────────────────
@@ -354,8 +353,7 @@ export function FeedClient({
   suggestedUsers,
   stackTools,
   trendingAlts,
-  composerUsTools,
-  composerEuTools,
+  composerAlternatives,
 }: FeedClientProps) {
   const router = useRouter();
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -453,8 +451,7 @@ export function FeedClient({
               isPartnerMode={isPartnerMode}
               partnerName={partnerName}
               partnerLogoUrl={partnerLogoUrl}
-              usTools={composerUsTools}
-              euTools={composerEuTools}
+              alternatives={composerAlternatives}
             />
 
             {/* Filter tabs */}

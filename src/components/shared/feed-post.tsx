@@ -5,7 +5,6 @@ import { useEffect, useState, useTransition } from "react";
 import {
   ThumbsUp,
   MessageCircle,
-  Bookmark,
   BadgeCheck,
   Star,
   Send,
@@ -26,7 +25,6 @@ import {
 } from "@/lib/post-utils";
 import {
   toggleLike,
-  toggleSave,
   toggleRecommend,
   toggleFollow,
   toggleConnect,
@@ -105,11 +103,11 @@ function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diff / 60000);
   if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 60) return `${minutes}m`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return `${hours}h`;
   const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
+  if (days < 7) return `${days}d`;
   return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
@@ -135,6 +133,57 @@ function Avatar({
     return <img src={image} alt={name ?? ""} className={cn(className, "object-cover")} />;
   }
   return <div className={className}>{initials(name)}</div>;
+}
+
+function SwitchCard({ post }: { post: FeedPostData }) {
+  const fromName = post.fromToolData?.name ?? post.fromTool;
+  const toName = post.toToolData?.name ?? post.toTool;
+  if (!fromName && !toName) return null;
+  return (
+    <div className="flex items-center justify-center gap-3">
+      {/* From card */}
+      <div
+        className="flex items-center gap-2.5 rounded-xl bg-white px-4 py-2.5"
+        style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.06), 0 2px 6px rgba(0,0,0,0.03)" }}
+      >
+        <ToolIcon
+          toolData={post.fromToolData ?? undefined}
+          slug={post.fromToolData ? undefined : post.fromTool}
+          size="md"
+          plain
+          className="h-9 w-9 object-contain"
+        />
+        <span className="text-[13px] font-semibold text-[#4a5249]">{fromName}</span>
+      </div>
+
+      <ArrowRight className="h-4 w-4 shrink-0 text-[#0F6E56]" />
+
+      {/* To card */}
+      <div
+        className="flex items-center gap-2.5 rounded-xl bg-white px-4 py-2.5"
+        style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.06), 0 2px 6px rgba(0,0,0,0.03)" }}
+      >
+        <ToolIcon
+          toolData={post.toToolData ?? undefined}
+          slug={post.toToolData ? undefined : post.toTool}
+          size="md"
+          plain
+          className="h-9 w-9 object-contain"
+        />
+        <span className="text-[13px] font-bold text-[#0F6E56]">{toName}</span>
+        {post.toToolData?.country && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`https://flagcdn.com/16x12/${post.toToolData.country}.png`}
+            width={13}
+            height={9}
+            alt={post.toToolData.country}
+            className="rounded-[2px] opacity-75"
+          />
+        )}
+      </div>
+    </div>
+  );
 }
 
 function CommentItem({
@@ -188,7 +237,7 @@ function CommentItem({
     : comment.author.image;
 
   return (
-    <div id={`comment-${comment.id}`} className={cn("flex gap-2.5", depth > 0 && "ml-8 mt-2")}>
+    <div id={`comment-${comment.id}`} className={cn("flex gap-2.5", depth > 0 && "ml-9 mt-2")}>
       <Avatar
         name={commentDisplayName}
         image={commentDisplayImage}
@@ -196,27 +245,27 @@ function CommentItem({
         rounded={isPartnerComment ? "xl" : "full"}
       />
       <div className="min-w-0 flex-1">
-        <div className="rounded-xl bg-gray-50 px-3 py-2.5">
+        <div className="rounded-2xl bg-[#f5f3ef] px-3.5 py-2.5">
           <div className="flex flex-wrap items-baseline gap-1.5">
-            <span className="text-xs font-semibold text-gray-800">{commentDisplayName}</span>
-            <span className="text-[10px] text-gray-400">{timeAgo(comment.createdAt)}</span>
+            <span className="text-[13px] font-semibold text-[#1B2B1F]">{commentDisplayName}</span>
+            <span className="text-[10px] text-[#9ba39c]">{timeAgo(comment.createdAt)}</span>
           </div>
-          <p className="mt-0.5 text-sm leading-snug text-gray-700">{comment.content}</p>
+          <p className="mt-0.5 text-[13px] leading-snug text-[#495346]">{comment.content}</p>
         </div>
 
         <div className="mt-1 ml-1 flex items-center gap-3">
           {currentUserId && depth === 0 && (
             <button
-              onClick={() => setReplying((value) => !value)}
-              className="text-[11px] font-medium text-gray-400 transition-colors hover:text-[#0F6E56]"
+              onClick={() => setReplying((v) => !v)}
+              className="text-[11px] font-semibold text-[#9ba39c] transition-colors hover:text-[#0F6E56]"
             >
               Reply
             </button>
           )}
           {replies.length > 0 && (
             <button
-              onClick={() => setShowReplies((value) => !value)}
-              className="flex items-center gap-0.5 text-[11px] text-gray-400 transition-colors hover:text-gray-600"
+              onClick={() => setShowReplies((v) => !v)}
+              className="flex items-center gap-0.5 text-[11px] text-[#9ba39c] transition-colors hover:text-[#495346]"
             >
               {showReplies ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               {replies.length} {replies.length === 1 ? "reply" : "replies"}
@@ -227,14 +276,14 @@ function CommentItem({
         {replying && (
           <div className="mt-2 flex items-center gap-2">
             <Avatar name={null} image={currentUserImage} size={6} />
-            <div className="flex flex-1 items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5">
+            <div className="flex flex-1 items-center gap-1 rounded-full border border-[#e8e2d8] bg-white px-3 py-1.5 focus-within:border-[#0F6E56]">
               <input
                 autoFocus
                 value={replyText}
-                onChange={(event) => setReplyText(event.target.value)}
-                onKeyDown={(event) => event.key === "Enter" && !event.shiftKey && handleReply()}
+                onChange={(e) => setReplyText(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleReply()}
                 placeholder="Write a reply…"
-                className="flex-1 bg-transparent text-xs text-gray-700 outline-none placeholder:text-gray-400"
+                className="flex-1 bg-transparent text-[12px] text-[#1B2B1F] outline-none placeholder:text-[#bbb5aa]"
               />
               <button
                 onClick={handleReply}
@@ -263,36 +312,6 @@ function CommentItem({
   );
 }
 
-function CommentPreview({ comment }: { comment: SerializedComment }) {
-  const isPartnerComment = comment.senderMode === "partner" && !!comment.author.partner;
-  const commentDisplayName = isPartnerComment
-    ? (comment.author.partner?.companyName ?? comment.author.name)
-    : comment.author.name;
-  const commentDisplayImage = isPartnerComment
-    ? (comment.author.partner?.logoUrl ?? comment.author.image)
-    : comment.author.image;
-
-  return (
-    <div className="flex gap-2.5">
-      <Avatar
-        name={commentDisplayName}
-        image={commentDisplayImage}
-        size={7}
-        rounded={isPartnerComment ? "xl" : "full"}
-      />
-      <div className="min-w-0 flex-1 rounded-[16px] bg-[#fbfaf6] px-3 py-2.5">
-        <div className="flex flex-wrap items-baseline gap-1.5">
-          <span className="text-xs font-semibold text-[#1B2B1F]">{commentDisplayName}</span>
-          <span className="text-[10px] text-[#98a093]">{timeAgo(comment.createdAt)}</span>
-        </div>
-        <p className="mt-0.5 line-clamp-2 text-[13px] leading-[1.55] text-[#5a6459]">
-          {comment.content}
-        </p>
-      </div>
-    </div>
-  );
-}
-
 function LinkPreview({
   url,
   title,
@@ -307,34 +326,30 @@ function LinkPreview({
   domain: string | null;
 }) {
   const displayDomain = domain || getUrlDomain(url);
-
   return (
     <a
       href={url}
       target="_blank"
       rel="noreferrer"
-      className="block overflow-hidden rounded-[20px] border border-[#ece7dc] bg-white transition-all duration-200 hover:border-[#d8d1c3]"
-      style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 6px 18px rgba(0,0,0,0.03)" }}
+      className="block overflow-hidden rounded-[18px] border border-[#ece7dc] bg-white transition-all duration-200 hover:border-[#d8d1c3]"
+      style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)" }}
     >
       {image && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={image} alt="" className="aspect-[1.91/1] max-h-[350px] w-full object-cover" />
+        <img src={image} alt="" className="aspect-[1.91/1] max-h-[300px] w-full object-cover" />
       )}
-      <div className="border-t border-[#eee7db] bg-[#fbfaf6] px-4 py-3">
+      <div className="border-t border-[#ece7dc] px-4 py-3">
         <div className="flex items-start justify-between gap-2.5">
-        <div className="min-w-0">
-          <p className="text-[11px] uppercase tracking-wide text-gray-400">{displayDomain}</p>
-          <p className="mt-0.5 line-clamp-2 text-[14px] font-semibold leading-snug text-[#1B2B1F]">
-            {title || url}
-          </p>
-          {description && (
-            <p className="mt-0.5 line-clamp-2 text-[12px] leading-5 text-[#667065]">{description}</p>
-          )}
-          {!title && (
-            <p className="mt-1 truncate text-[11px] text-[#0F6E56]">{url}</p>
-          )}
-        </div>
-        <ExternalLink className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+          <div className="min-w-0">
+            <p className="text-[11px] uppercase tracking-wide text-[#9ba39c]">{displayDomain}</p>
+            <p className="mt-0.5 line-clamp-2 text-[13px] font-semibold leading-snug text-[#1B2B1F]">
+              {title || url}
+            </p>
+            {description && (
+              <p className="mt-0.5 line-clamp-2 text-[12px] leading-5 text-[#667065]">{description}</p>
+            )}
+          </div>
+          <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#9ba39c]" />
         </div>
       </div>
     </a>
@@ -349,95 +364,42 @@ function ImageGallery({
   onOpen: (index: number) => void;
 }) {
   if (imageUrls.length === 0) return null;
-
   if (imageUrls.length === 1) {
     return (
       <button
         type="button"
         onClick={() => onOpen(0)}
-        className="block w-full overflow-hidden rounded-[20px] border border-[#ece7dc] bg-[#fbfaf7]"
-        style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 6px 18px rgba(0,0,0,0.03)" }}
+        className="block w-full overflow-hidden rounded-[18px] border border-[#ece7dc] bg-[#f8f6f2]"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={imageUrls[0]} alt="" className="max-h-[350px] w-full rounded-[20px] object-contain" />
+        <img src={imageUrls[0]} alt="" className="w-full rounded-[18px] object-contain" style={{ maxHeight: 480 }} />
       </button>
     );
   }
-
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="grid grid-cols-2 gap-1.5">
       {imageUrls.map((url, index) => (
         <button
           key={url}
           type="button"
           onClick={() => onOpen(index)}
-          className="block overflow-hidden rounded-[18px] border border-[#ece7dc] bg-[#fbfaf7]"
-          style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 6px 18px rgba(0,0,0,0.03)" }}
+          className="block overflow-hidden rounded-[14px] border border-[#ece7dc] bg-[#f8f6f2]"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={url} alt="" className="aspect-[4/3] max-h-[350px] w-full rounded-[18px] object-cover" />
+          <img src={url} alt="" className="w-full rounded-[14px] object-contain" style={{ maxHeight: 280 }} />
         </button>
       ))}
     </div>
   );
 }
 
-function SwitchPanel({ post }: { post: FeedPostData }) {
-  return (
-    <div className="flex items-center justify-center gap-3">
-      <div className="flex min-w-0 items-center gap-2">
-        <ToolIcon
-          toolData={post.fromToolData ?? undefined}
-          slug={post.fromToolData ? undefined : post.fromTool}
-          size="md"
-          plain
-          className="h-8 w-8 object-contain"
-        />
-        <p className="truncate text-[14px] font-semibold text-[#1B2B1F]">
-          {post.fromToolData?.name ?? post.fromTool}
-        </p>
-      </div>
-
-      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#F3F6F2]">
-        <ArrowRight className="h-3.5 w-3.5 text-[#0F6E56]" />
-      </div>
-
-      <div className="flex min-w-0 items-center gap-2">
-        <ToolIcon
-          toolData={post.toToolData ?? undefined}
-          slug={post.toToolData ? undefined : post.toTool}
-          size="md"
-          plain
-          className="h-8 w-8 object-contain"
-        />
-        <div className="flex min-w-0 items-center gap-1.5">
-          <p className="truncate text-[14px] font-semibold text-[#0F6E56]">
-            {post.toToolData?.name ?? post.toTool}
-          </p>
-          {post.toToolData?.country && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={`https://flagcdn.com/16x12/${post.toToolData.country}.png`}
-              width={14}
-              height={10}
-              alt={post.toToolData.country}
-              className="rounded-[2px] opacity-80"
-            />
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const STORY_PREVIEW = 220;
+const STORY_PREVIEW = 240;
 
 export function FeedPost({
   post,
   currentUserId,
   currentUserImage,
   initialLiked = false,
-  initialSaved = false,
   initialRecommended = false,
   initialFollowing = false,
   initialConnected = false,
@@ -445,14 +407,12 @@ export function FeedPost({
 }: FeedPostProps) {
   const isOwn = currentUserId === post.author.id;
   const isPartner = post.postedAsPartner;
-  // When posted as partner, show company identity
   const displayName = isPartner ? (post.author.partner?.companyName ?? post.author.name) : post.author.name;
   const displayImage = isPartner ? (post.author.partner?.logoUrl ?? post.author.image) : post.author.image;
   const { text, hashtags } = splitPostContent(post.story, post.tags);
 
   const [liked, setLiked] = useState(initialLiked);
   const [likeCount, setLikeCount] = useState(post.likeCount);
-  const [saved, setSaved] = useState(initialSaved);
   const [recommended, setRecommended] = useState(initialRecommended);
   const [recommendCount, setRecommendCount] = useState(post.recommendCount);
   const [following, setFollowing] = useState(initialFollowing);
@@ -490,28 +450,15 @@ export function FeedPost({
     if (!currentUserId) return;
     const next = !liked;
     setLiked(next);
-    setLikeCount((count) => count + (next ? 1 : -1));
+    setLikeCount((c) => c + (next ? 1 : -1));
     startTransition(async () => {
       try {
-        const response = await toggleLike(post.id);
-        setLiked(response.liked);
-        setLikeCount(response.count);
+        const res = await toggleLike(post.id);
+        setLiked(res.liked);
+        setLikeCount(res.count);
       } catch {
         setLiked(!next);
-        setLikeCount((count) => count + (next ? -1 : 1));
-      }
-    });
-  }
-
-  function handleSave() {
-    if (!currentUserId) return;
-    setSaved((value) => !value);
-    startTransition(async () => {
-      try {
-        const response = await toggleSave(post.id);
-        setSaved(response.saved);
-      } catch {
-        setSaved((value) => !value);
+        setLikeCount((c) => c + (next ? -1 : 1));
       }
     });
   }
@@ -520,41 +467,41 @@ export function FeedPost({
     if (!currentUserId) return;
     const next = !recommended;
     setRecommended(next);
-    setRecommendCount((count) => count + (next ? 1 : -1));
+    setRecommendCount((c) => c + (next ? 1 : -1));
     startTransition(async () => {
       try {
-        const response = await toggleRecommend(post.id);
-        setRecommended(response.recommended);
-        setRecommendCount(response.count);
+        const res = await toggleRecommend(post.id);
+        setRecommended(res.recommended);
+        setRecommendCount(res.count);
       } catch {
         setRecommended(!next);
-        setRecommendCount((count) => count + (next ? -1 : 1));
+        setRecommendCount((c) => c + (next ? -1 : 1));
       }
     });
   }
 
   function handleFollow() {
     if (!currentUserId || isOwn) return;
-    setFollowing((value) => !value);
+    setFollowing((v) => !v);
     startTransition(async () => {
       try {
-        const response = await toggleFollow(post.author.id);
-        setFollowing(response.following);
+        const res = await toggleFollow(post.author.id);
+        setFollowing(res.following);
       } catch {
-        setFollowing((value) => !value);
+        setFollowing((v) => !v);
       }
     });
   }
 
   function handleConnect() {
     if (!currentUserId || isOwn) return;
-    setConnected((value) => !value);
+    setConnected((v) => !v);
     startTransition(async () => {
       try {
-        const response = await toggleConnect(post.author.id);
-        setConnected(response.connected);
+        const res = await toggleConnect(post.author.id);
+        setConnected(res.connected);
       } catch {
-        setConnected((value) => !value);
+        setConnected((v) => !v);
       }
     });
   }
@@ -564,7 +511,7 @@ export function FeedPost({
     startTransition(async () => {
       try {
         const comment = await addComment(post.id, newComment.trim());
-        const commentItem: SerializedComment = {
+        const item: SerializedComment = {
           id: comment.id,
           authorId: comment.author.id,
           postId: post.id,
@@ -574,8 +521,8 @@ export function FeedPost({
           author: comment.author,
           replies: [],
         };
-        setComments((current) => [...(current ?? []), commentItem]);
-        setCommentCount((count) => count + 1);
+        setComments((c) => [...(c ?? []), item]);
+        setCommentCount((c) => c + 1);
         setNewComment("");
       } catch {}
     });
@@ -586,104 +533,119 @@ export function FeedPost({
       <article
         id={`post-${post.id}`}
         className={cn(
-          "overflow-hidden rounded-[24px] bg-white",
+          "overflow-hidden rounded-2xl bg-white",
           isPartner && "border-l-[3px] border-l-[#2A5FA5]"
         )}
         style={{
-          border: "1.5px solid rgba(0,0,0,0.04)",
-          boxShadow: "0 1px 2px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04)",
+          border: isPartner ? undefined : "1px solid rgba(0,0,0,0.06)",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04)",
         }}
       >
-        <div className="px-5 py-4">
-          <div className="mb-3 flex items-start justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <Avatar
-                name={displayName}
-                image={displayImage}
-                size={10}
-                rounded={isPartner ? "xl" : "full"}
-              />
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-1.5 leading-tight">
-                  <span className="truncate text-sm font-semibold leading-tight text-[#1B2B1F]">{displayName}</span>
-                  {(post.author.verified || isPartner) && <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-[#2A5FA5]" />}
-                </div>
-                {!isPartner && (post.author.title || post.author.company) && (
-                  <p className="truncate text-xs leading-tight text-[#7d857b]">
-                    {[post.author.title, post.author.company].filter(Boolean).join(" · ")}
-                  </p>
+        {/* ── Header ── */}
+        <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <Avatar
+              name={displayName}
+              image={displayImage}
+              size={11}
+              rounded={isPartner ? "xl" : "full"}
+            />
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-1 leading-tight">
+                <span className="text-[14px] font-bold text-[#1B2B1F] leading-tight">{displayName}</span>
+                {(post.author.verified || isPartner) && (
+                  <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-[#2A5FA5]" />
                 )}
-                <p className="text-[10px] leading-tight text-[#98a093]">{timeAgo(post.createdAt)}</p>
               </div>
+              {!isPartner && (post.author.title || post.author.company) && (
+                <p className="truncate text-[12px] text-[#8a9090] leading-tight">
+                  {[post.author.title, post.author.company].filter(Boolean).join(" · ")}
+                </p>
+              )}
+              <span className="text-[11px] text-[#b0b8b0] mt-0.5 block">{timeAgo(post.createdAt)}</span>
             </div>
-
-            {!isOwn && currentUserId && isPartner && (
-              <button
-                onClick={handleConnect}
-                disabled={isPending}
-                className={cn(
-                  "shrink-0 flex items-center gap-1 rounded-full border px-3 py-1 text-[12px] font-semibold transition-colors",
-                  connected
-                    ? "border-[#2A5FA5] bg-blue-50 text-[#2A5FA5]"
-                    : "border-[#ded8cb] text-[#657064] hover:border-[#2A5FA5] hover:text-[#2A5FA5]"
-                )}
-              >
-                {connected ? <UserCheck className="h-3.5 w-3.5" /> : <UserPlus className="h-3.5 w-3.5" />}
-                {connected ? "Connected" : "Connect"}
-              </button>
-            )}
-            {!isOwn && currentUserId && !isPartner && (
-              <button
-                onClick={handleFollow}
-                disabled={isPending}
-                className={cn(
-                  "shrink-0 flex items-center gap-1 rounded-full border px-3 py-1 text-[12px] font-semibold transition-colors",
-                  following
-                    ? "border-[#0F6E56] bg-green-50 text-[#0F6E56]"
-                    : "border-[#ded8cb] text-[#657064] hover:border-[#0F6E56] hover:text-[#0F6E56]"
-                )}
-              >
-                {following ? <UserCheck className="h-3.5 w-3.5" /> : <UserPlus className="h-3.5 w-3.5" />}
-                {following ? "Following" : "Follow"}
-              </button>
-            )}
-            {!currentUserId && (
-              <a
-                href="/login"
-                className="shrink-0 rounded-full border border-[#ded8cb] px-3 py-1 text-[12px] font-semibold text-[#657064] transition-colors hover:border-[#0F6E56] hover:text-[#0F6E56]"
-              >
-                {isPartner ? "Connect" : "Follow"}
-              </a>
-            )}
           </div>
 
-          <div className="mb-4">
-            <SwitchPanel post={post} />
+          {/* Follow / Connect */}
+          {!isOwn && currentUserId && isPartner && (
+            <button
+              onClick={handleConnect}
+              disabled={isPending}
+              className={cn(
+                "shrink-0 flex items-center gap-1 rounded-full border px-3 py-1 text-[12px] font-semibold transition-colors",
+                connected
+                  ? "border-[#2A5FA5] bg-blue-50 text-[#2A5FA5]"
+                  : "border-[#e0d9cf] text-[#7a837a] hover:border-[#2A5FA5] hover:text-[#2A5FA5]"
+              )}
+            >
+              {connected ? <UserCheck className="h-3.5 w-3.5" /> : <UserPlus className="h-3.5 w-3.5" />}
+              {connected ? "Connected" : "Connect"}
+            </button>
+          )}
+          {!isOwn && currentUserId && !isPartner && (
+            <button
+              onClick={handleFollow}
+              disabled={isPending}
+              className={cn(
+                "shrink-0 flex items-center gap-1 rounded-full border px-3 py-1 text-[12px] font-semibold transition-colors",
+                following
+                  ? "border-[#0F6E56] bg-green-50 text-[#0F6E56]"
+                  : "border-[#e0d9cf] text-[#7a837a] hover:border-[#0F6E56] hover:text-[#0F6E56]"
+              )}
+            >
+              {following ? <UserCheck className="h-3.5 w-3.5" /> : <UserPlus className="h-3.5 w-3.5" />}
+              {following ? "Following" : "Follow"}
+            </button>
+          )}
+          {!currentUserId && (
+            <a
+              href="/login"
+              className="shrink-0 flex items-center gap-1 rounded-full border border-[#e0d9cf] px-3 py-1 text-[12px] font-semibold text-[#7a837a] transition-colors hover:border-[#0F6E56] hover:text-[#0F6E56]"
+            >
+              <UserPlus className="h-3.5 w-3.5" />
+              {isPartner ? "Connect" : "Follow"}
+            </a>
+          )}
+        </div>
+
+        {/* ── Switch card ── */}
+        {(post.fromTool || post.toTool) && (
+          <div className="px-4 pb-2">
+            <SwitchCard post={post} />
           </div>
+        )}
 
-
+        {/* ── Body ── */}
+        <div className="px-4 pb-3">
           {text && (
-            <div className="mb-2 text-[14px] leading-[1.65] text-[#495346] whitespace-pre-line">
+            <div className="text-[14px] leading-[1.7] text-[#3a4a3c] whitespace-pre-line">
               {displayStory}
-              {isLong && !expanded && "…"}
+              {isLong && !expanded && (
+                <button
+                  onClick={() => setExpanded(true)}
+                  className="ml-1 font-semibold text-[#0F6E56] hover:underline"
+                >
+                  …more
+                </button>
+              )}
             </div>
           )}
-          {isLong && (
+          {isLong && expanded && (
             <button
-              onClick={() => setExpanded((value) => !value)}
+              onClick={() => setExpanded(false)}
               className="mt-1 text-[12px] font-semibold text-[#0F6E56] hover:underline"
             >
-              {expanded ? "Show less" : "…see more"}
+              Show less
             </button>
           )}
 
           {hashtags.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-2.5 flex flex-wrap gap-1.5">
               {hashtags.map((tag) => (
                 <Link
                   key={tag}
                   href={`/feed?tag=${encodeURIComponent(tag)}`}
-                  className="rounded-full border border-[#e4ded2] bg-[#fbfaf6] px-2.5 py-1 text-[11px] font-medium text-[#0F6E56] transition-colors hover:border-[#d7d0c0]"
+                  className="text-[12px] font-medium text-[#0F6E56] transition-colors hover:underline"
                 >
                   #{tag}
                 </Link>
@@ -692,7 +654,7 @@ export function FeedPost({
           )}
 
           {post.imageUrls.length > 0 && (
-            <div className={cn("mt-3", !text && hashtags.length === 0 && "mt-0")}>
+            <div className="mt-3">
               <ImageGallery imageUrls={post.imageUrls} onOpen={setActiveImageIndex} />
             </div>
           )}
@@ -710,18 +672,37 @@ export function FeedPost({
           )}
         </div>
 
+        {/* ── Engagement counts ── */}
         {(likeCount > 0 || recommendCount > 0 || commentCount > 0) && (
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#eee7db] px-5 py-2 text-[11px] text-[#8b9389]">
-            <span className="min-w-0 break-words">
-              {likeCount > 0 && `${likeCount} like${likeCount !== 1 ? "s" : ""}`}
-              {likeCount > 0 && recommendCount > 0 && " · "}
-              {recommendCount > 0 &&
-                `${recommendCount} recommendation${recommendCount !== 1 ? "s" : ""}`}
-            </span>
+          <div className="flex items-center justify-between gap-2 border-t border-[#f0ece4] px-4 py-2 text-[12px] text-[#9ba39c]">
+            <div className="flex items-center gap-3">
+              {likeCount > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[#0F6E56]">
+                    <ThumbsUp className="h-2.5 w-2.5 text-white" />
+                  </span>
+                  {liked && currentUserImage && (
+                    <Avatar name={null} image={currentUserImage} size={5} />
+                  )}
+                  <span>{likeCount}</span>
+                </span>
+              )}
+              {recommendCount > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-amber-400">
+                    <Star className="h-2.5 w-2.5 text-white" />
+                  </span>
+                  {recommended && currentUserImage && (
+                    <Avatar name={null} image={currentUserImage} size={5} />
+                  )}
+                  <span>{recommendCount}</span>
+                </span>
+              )}
+            </div>
             {commentCount > 0 && (
               <button
-                onClick={() => setCommentsOpen((value) => !value)}
-                className="shrink-0 transition-colors hover:text-gray-700"
+                onClick={() => setCommentsOpen((v) => !v)}
+                className="transition-colors hover:text-[#495346]"
               >
                 {commentCount} comment{commentCount !== 1 ? "s" : ""}
               </button>
@@ -729,72 +710,74 @@ export function FeedPost({
           </div>
         )}
 
+        {/* ── Comment preview ── */}
         {!commentsOpen && commentCount > 0 && comments && comments.length > 0 && (
           <button
             onClick={() => setCommentsOpen(true)}
-            className="block w-full border-t border-[#eee7db] px-5 py-3 text-left transition-colors hover:bg-[#fbfaf6]"
+            className="flex w-full items-start gap-2.5 border-t border-[#f0ece4] px-4 py-3 text-left transition-colors hover:bg-[#faf8f4]"
           >
-            <CommentPreview comment={comments[0]} />
+            <Avatar
+              name={comments[0].author.name}
+              image={comments[0].author.image}
+              size={6}
+            />
+            <div className="min-w-0 flex-1 rounded-2xl bg-[#f5f3ef] px-3 py-2">
+              <span className="text-[12px] font-semibold text-[#1B2B1F]">
+                {comments[0].author.name}
+              </span>
+              <p className="mt-0.5 line-clamp-1 text-[12px] text-[#667065]">
+                {comments[0].content}
+              </p>
+            </div>
           </button>
         )}
 
-        <div className="flex border-t border-[#eee7db] bg-[#fcfbf7]">
+        {/* ── Action bar ── */}
+        <div className="grid grid-cols-3 border-t border-[#f0ece4]">
           <button
             onClick={handleLike}
             className={cn(
-              "flex min-w-0 flex-1 items-center justify-center gap-1 px-2 py-2 text-[12px] font-medium transition-colors sm:gap-1.5 sm:px-3 sm:text-[13px]",
+              "flex items-center justify-center gap-1.5 py-2.5 text-[13px] font-medium transition-colors",
               liked
-                ? "bg-green-50 text-[#0F6E56] hover:bg-green-100"
-                : "text-[#667065] hover:bg-white hover:text-[#0F6E56]"
+                ? "text-[#0F6E56] bg-green-50"
+                : "text-[#7a837a] hover:bg-[#faf8f4] hover:text-[#0F6E56]"
             )}
           >
-            <ThumbsUp className={cn("h-4 w-4 shrink-0", liked && "fill-[#0F6E56]")} />
-            <span className="truncate">Like</span>
+            <ThumbsUp className={cn("h-4 w-4", liked && "fill-[#0F6E56]")} />
+            <span>Like</span>
           </button>
 
           <button
-            onClick={() => setCommentsOpen((value) => !value)}
+            onClick={() => setCommentsOpen((v) => !v)}
             className={cn(
-              "flex min-w-0 flex-1 items-center justify-center gap-1 px-2 py-2 text-[12px] font-medium transition-colors sm:gap-1.5 sm:px-3 sm:text-[13px]",
-              commentsOpen ? "bg-green-50 text-[#0F6E56]" : "text-[#667065] hover:bg-white hover:text-[#0F6E56]"
+              "flex items-center justify-center gap-1.5 py-2.5 text-[13px] font-medium transition-colors border-x border-[#f0ece4]",
+              commentsOpen ? "text-[#0F6E56] bg-green-50" : "text-[#7a837a] hover:bg-[#faf8f4] hover:text-[#0F6E56]"
             )}
           >
-            <MessageCircle className="h-4 w-4 shrink-0" />
-            <span className="truncate">Comment</span>
-          </button>
-
-          <button
-            onClick={handleSave}
-            className={cn(
-              "flex min-w-0 flex-1 items-center justify-center gap-1 px-2 py-2 text-[12px] font-medium transition-colors sm:gap-1.5 sm:px-3 sm:text-[13px]",
-              saved
-                ? "bg-green-50 text-[#0F6E56] hover:bg-green-100"
-                : "text-[#667065] hover:bg-white hover:text-[#0F6E56]"
-            )}
-          >
-            <Bookmark className={cn("h-4 w-4 shrink-0", saved && "fill-[#0F6E56]")} />
-            <span className="truncate">Save</span>
+            <MessageCircle className="h-4 w-4" />
+            <span>Comment</span>
           </button>
 
           <button
             onClick={handleRecommend}
             className={cn(
-              "flex min-w-0 flex-1 items-center justify-center gap-1 px-2 py-2 text-[12px] font-medium transition-colors sm:gap-1.5 sm:px-3 sm:text-[13px]",
+              "flex items-center justify-center gap-1.5 py-2.5 text-[13px] font-medium transition-colors",
               recommended
-                ? "bg-amber-50 text-amber-500 hover:bg-amber-100"
-                : "text-[#667065] hover:bg-white hover:text-amber-500"
+                ? "text-amber-500 bg-amber-50"
+                : "text-[#7a837a] hover:bg-[#faf8f4] hover:text-amber-500"
             )}
           >
-            <Star className={cn("h-4 w-4 shrink-0", recommended && "fill-amber-500")} />
-            <span className="truncate">Recommend</span>
+            <Star className={cn("h-4 w-4", recommended && "fill-amber-500")} />
+            <span>Recommend</span>
           </button>
         </div>
 
+        {/* ── Comments section ── */}
         {commentsOpen && (
-          <div className="space-y-3 border-t border-[#eee7db] px-5 pb-5 pt-4">
+          <div className="space-y-3 border-t border-[#f0ece4] px-4 pb-4 pt-3">
             {loadingComments && (
               <div className="flex justify-center py-4">
-                <Loader2 className="h-5 w-5 animate-spin text-gray-300" />
+                <Loader2 className="h-5 w-5 animate-spin text-[#c8c0b4]" />
               </div>
             )}
 
@@ -810,28 +793,28 @@ export function FeedPost({
 
             {currentUserId ? (
               <div className="flex items-center gap-2 pt-1">
-                <Avatar name={null} image={currentUserImage} size={7} />
-                <div className="flex flex-1 items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-2 transition-colors focus-within:border-[#0F6E56] focus-within:bg-white">
+                <Avatar name={null} image={currentUserImage} size={8} />
+                <div className="flex flex-1 items-center gap-2 rounded-full border border-[#e8e2d8] bg-[#faf8f4] px-4 py-2 transition-colors focus-within:border-[#0F6E56] focus-within:bg-white">
                   <input
                     value={newComment}
-                    onChange={(event) => setNewComment(event.target.value)}
-                    onKeyDown={(event) => event.key === "Enter" && !event.shiftKey && handleComment()}
-                    placeholder="Add a comment…"
-                    className="flex-1 bg-transparent text-xs text-gray-700 outline-none placeholder:text-gray-400"
+                    onChange={(e) => setNewComment(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleComment()}
+                    placeholder="Write a comment…"
+                    className="flex-1 bg-transparent text-[13px] text-[#1B2B1F] outline-none placeholder:text-[#bbb5aa]"
                   />
                   <button
                     onClick={handleComment}
                     disabled={!newComment.trim() || isPending}
                     className="text-[#0F6E56] transition-opacity disabled:opacity-40"
                   >
-                    {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                    {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
             ) : (
               <a
                 href="/login"
-                className="flex items-center gap-2 rounded-xl border border-dashed border-gray-200 px-4 py-2.5 text-xs text-gray-400 transition-colors hover:border-gray-300 hover:text-gray-500"
+                className="flex items-center gap-2 rounded-xl border border-dashed border-[#e0d9cf] px-4 py-2.5 text-[13px] text-[#9ba39c] transition-colors hover:border-[#c8c0b4] hover:text-[#667065]"
               >
                 Sign in to comment
               </a>
@@ -840,15 +823,16 @@ export function FeedPost({
         )}
       </article>
 
+      {/* ── Lightbox ── */}
       {activeImageIndex !== null && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 p-4"
           onClick={() => setActiveImageIndex(null)}
         >
           <button
             type="button"
             onClick={() => setActiveImageIndex(null)}
-            className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white transition-colors hover:bg-black/70"
+            className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
           >
             <X className="h-5 w-5" />
           </button>
@@ -856,8 +840,8 @@ export function FeedPost({
           <img
             src={post.imageUrls[activeImageIndex]}
             alt=""
-            className="max-h-[88vh] max-w-[92vw] rounded-2xl object-contain"
-            onClick={(event) => event.stopPropagation()}
+            className="max-h-[90vh] max-w-[94vw] rounded-2xl object-contain"
+            onClick={(e) => e.stopPropagation()}
           />
         </div>
       )}

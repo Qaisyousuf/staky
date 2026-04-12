@@ -162,7 +162,7 @@ function SectionHeader({ title, action }: { title: string; action?: { href: stri
 
 // ─── User Dashboard ───────────────────────────────────────────────────────────
 
-async function UserDashboard({ userId, userName, activeMode }: { userId: string; userName: string | null | undefined; activeMode: string }) {
+async function UserDashboard({ userId, userName, activeMode, hasPartner }: { userId: string; userName: string | null | undefined; activeMode: string; hasPartner: boolean }) {
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
   const [stackCount, followingCount, connectionCount, stackItems, profileViewsCount, recentViewers, topAlts] =
@@ -235,13 +235,15 @@ async function UserDashboard({ userId, userName, activeMode }: { userId: string;
           <p className="text-gray-500 text-sm mt-1">Here&apos;s what&apos;s happening with your EU migration journey.</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Link
-            href="/app/settings?tab=partner"
-            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 text-sm font-semibold px-4 py-2.5 transition-colors"
-          >
-            <Handshake className="h-4 w-4 text-gray-400" />
-            Become a partner
-          </Link>
+          {!hasPartner && (
+            <Link
+              href="/app/settings?tab=partner"
+              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 text-sm font-semibold px-4 py-2.5 transition-colors"
+            >
+              <Handshake className="h-4 w-4 text-gray-400" />
+              Become a partner
+            </Link>
+          )}
           <Link
             href="/app/feed"
             className="inline-flex items-center gap-2 rounded-xl bg-[#0F6E56] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#0d5f4a] transition-colors shadow-sm"
@@ -781,9 +783,10 @@ export default async function DashboardPage() {
   });
   const activeMode = userRecord?.activeMode ?? "user";
   const partnerApproved = userRecord?.partner?.approved ?? false;
+  const hasPartner = userRecord?.partner != null;
 
   const isPartnerMode = partnerApproved && activeMode === "partner";
   return isPartnerMode
     ? <PartnerDashboard userId={userId} userName={name} />
-    : <UserDashboard userId={userId} userName={name} activeMode={activeMode} />;
+    : <UserDashboard userId={userId} userName={name} activeMode={activeMode} hasPartner={hasPartner} />;
 }

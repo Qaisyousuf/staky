@@ -14,7 +14,7 @@ const SECTIONS = [
   },
   {
     title: "Who we are",
-    body: `Staky is operated by Staky ApS, a company registered in Denmark (Copenhagen). We help European businesses discover alternatives to US software and connect with migration partners. All data is processed within the European Economic Area.`,
+    body: `Staky is operated by Staky, a company registered in Denmark. We help European businesses discover alternatives to US software and connect with migration partners. All data is processed within the European Economic Area.`,
   },
   {
     title: "Your account",
@@ -34,11 +34,11 @@ const SECTIONS = [
   },
   {
     title: "Intellectual property",
-    body: `The Staky name, logo, and Platform design are owned by Staky ApS. You may not reproduce, distribute, or create derivative works from our content without written permission. Logos and trademarks of third-party tools belong to their respective owners.`,
+    body: `The Staky name, logo, and Platform design are owned by Staky. You may not reproduce, distribute, or create derivative works from our content without written permission. Logos and trademarks of third-party tools belong to their respective owners.`,
   },
   {
     title: "Limitation of liability",
-    body: `To the extent permitted by Danish and EU law, Staky ApS shall not be liable for indirect, incidental, or consequential damages arising from your use of the Platform, including data loss, service interruptions, or decisions made based on Platform content.`,
+    body: `To the extent permitted by Danish and EU law, Staky shall not be liable for indirect, incidental, or consequential damages arising from your use of the Platform, including data loss, service interruptions, or decisions made based on Platform content.`,
   },
   {
     title: "Privacy & data",
@@ -50,7 +50,7 @@ const SECTIONS = [
   },
   {
     title: "Governing law",
-    body: `These terms are governed by the laws of Denmark. Any disputes shall be subject to the exclusive jurisdiction of the courts of Copenhagen, Denmark, unless EU consumer protection law requires otherwise.`,
+    body: `These terms are governed by the laws of Denmark. Any disputes shall be subject to the exclusive jurisdiction of the Danish courts, unless EU consumer protection law requires otherwise.`,
   },
 ];
 
@@ -69,7 +69,7 @@ export default function TermsPage() {
             Terms of Use
           </h1>
           <p className="mt-3 text-[14px] text-[#9BA39C]">
-            Last updated: April 2026 · Staky ApS, Copenhagen, Denmark
+            Last updated: April 2026 · Staky
           </p>
         </div>
 
