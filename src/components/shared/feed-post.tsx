@@ -480,12 +480,15 @@ export function FeedPost({
     });
   }
 
+  // Which persona of the author does this post represent?
+  const authorPersonaMode = post.postedAsPartner ? "partner" : "user";
+
   function handleFollow() {
     if (!currentUserId || isOwn) return;
     setFollowing((v) => !v);
     startTransition(async () => {
       try {
-        const res = await toggleFollow(post.author.id);
+        const res = await toggleFollow(post.author.id, authorPersonaMode);
         setFollowing(res.following);
       } catch {
         setFollowing((v) => !v);
@@ -498,7 +501,7 @@ export function FeedPost({
     setConnected((v) => !v);
     startTransition(async () => {
       try {
-        const res = await toggleConnect(post.author.id);
+        const res = await toggleConnect(post.author.id, authorPersonaMode);
         setConnected(res.connected);
       } catch {
         setConnected((v) => !v);

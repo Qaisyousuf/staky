@@ -8,7 +8,7 @@ import {
   Menu, Search, Bell, Mail, Settings, X, Plus,
   Heart, MessageCircle, Reply, UserPlus, ThumbsUp,
   Link2, Bookmark, Share2, BriefcaseBusiness, CircleCheckBig, CircleOff, CircleDot, MessageSquare,
-  ArrowLeftRight, Eye, Handshake, ShieldCheck, ShieldX, Trash2, Receipt, CreditCard, ClipboardList, CheckSquare, Inbox, Briefcase,
+  ArrowLeftRight, Eye, Handshake, ShieldCheck, ShieldX, Trash2, Receipt, CreditCard, ClipboardList, CheckSquare, Inbox, Briefcase, FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { markAllNotificationsRead, markNotificationRead } from "@/actions/social";
@@ -60,8 +60,12 @@ function notifUrl(n: NotificationItem, role?: string): string {
         : "/feed";
     case "FOLLOW":
     case "CONNECT":
-    case "PROFILE_VIEW":
-      return n.sender?.id ? `/app/profile/${n.sender.id}?from=views` : "/app/profile/views";
+    case "PROFILE_VIEW": {
+      if (!n.sender?.id) return "/app/profile/views";
+      // Show the sender's persona that performed the action (partner or user)
+      const personaParam = n.senderMode === "partner" ? "asPartner=1" : "asUser=1";
+      return `/app/profile/${n.sender.id}?${personaParam}&from=notifications`;
+    }
     case "REQUEST_RECEIVED":
       return n.requestId ? `/app/leads/${n.requestId}` : "/app/leads";
     case "REQUEST_ACCEPTED":
@@ -91,6 +95,8 @@ function notifUrl(n: NotificationItem, role?: string): string {
     case "CONFIG_SUBMITTED":
       // Partner receives: go to the lead
       return n.requestId ? `/app/leads/${n.requestId}` : "/app/leads";
+    case "NEW_POST":
+      return n.postId ? `/app/feed?post=${n.postId}` : "/app/feed";
     case "CONTACT_RECEIVED":
       return "/app/admin?tab=contact";
     case "JOB_APPLICATION_RECEIVED":
@@ -135,7 +141,7 @@ const TYPE_CFG: Record<string, { icon: React.ElementType; bg: string; fg: string
   REPLY:          { icon: Reply,          bg: "bg-green-100",  fg: "text-green-600", action: "replied to your comment" },
   FOLLOW:         { icon: UserPlus,       bg: "bg-blue-100",   fg: "text-blue-600",  action: "started following you" },
   RECOMMENDATION: { icon: ThumbsUp,       bg: "bg-green-100",  fg: "text-green-600", action: "recommended your post" },
-  CONNECT:        { icon: Link2,          bg: "bg-blue-100",   fg: "text-blue-600",  action: "accepted your connection" },
+  CONNECT:        { icon: Link2,          bg: "bg-blue-100",   fg: "text-blue-600",  action: "connected with you" },
   SAVE:           { icon: Bookmark,       bg: "bg-amber-100",  fg: "text-amber-500", action: "saved your post" },
   SHARE:          { icon: Share2,         bg: "bg-gray-100",   fg: "text-gray-500",  action: "shared your post" },
   REQUEST_RECEIVED:  { icon: BriefcaseBusiness, bg: "bg-blue-100",   fg: "text-blue-600",  action: "sent you a migration request" },
@@ -155,6 +161,7 @@ const TYPE_CFG: Record<string, { icon: React.ElementType; bg: string; fg: string
   CONFIG_SUBMITTED:      { icon: CheckSquare,   bg: "bg-green-100",  fg: "text-green-600",  action: "submitted their configuration" },
   CONTACT_RECEIVED:          { icon: Inbox,     bg: "bg-blue-100",   fg: "text-blue-600",   action: "sent a contact message" },
   JOB_APPLICATION_RECEIVED:  { icon: Briefcase, bg: "bg-violet-100", fg: "text-violet-600", action: "submitted a job application" },
+  NEW_POST:                   { icon: FileText,  bg: "bg-green-100",  fg: "text-green-600",  action: "shared a new post" },
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

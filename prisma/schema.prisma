@@ -65,6 +65,7 @@ enum NotificationType {
   CONFIG_SUBMITTED
   CONTACT_RECEIVED
   JOB_APPLICATION_RECEIVED
+  NEW_POST
 }
 
 enum InvoiceStatus {
@@ -370,31 +371,35 @@ model SavedPost {
 // ─── Social graph ─────────────────────────────────────────────────────────────
 
 model Follow {
-  id          String   @id @default(cuid())
-  followerId  String
-  followingId String
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  followerId    String
+  followerMode  String   @default("user")
+  followingId   String
+  followingMode String   @default("user")
+  createdAt     DateTime @default(now())
 
   follower  User @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
   following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
 
-  @@unique([followerId, followingId])
-  @@index([followerId])
+  @@unique([followerId, followerMode, followingId, followingMode])
+  @@index([followerId, followerMode])
   @@index([followingId])
   @@map("follows")
 }
 
 model Connection {
-  id        String   @id @default(cuid())
-  userId    String
-  targetId  String
-  createdAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  userId        String
+  requesterMode String   @default("user")
+  targetId      String
+  targetMode    String   @default("user")
+  createdAt     DateTime @default(now())
 
   user   User @relation("ConnectionUser", fields: [userId], references: [id], onDelete: Cascade)
   target User @relation("ConnectionTarget", fields: [targetId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, targetId])
-  @@index([userId])
+  @@unique([userId, requesterMode, targetId, targetMode])
+  @@index([userId, requesterMode])
   @@index([targetId])
   @@map("connections")
 }
@@ -420,6 +425,7 @@ model MigrationRequest {
   targetDate    DateTime?
   configItems   Json?
   configSentAt  DateTime?
+  senderMode    String                 @default("user")
   status        MigrationRequestStatus @default(PENDING)
   createdAt     DateTime               @default(now())
   updatedAt     DateTime               @updatedAt
@@ -543,18 +549,20 @@ model NotificationSettings {
 // ─── Messages ─────────────────────────────────────────────────────────────────
 
 model Message {
-  id          String   @id @default(cuid())
-  senderId    String
-  recipientId String
-  content     String   @db.Text
-  read        Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  senderId      String
+  recipientId   String
+  content       String   @db.Text
+  read          Boolean  @default(false)
+  senderMode    String   @default("user")
+  recipientMode String   @default("user")
+  createdAt     DateTime @default(now())
 
   sender    User @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
   recipient User @relation("MessageRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
 
   @@index([senderId, recipientId, createdAt(sort: Desc)])
-  @@index([recipientId, read])
+  @@index([recipientId, recipientMode, read])
   @@map("messages")
 }
 

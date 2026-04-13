@@ -5,10 +5,10 @@ import Link from "next/link";
 import {
   Search, UserPlus, UserCheck, MessageSquare, Eye,
   MapPin, BadgeCheck, Settings, TrendingUp, Users,
-  ArrowRight,
+  ArrowRight, Link2, Handshake,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toggleFollow } from "@/actions/social";
+import { toggleFollow, toggleConnect } from "@/actions/social";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -18,7 +18,7 @@ const F = "-apple-system, 'Segoe UI', system-ui, sans-serif";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type TabId = "followers" | "following" | "connections";
+type TabId = "followers" | "following" | "connections" | "views";
 
 interface CurrentUser {
   id: string;
@@ -55,8 +55,12 @@ interface ProfileViews {
   recentViewers: {
     id: string;
     viewerId: string | null;
+    viewerMode: string;
     createdAt: string;
-    viewer: { id: string; name: string | null; image: string | null; title: string | null; company: string | null } | null;
+    viewer: {
+      id: string; name: string | null; image: string | null; title: string | null; company: string | null;
+      partner?: { companyName: string; logoUrl: string | null; approved: boolean } | null;
+    } | null;
   }[];
 }
 
@@ -68,6 +72,9 @@ interface NetworkUser {
   company: string | null;
   role: string;
   activeMode?: string;
+  followingMode?: string;
+  followerMode?: string;
+  connectionPersonaMode?: string;
   isFollowingBack?: boolean;
   partner?: { companyName: string; logoUrl?: string | null; rating: number; approved?: boolean } | null;
 }
@@ -124,8 +131,8 @@ function UserAvatar({
 
 // ─── Follow toggle ────────────────────────────────────────────────────────────
 
-function FollowToggle({ userId, initialFollowing, label }: {
-  userId: string; initialFollowing: boolean; label?: string;
+function FollowToggle({ userId, initialFollowing, label, followingMode }: {
+  userId: string; initialFollowing: boolean; label?: string; followingMode?: string;
 }) {
   const [following, setFollowing] = useState(initialFollowing);
   const [pending, startTransition] = useTransition();
@@ -134,7 +141,7 @@ function FollowToggle({ userId, initialFollowing, label }: {
     const next = !following;
     setFollowing(next);
     startTransition(async () => {
-      try { const res = await toggleFollow(userId); setFollowing(res.following); }
+      try { const res = await toggleFollow(userId, followingMode); setFollowing(res.following); }
       catch { setFollowing(!next); }
     });
   }
@@ -157,9 +164,44 @@ function FollowToggle({ userId, initialFollowing, label }: {
   );
 }
 
+// ─── Connect toggle ───────────────────────────────────────────────────────────
+
+function ConnectToggle({ userId, initialConnected, targetMode }: {
+  userId: string; initialConnected: boolean; targetMode: string;
+}) {
+  const [connected, setConnected] = useState(initialConnected);
+  const [pending, startTransition] = useTransition();
+
+  function toggle() {
+    const next = !connected;
+    setConnected(next);
+    startTransition(async () => {
+      try { const res = await toggleConnect(userId, targetMode); setConnected(res.connected); }
+      catch { setConnected(!next); }
+    });
+  }
+
+  return (
+    <button
+      onClick={toggle}
+      disabled={pending}
+      className={cn(
+        "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold transition-all disabled:opacity-50 shrink-0",
+        connected
+          ? "bg-[#F7F9F8] text-[#5C6B5E] hover:bg-[#F0EDE8]"
+          : "bg-[#2A5FA5] text-white hover:bg-[#244d8a]"
+      )}
+    >
+      {connected
+        ? <><UserCheck className="h-3.5 w-3.5" />Connected</>
+        : <><Link2 className="h-3.5 w-3.5" />Connect</>}
+    </button>
+  );
+}
+
 // ─── Own profile card (hero) ──────────────────────────────────────────────────
 
-function ProfileCard({ user }: { user: CurrentUser }) {
+function ProfileCard({ user, onTabChange }: { user: CurrentUser; onTabChange: (tab: TabId) => void }) {
   const isPartner = user.activeMode === "partner" && !!user.partner?.approved;
   const accent    = isPartner ? "#2A5FA5" : "#0F6E56";
   const bandBg    = isPartner
@@ -171,18 +213,15 @@ function ProfileCard({ user }: { user: CurrentUser }) {
   const initials     = (displayName ?? "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
   const shape        = isPartner ? "rounded-2xl" : "rounded-full";
 
-  const stats = [
-    { value: user.followerCount,   label: "Followers",  href: "?tab=followers"   },
-    { value: user.followingCount,  label: "Following",  href: "?tab=following"   },
-    { value: user.connectionCount, label: "Connects",   href: "?tab=connections" },
+  const stats: { value: number; label: string; tab: TabId }[] = [
+    { value: user.followerCount,   label: "Followers",  tab: "followers"   },
+    { value: user.followingCount,  label: "Following",  tab: "following"   },
+    { value: user.connectionCount, label: "Connects",   tab: "connections" },
   ];
 
   return (
     <div className="relative flex flex-col rounded-2xl bg-white overflow-hidden" style={{ border: CARD_BORDER, boxShadow: CARD_SHADOW }}>
-      {/* Colour band */}
       <div className="h-[72px] w-full shrink-0" style={{ background: bandBg }} />
-
-      {/* Avatar + actions row */}
       <div className="px-4 -mt-8 flex items-end justify-between gap-2">
         {displayImage ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -196,7 +235,7 @@ function ProfileCard({ user }: { user: CurrentUser }) {
         )}
         <div className="flex items-center gap-1.5 pb-1 flex-wrap justify-end">
           <Link
-            href={`/app/profile/${user.id}?from=network`}
+            href={`/app/profile/${user.id}${isPartner ? "?asPartner=1" : "?asUser=1"}&from=network`}
             className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-xl transition-colors text-[#5C6B5E] hover:text-[#1B2B1F] hover:bg-[#F7F9F8]"
             style={{ border: "1px solid rgba(0,0,0,0.08)" }}
           >
@@ -211,8 +250,6 @@ function ProfileCard({ user }: { user: CurrentUser }) {
           </Link>
         </div>
       </div>
-
-      {/* Profile info */}
       <div className="px-4 pt-3 pb-4">
         <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
           <p className="text-[16px] font-black text-[#1B2B1F] leading-tight">{displayName ?? "Anonymous"}</p>
@@ -236,23 +273,20 @@ function ProfileCard({ user }: { user: CurrentUser }) {
             </span>
           </div>
         )}
-
-        {/* Stats strip */}
         <div className="mt-4 grid grid-cols-3 pt-4 border-t border-[#F0EDE8]">
-          {stats.map(({ value, label, href }, i) => (
-            <Link
+          {stats.map(({ value, label, tab }, i) => (
+            <button
               key={label}
-              href={href}
+              type="button"
+              onClick={() => onTabChange(tab)}
               className={cn(
-                "flex flex-col items-center py-1.5 rounded-xl hover:bg-[#F7F9F8] transition-colors group",
+                "flex flex-col items-center py-1.5 rounded-xl hover:bg-[#F7F9F8] transition-colors group cursor-pointer",
                 i !== 2 && "border-r border-[rgba(0,0,0,0.05)]"
               )}
             >
-              <span className="text-[15px] font-black leading-none text-[#1B2B1F] group-hover:transition-colors" style={{ color: undefined }}>
-                {value.toLocaleString()}
-              </span>
+              <span className="text-[15px] font-black leading-none text-[#1B2B1F]">{value.toLocaleString()}</span>
               <span className="text-[10px] text-[#9BA39C] mt-0.5 font-medium">{label}</span>
-            </Link>
+            </button>
           ))}
         </div>
       </div>
@@ -260,23 +294,20 @@ function ProfileCard({ user }: { user: CurrentUser }) {
   );
 }
 
-// ─── Profile views card ───────────────────────────────────────────────────────
+// ─── Profile views sidebar widget ─────────────────────────────────────────────
 
-function ProfileViewsCard({ views }: { views: ProfileViews }) {
+function ProfileViewsWidget({ views }: { views: ProfileViews }) {
   const maxBar = Math.max(...views.last30Days.map((d) => d.count), 1);
   const last14 = views.last30Days.slice(-14);
 
   return (
     <div className="rounded-2xl bg-white overflow-hidden" style={{ border: CARD_BORDER, boxShadow: CARD_SHADOW }}>
-      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3.5" style={{ borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
         <p className="text-[13px] font-bold text-[#1B2B1F]">Profile views</p>
         <Link href="/app/profile/views" className="text-[11px] font-semibold text-[#0F6E56] hover:underline flex items-center gap-1">
           See all<ArrowRight className="h-3 w-3" />
         </Link>
       </div>
-
-      {/* Stats row */}
       <div className="grid grid-cols-2 divide-x" style={{ borderBottom: "1px solid rgba(0,0,0,0.05)", borderColor: "rgba(0,0,0,0.05)" }}>
         <div className="px-4 py-3">
           <p className="text-[22px] font-black text-[#1B2B1F] leading-none">{views.weeklyCount}</p>
@@ -287,8 +318,6 @@ function ProfileViewsCard({ views }: { views: ProfileViews }) {
           <p className="text-[10px] text-[#9BA39C] mt-0.5 font-medium">all time</p>
         </div>
       </div>
-
-      {/* Mini bar chart */}
       <div className="px-4 pt-3 pb-2">
         <div className="flex items-end gap-[2px] h-10">
           {last14.map(({ date, count }) => (
@@ -306,27 +335,42 @@ function ProfileViewsCard({ views }: { views: ProfileViews }) {
         <p className="text-[9px] text-[#C8D0CA] mt-1.5 font-medium uppercase tracking-wide">14-day activity</p>
       </div>
 
-      {/* Recent viewers */}
+      {/* Preview of recent viewers (up to 3) */}
       {views.recentViewers.length > 0 ? (
         <div className="px-4 pt-1 pb-3 space-y-2.5" style={{ borderTop: "1px solid rgba(0,0,0,0.05)" }}>
-          {views.recentViewers.slice(0, 3).map((v) => (
-            <Link key={v.id} href={`/app/profile/${v.viewerId}?from=views`} className="flex items-center gap-2.5 group">
-              {v.viewer?.image ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={v.viewer.image} alt={v.viewer.name ?? ""} className="h-7 w-7 rounded-full object-cover shrink-0" />
-              ) : (
-                <div className="h-7 w-7 rounded-full bg-[#EAF3EE] flex items-center justify-center text-[#0F6E56] text-[10px] font-bold shrink-0 select-none">
-                  {getInitials(v.viewer?.name ?? null)}
+          {views.recentViewers.slice(0, 3).map((v) => {
+            const isPartnerViewer = v.viewerMode === "partner" && !!v.viewer?.partner?.approved;
+            const displayName  = isPartnerViewer ? (v.viewer?.partner?.companyName ?? v.viewer?.name) : v.viewer?.name;
+            const displayImage = isPartnerViewer ? (v.viewer?.partner?.logoUrl ?? v.viewer?.image) : v.viewer?.image;
+            const shape = isPartnerViewer ? "rounded-lg" : "rounded-full";
+            const bg    = isPartnerViewer ? "bg-[#2A5FA5]" : "bg-[#EAF3EE]";
+            const fg    = isPartnerViewer ? "text-white" : "text-[#0F6E56]";
+            return (
+              <Link key={v.id} href={`/app/profile/${v.viewerId}${isPartnerViewer ? "?asPartner=1" : "?asUser=1"}&from=views`} className="flex items-center gap-2.5 group">
+                {displayImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={displayImage} alt={displayName ?? ""} className={`h-7 w-7 ${shape} object-cover shrink-0`} />
+                ) : (
+                  <div className={`h-7 w-7 ${shape} ${bg} flex items-center justify-center ${fg} text-[10px] font-bold shrink-0 select-none`}>
+                    {getInitials(displayName ?? null)}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-semibold text-[#1B2B1F] group-hover:text-[#0F6E56] transition-colors truncate leading-snug">
+                    {displayName ?? "Anonymous"}
+                  </p>
+                  <p className="text-[10px] text-[#C8D0CA]">
+                    {isPartnerViewer ? "Migration Partner · " : ""}{timeAgo(v.createdAt)}
+                  </p>
                 </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-semibold text-[#1B2B1F] group-hover:text-[#0F6E56] transition-colors truncate leading-snug">
-                  {v.viewer?.name ?? "Anonymous"}
-                </p>
-                <p className="text-[10px] text-[#C8D0CA]">{timeAgo(v.createdAt)}</p>
-              </div>
+              </Link>
+            );
+          })}
+          {views.recentViewers.length > 3 && (
+            <Link href="/app/profile/views" className="block w-full text-center text-[11px] font-semibold text-[#0F6E56] hover:underline pt-1">
+              +{views.recentViewers.length - 3} more viewers
             </Link>
-          ))}
+          )}
         </div>
       ) : (
         <div className="px-4 py-5 text-center" style={{ borderTop: "1px solid rgba(0,0,0,0.05)" }}>
@@ -334,6 +378,67 @@ function ProfileViewsCard({ views }: { views: ProfileViews }) {
           <p className="text-[11px] text-[#9BA39C]">No visitors yet</p>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Views tab list ───────────────────────────────────────────────────────────
+
+function ViewsList({ viewers }: { viewers: ProfileViews["recentViewers"] }) {
+  if (viewers.length === 0) {
+    return (
+      <div className="py-16 text-center">
+        <div className="h-12 w-12 rounded-2xl bg-[#F7F9F8] flex items-center justify-center mx-auto mb-3">
+          <Eye className="h-5 w-5 text-[#C8D0CA]" />
+        </div>
+        <p className="text-[13px] font-semibold text-[#1B2B1F]">No profile views yet</p>
+        <p className="text-[12px] text-[#9BA39C] mt-1">Share your profile to attract visitors</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="divide-y divide-[rgba(0,0,0,0.04)]">
+      {viewers.map((v) => {
+        const isPartnerViewer = v.viewerMode === "partner" && !!v.viewer?.partner?.approved;
+        const displayName  = isPartnerViewer ? (v.viewer?.partner?.companyName ?? v.viewer?.name) : v.viewer?.name;
+        const displayImage = isPartnerViewer ? (v.viewer?.partner?.logoUrl ?? v.viewer?.image) : v.viewer?.image;
+        const subtitle = isPartnerViewer
+          ? "Migration Partner"
+          : [v.viewer?.title, v.viewer?.company].filter(Boolean).join(" · ") || "Staky member";
+
+        return (
+          <div key={v.id} className="flex items-center gap-3 py-3 -mx-4 px-4 hover:bg-[#F7F9F8] transition-colors">
+            <Link href={`/app/profile/${v.viewerId}${isPartnerViewer ? "?asPartner=1" : "?asUser=1"}&from=views`} className="shrink-0">
+              <UserAvatar name={displayName ?? null} image={displayImage ?? null} isPartner={isPartnerViewer} size="md" />
+            </Link>
+            <div className="flex-1 min-w-0">
+              <Link
+                href={`/app/profile/${v.viewerId}${isPartnerViewer ? "?asPartner=1" : "?asUser=1"}&from=views`}
+                className="text-[13px] font-bold text-[#1B2B1F] hover:text-[#0F6E56] transition-colors truncate block leading-tight"
+              >
+                {displayName ?? "Anonymous"}
+              </Link>
+              <p className="text-[11px] text-[#9BA39C] truncate leading-snug mt-0.5">{subtitle}</p>
+            </div>
+            <div className="shrink-0 flex items-center gap-2">
+              {isPartnerViewer && (
+                <span className="hidden sm:inline text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-[#EEF3FA] text-[#2A5FA5]">
+                  Partner
+                </span>
+              )}
+              <span className="text-[11px] text-[#C8D0CA] tabular-nums whitespace-nowrap">{timeAgo(v.createdAt)}</span>
+              <Link
+                href={`/app/profile/${v.viewerId}${isPartnerViewer ? "?asPartner=1" : "?asUser=1"}&from=views`}
+                className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-semibold text-[#5C6B5E] hover:bg-[#F0EDE8] transition-colors"
+                style={{ border: "1px solid rgba(0,0,0,0.08)" }}
+              >
+                View
+              </Link>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -361,9 +466,10 @@ export function NetworkClient({
   const [search, setSearch]       = useState("");
 
   const TABS = [
-    { id: "followers"   as TabId, label: "Followers",   count: followers.length   },
-    { id: "following"   as TabId, label: "Following",   count: following.length   },
-    { id: "connections" as TabId, label: "Connections", count: connections.length },
+    { id: "followers"   as TabId, label: "Followers",   count: followers.length,             icon: Users },
+    { id: "following"   as TabId, label: "Following",   count: following.length,             icon: UserCheck },
+    { id: "connections" as TabId, label: "Connections", count: connections.length,           icon: Handshake },
+    { id: "views"       as TabId, label: "Views",       count: profileViews.recentViewers.length, icon: Eye },
   ];
 
   function filterUsers<T extends { name: string | null; company: string | null }>(users: T[]): T[] {
@@ -383,8 +489,8 @@ export function NetworkClient({
 
         {/* ── Left sidebar ───────────────────────────────────────────────────── */}
         <div className="space-y-3 lg:sticky lg:top-6">
-          <ProfileCard user={currentUser} />
-          <ProfileViewsCard views={profileViews} />
+          <ProfileCard user={currentUser} onTabChange={(t) => { setActiveTab(t); setSearch(""); }} />
+          <ProfileViewsWidget views={profileViews} />
         </div>
 
         {/* ── Right content ───────────────────────────────────────────────────── */}
@@ -401,7 +507,7 @@ export function NetworkClient({
               </div>
               <div className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {suggestedProfiles.slice(0, 3).map((p) => {
-                  const pIsPartner   = p.activeMode === "partner" && !!p.partner?.approved;
+                  const pIsPartner   = !!p.partner?.approved;
                   const pDisplayName = pIsPartner ? (p.partner!.companyName ?? p.name) : p.name;
                   const pDisplayImg  = pIsPartner ? (p.partner!.logoUrl ?? null) : p.image;
                   return (
@@ -410,12 +516,12 @@ export function NetworkClient({
                       className="flex flex-col items-center gap-3 rounded-2xl p-4 text-center transition-all hover:-translate-y-0.5"
                       style={{ border: CARD_BORDER, boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}
                     >
-                      <Link href={`/app/profile/${p.id}`}>
+                      <Link href={`/app/profile/${p.id}${pIsPartner ? "?asPartner=1" : "?asUser=1"}&from=network`}>
                         <UserAvatar name={pDisplayName} image={pDisplayImg} isPartner={pIsPartner} size="lg" />
                       </Link>
                       <div className="min-w-0 w-full flex-1">
                         <Link
-                          href={`/app/profile/${p.id}`}
+                          href={`/app/profile/${p.id}${pIsPartner ? "?asPartner=1" : "?asUser=1"}&from=network`}
                           className="text-[13px] font-bold text-[#1B2B1F] hover:text-[#0F6E56] transition-colors truncate block leading-tight"
                         >
                           {pDisplayName ?? "Anonymous"}
@@ -424,7 +530,12 @@ export function NetworkClient({
                           {pIsPartner ? "Migration Partner" : (p.title ?? p.company ?? "Staky member")}
                         </p>
                       </div>
-                      <FollowToggle userId={p.id} initialFollowing={false} />
+                      {/* Partners get a Connect button, switchers get Follow */}
+                      {pIsPartner ? (
+                        <ConnectToggle userId={p.id} initialConnected={false} targetMode="partner" />
+                      ) : (
+                        <FollowToggle userId={p.id} initialFollowing={false} followingMode="user" />
+                      )}
                     </div>
                   );
                 })}
@@ -432,7 +543,7 @@ export function NetworkClient({
             </div>
           )}
 
-          {/* Followers / Following / Connections */}
+          {/* Followers / Following / Connections / Views */}
           <div className="rounded-2xl bg-white overflow-hidden" style={{ border: CARD_BORDER, boxShadow: CARD_SHADOW }}>
 
             {/* Tab strip */}
@@ -460,89 +571,112 @@ export function NetworkClient({
               ))}
             </div>
 
-            {/* Search */}
-            <div className="px-4 pt-3.5 pb-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#C8D0CA] pointer-events-none" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder={`Search ${activeTab}…`}
-                  className="w-full rounded-xl pl-9 pr-3 py-2 text-[13px] placeholder:text-[#C8D0CA] outline-none transition-all"
-                  style={{ background: "#F7F9F8", border: "1.5px solid rgba(0,0,0,0.06)" }}
-                  onFocus={(e) => { e.currentTarget.style.border = "1.5px solid #0F6E56"; e.currentTarget.style.background = "#fff"; }}
-                  onBlur={(e)  => { e.currentTarget.style.border = "1.5px solid rgba(0,0,0,0.06)"; e.currentTarget.style.background = "#F7F9F8"; }}
-                />
-              </div>
-            </div>
-
-            {/* List */}
-            <div className="px-4 pb-3 pt-1">
-              {activeUsers.length === 0 ? (
-                <div className="py-12 text-center">
-                  <div className="h-12 w-12 rounded-2xl bg-[#F7F9F8] flex items-center justify-center mx-auto mb-3">
-                    <Users className="h-5 w-5 text-[#C8D0CA]" />
-                  </div>
-                  <p className="text-[13px] font-semibold text-[#1B2B1F]">
-                    {search ? "No results found" : `No ${activeTab} yet`}
-                  </p>
-                  {!search && activeTab === "followers" && (
-                    <p className="text-[12px] text-[#9BA39C] mt-1">Share your profile to grow your audience</p>
-                  )}
+            {/* Search (only for non-views tabs) */}
+            {activeTab !== "views" && (
+              <div className="px-4 pt-3.5 pb-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#C8D0CA] pointer-events-none" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder={`Search ${activeTab}…`}
+                    className="w-full rounded-xl pl-9 pr-3 py-2 text-[13px] placeholder:text-[#C8D0CA] outline-none transition-all"
+                    style={{ background: "#F7F9F8", border: "1.5px solid rgba(0,0,0,0.06)" }}
+                    onFocus={(e) => { e.currentTarget.style.border = "1.5px solid #0F6E56"; e.currentTarget.style.background = "#fff"; }}
+                    onBlur={(e)  => { e.currentTarget.style.border = "1.5px solid rgba(0,0,0,0.06)"; e.currentTarget.style.background = "#F7F9F8"; }}
+                  />
                 </div>
-              ) : (
-                activeUsers.map((user) => {
-                  const isPC       = user.activeMode === "partner" && !!user.partner?.approved;
-                  const dName      = isPC ? (user.partner!.companyName ?? user.name) : user.name;
-                  const dImage     = isPC ? (user.partner!.logoUrl ?? user.image) : user.image;
-                  const subtitle   = isPC
-                    ? "Migration Partner"
-                    : [user.title, user.company].filter(Boolean).join(" · ") || "Staky member";
+              </div>
+            )}
 
-                  return (
-                    <div
-                      key={user.id}
-                      className="flex items-center gap-3 py-3 -mx-4 px-4 rounded-xl hover:bg-[#F7F9F8] transition-colors"
-                      style={{ borderBottom: "1px solid rgba(0,0,0,0.04)" }}
-                    >
-                      <Link href={`/app/profile/${user.id}`} className="shrink-0">
-                        <UserAvatar name={dName} image={dImage} isPartner={isPC} size="md" />
-                      </Link>
-                      <div className="flex-1 min-w-0">
-                        <Link
-                          href={`/app/profile/${user.id}`}
-                          className="text-[13px] font-bold text-[#1B2B1F] hover:text-[#0F6E56] transition-colors truncate block leading-tight"
-                        >
-                          {dName ?? "Anonymous"}
-                        </Link>
-                        <p className="text-[11px] text-[#9BA39C] truncate leading-snug mt-0.5">{subtitle}</p>
-                      </div>
-                      <div className="shrink-0">
-                        {activeTab === "followers" ? (
-                          <FollowToggle
-                            userId={user.id}
-                            initialFollowing={user.isFollowingBack ?? false}
-                            label={user.isFollowingBack ? "Following" : "Follow back"}
-                          />
-                        ) : activeTab === "following" ? (
-                          <FollowToggle userId={user.id} initialFollowing={true} label="Unfollow" />
-                        ) : (
-                          <Link
-                            href={`/app/messages?user=${user.id}`}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold text-[#5C6B5E] hover:bg-[#F0EDE8] transition-colors"
-                            style={{ border: "1px solid rgba(0,0,0,0.08)" }}
-                          >
-                            <MessageSquare className="h-3.5 w-3.5" />
-                            Message
-                          </Link>
-                        )}
-                      </div>
+            {/* Views tab */}
+            {activeTab === "views" ? (
+              <div className="px-4 pb-3 pt-2">
+                {profileViews.recentViewers.length > 0 && (
+                  <p className="text-[11px] text-[#9BA39C] mb-2 pb-2 border-b border-[rgba(0,0,0,0.04)]">
+                    {profileViews.recentViewers.length} visitor{profileViews.recentViewers.length !== 1 ? "s" : ""} · {profileViews.totalCount.toLocaleString()} total views
+                  </p>
+                )}
+                <ViewsList viewers={profileViews.recentViewers} />
+              </div>
+            ) : (
+              /* Followers / Following / Connections list */
+              <div className="px-4 pb-3 pt-1">
+                {activeUsers.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <div className="h-12 w-12 rounded-2xl bg-[#F7F9F8] flex items-center justify-center mx-auto mb-3">
+                      <Users className="h-5 w-5 text-[#C8D0CA]" />
                     </div>
-                  );
-                })
-              )}
-            </div>
+                    <p className="text-[13px] font-semibold text-[#1B2B1F]">
+                      {search ? "No results found" : `No ${activeTab} yet`}
+                    </p>
+                    {!search && activeTab === "followers" && (
+                      <p className="text-[12px] text-[#9BA39C] mt-1">Share your profile to grow your audience</p>
+                    )}
+                  </div>
+                ) : (
+                  activeUsers.map((user) => {
+                    const personaMode =
+                      activeTab === "following"   ? (user.followingMode ?? user.activeMode) :
+                      activeTab === "followers"   ? (user.followerMode  ?? user.activeMode) :
+                      (user.connectionPersonaMode ?? user.activeMode);
+
+                    const isPC     = personaMode === "partner" && !!user.partner?.approved;
+                    const dName    = isPC ? (user.partner!.companyName ?? user.name) : user.name;
+                    const dImage   = isPC ? (user.partner!.logoUrl ?? user.image) : user.image;
+                    const subtitle = isPC
+                      ? "Migration Partner"
+                      : [user.title, user.company].filter(Boolean).join(" · ") || "Staky member";
+                    const profileHref = `/app/profile/${user.id}${isPC ? "?asPartner=1" : "?asUser=1"}&from=network`;
+
+                    return (
+                      <div
+                        key={`${user.id}:${personaMode}`}
+                        className="flex items-center gap-3 py-3 -mx-4 px-4 rounded-xl hover:bg-[#F7F9F8] transition-colors"
+                        style={{ borderBottom: "1px solid rgba(0,0,0,0.04)" }}
+                      >
+                        <Link href={profileHref} className="shrink-0">
+                          <UserAvatar name={dName} image={dImage} isPartner={isPC} size="md" />
+                        </Link>
+                        <div className="flex-1 min-w-0">
+                          <Link href={profileHref} className="text-[13px] font-bold text-[#1B2B1F] hover:text-[#0F6E56] transition-colors truncate block leading-tight">
+                            {dName ?? "Anonymous"}
+                          </Link>
+                          <p className="text-[11px] text-[#9BA39C] truncate leading-snug mt-0.5">{subtitle}</p>
+                        </div>
+                        <div className="shrink-0">
+                          {activeTab === "followers" ? (
+                            <FollowToggle
+                              userId={user.id}
+                              initialFollowing={user.isFollowingBack ?? false}
+                              label={user.isFollowingBack ? "Following" : "Follow back"}
+                              followingMode={user.followerMode}
+                            />
+                          ) : activeTab === "following" ? (
+                            <FollowToggle
+                              userId={user.id}
+                              initialFollowing={true}
+                              label="Unfollow"
+                              followingMode={user.followingMode}
+                            />
+                          ) : (
+                            <Link
+                              href={`/app/messages?user=${user.id}`}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold text-[#5C6B5E] hover:bg-[#F0EDE8] transition-colors"
+                              style={{ border: "1px solid rgba(0,0,0,0.08)" }}
+                            >
+                              <MessageSquare className="h-3.5 w-3.5" />
+                              Message
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
           </div>
 
         </div>

@@ -21,20 +21,34 @@ export async function getAppFeedPosts({
   if (!session?.user?.id) throw new Error("Not authenticated");
   const userId = session.user.id;
 
-  // For "following" filter we need the followed user IDs up front
-  let followedIds: string[] = [];
+  // For "following" filter we need the followed (userId, followingMode) pairs, scoped to current mode
+  // followingMode tells us which persona of theirs we follow — posts must match that persona
+  let followedPairs: { followingId: string; followingMode: string }[] = [];
   if (filter === "following") {
-    const rows = await prisma.follow.findMany({
-      where: { followerId: userId },
-      select: { followingId: true },
+    // Read mode from DB — JWT can lag after mode switch
+    const modeRecord = await prisma.user.findUnique({ where: { id: userId }, select: { activeMode: true, partner: { select: { approved: true } } } });
+    const followerMode = (modeRecord?.activeMode === "partner" && modeRecord?.partner?.approved) ? "partner" : "user";
+    followedPairs = await prisma.follow.findMany({
+      where: { followerId: userId, followerMode },
+      select: { followingId: true, followingMode: true },
     });
-    followedIds = rows.map((r) => r.followingId);
   }
 
   // Build where clause
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = { published: true };
-  if (filter === "following") where.authorId = { in: followedIds };
+  if (filter === "following") {
+    // Show posts from followed users only when the post persona matches the followed persona
+    // postedAsPartner: true ↔ followingMode: "partner"; postedAsPartner: false ↔ followingMode: "user"
+    const partnerFollowedIds = followedPairs.filter((p) => p.followingMode === "partner").map((p) => p.followingId);
+    const userFollowedIds    = followedPairs.filter((p) => p.followingMode === "user").map((p) => p.followingId);
+    where.OR = [
+      ...(partnerFollowedIds.length > 0 ? [{ authorId: { in: partnerFollowedIds }, postedAsPartner: true }] : []),
+      ...(userFollowedIds.length    > 0 ? [{ authorId: { in: userFollowedIds },    postedAsPartner: false }] : []),
+    ];
+    // If nothing to show, force empty result
+    if (where.OR.length === 0) where.OR = [{ id: "__none__" }];
+  }
   if (filter === "community") where.author = { role: { not: "PARTNER" } };
   if (filter === "partners") where.author = { role: "PARTNER" };
 
@@ -69,8 +83,8 @@ export async function getAppFeedPosts({
       likedIds: [] as string[],
       savedIds: [] as string[],
       recommendedIds: [] as string[],
-      followingIds: [] as string[],
-      connectedIds: [] as string[],
+      followingIds: [] as string[], // compound keys: "userId:personaMode"
+      connectedIds: [] as string[], // compound keys: "userId:personaMode"
       hasMore: false,
       nextCursor: undefined as string | undefined,
     };
@@ -78,7 +92,9 @@ export async function getAppFeedPosts({
 
   const postIds = rawPosts.map((p) => p.id);
   const authorIds = Array.from(new Set(rawPosts.map((p) => p.authorId)));
-  const activeMode = session.user.activeMode ?? "user";
+  // Always read from DB — JWT activeMode can lag after a mode switch
+  const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { activeMode: true } });
+  const activeMode = dbUser?.activeMode ?? "user";
 
   // Fetch DB tool records for fromTool/toTool (stored as slugs) to get logo data
   const toolSlugs = Array.from(new Set(rawPosts.flatMap((p) => [p.fromTool, p.toTool])));
@@ -92,10 +108,12 @@ export async function getAppFeedPosts({
     prisma.like.findMany({ where: { userId, postId: { in: postIds }, senderMode: activeMode }, select: { postId: true } }),
     prisma.savedPost.findMany({ where: { userId, postId: { in: postIds }, senderMode: activeMode }, select: { postId: true } }),
     prisma.recommendation.findMany({ where: { userId, postId: { in: postIds }, senderMode: activeMode }, select: { postId: true } }),
-    prisma.follow.findMany({ where: { followerId: userId, followingId: { in: authorIds } }, select: { followingId: true } }),
+    // Only count follows made from the current mode persona
+    prisma.follow.findMany({ where: { followerId: userId, followerMode: activeMode, followingId: { in: authorIds } }, select: { followingId: true, followingMode: true } }),
+    // Only count connections made from the current mode persona
     prisma.connection.findMany({
-      where: { OR: [{ userId, targetId: { in: authorIds } }, { userId: { in: authorIds }, targetId: userId }] },
-      select: { userId: true, targetId: true },
+      where: { OR: [{ userId, requesterMode: activeMode, targetId: { in: authorIds } }, { userId: { in: authorIds }, targetId: userId }] },
+      select: { userId: true, targetId: true, targetMode: true, requesterMode: true },
     }),
   ]);
 
@@ -131,15 +149,23 @@ export async function getAppFeedPosts({
     commentCount: p._count.comments,
   }));
 
-  const connectedAuthorIds = connections.map((c) => (c.userId === userId ? c.targetId : c.userId));
+  // Build persona-aware compound keys: "userId:personaMode"
+  // followingIds uses followingMode (which persona of theirs we follow)
+  const connectedKeys = connections.map((c) => {
+    const isRequester = c.userId === userId;
+    const otherId = isRequester ? c.targetId : c.userId;
+    // personaMode of the OTHER user in this connection
+    const personaMode = isRequester ? c.targetMode : c.requesterMode;
+    return `${otherId}:${personaMode}`;
+  });
 
   return {
     posts,
     likedIds: likes.map((l) => l.postId),
     savedIds: saves.map((s) => s.postId),
     recommendedIds: recs.map((r) => r.postId),
-    followingIds: follows.map((f) => f.followingId),
-    connectedIds: connectedAuthorIds,
+    followingIds: follows.map((f) => `${f.followingId}:${f.followingMode}`),
+    connectedIds: connectedKeys,
     hasMore: rawPosts.length === take,
     nextCursor: rawPosts.length === take ? rawPosts[rawPosts.length - 1].id : undefined,
   };
@@ -165,11 +191,19 @@ export async function checkNewPosts({
   };
 
   if (filter === "following") {
+    const modeRecord = await prisma.user.findUnique({ where: { id: userId }, select: { activeMode: true, partner: { select: { approved: true } } } });
+    const followerMode = (modeRecord?.activeMode === "partner" && modeRecord?.partner?.approved) ? "partner" : "user";
     const rows = await prisma.follow.findMany({
-      where: { followerId: userId },
-      select: { followingId: true },
+      where: { followerId: userId, followerMode },
+      select: { followingId: true, followingMode: true },
     });
-    where.authorId = { in: rows.map((r) => r.followingId) };
+    const partnerIds = rows.filter((r) => r.followingMode === "partner").map((r) => r.followingId);
+    const userIds    = rows.filter((r) => r.followingMode === "user").map((r) => r.followingId);
+    where.OR = [
+      ...(partnerIds.length > 0 ? [{ authorId: { in: partnerIds }, postedAsPartner: true }] : []),
+      ...(userIds.length    > 0 ? [{ authorId: { in: userIds },    postedAsPartner: false }] : []),
+    ];
+    if (where.OR.length === 0) return 0;
   } else if (filter === "community") {
     where.author = { role: { not: "PARTNER" } };
   } else if (filter === "partners") {

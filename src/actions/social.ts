@@ -135,41 +135,83 @@ export async function toggleRecommend(postId: string) {
 
 // ─── Follow ───────────────────────────────────────────────────────────────────
 
-export async function toggleFollow(targetUserId: string) {
+/**
+ * Toggle follow for targetUserId.
+ * @param followingMode - which persona of the target to follow ("user"|"partner").
+ *   If omitted, falls back to the target's current activeMode from DB.
+ */
+export async function toggleFollow(targetUserId: string, followingMode?: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Not authenticated");
   const followerId = session.user.id;
-  if (followerId === targetUserId) throw new Error("Cannot follow yourself");
+
+  // Read both modes from DB (authoritative — JWT can lag after mode switch)
+  const [followerRecord, targetRecord] = await Promise.all([
+    prisma.user.findUnique({ where: { id: followerId }, select: { activeMode: true, partner: { select: { approved: true } } } }),
+    prisma.user.findUnique({ where: { id: targetUserId }, select: { activeMode: true } }),
+  ]);
+  const followerMode = (followerRecord?.activeMode === "partner" && followerRecord?.partner?.approved) ? "partner" : "user";
+  // Use the explicitly provided followingMode, or fall back to target's current mode
+  const resolvedFollowingMode = followingMode ?? (targetRecord?.activeMode ?? "user");
+
+  // Block only same-user same-mode (cross-persona of the same owner is allowed)
+  if (followerId === targetUserId && followerMode === resolvedFollowingMode) {
+    throw new Error("Cannot follow yourself");
+  }
 
   const existing = await prisma.follow.findUnique({
-    where: { followerId_followingId: { followerId, followingId: targetUserId } },
+    where: {
+      followerId_followerMode_followingId_followingMode: {
+        followerId, followerMode, followingId: targetUserId, followingMode: resolvedFollowingMode,
+      },
+    },
   });
 
   if (existing) {
     await prisma.follow.delete({
-      where: { followerId_followingId: { followerId, followingId: targetUserId } },
+      where: {
+        followerId_followerMode_followingId_followingMode: {
+          followerId, followerMode, followingId: targetUserId, followingMode: resolvedFollowingMode,
+        },
+      },
     });
     return { following: false };
   }
 
-  await prisma.follow.create({ data: { followerId, followingId: targetUserId } });
-  const senderMode = await getSenderMode(followerId);
-  await notify(targetUserId, followerId, "FOLLOW", undefined, undefined, senderMode, "user");
+  await prisma.follow.create({ data: { followerId, followerMode, followingId: targetUserId, followingMode: resolvedFollowingMode } });
+  await notify(targetUserId, followerId, "FOLLOW", undefined, undefined, followerMode, resolvedFollowingMode);
   return { following: true };
 }
 
 // ─── Connect ──────────────────────────────────────────────────────────────────
 
-export async function toggleConnect(targetUserId: string) {
+/**
+ * Toggle connection request for targetUserId.
+ * @param targetMode - which persona of the target to connect with ("user"|"partner").
+ *   If omitted, falls back to the target's current activeMode from DB.
+ */
+export async function toggleConnect(targetUserId: string, targetMode?: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Not authenticated");
   const userId = session.user.id;
-  if (userId === targetUserId) throw new Error("Cannot connect with yourself");
+
+  // Read both modes from DB (authoritative — JWT can lag after mode switch)
+  const [userRecord, targetRecord] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { activeMode: true, partner: { select: { approved: true } } } }),
+    prisma.user.findUnique({ where: { id: targetUserId }, select: { activeMode: true } }),
+  ]);
+  const requesterMode = (userRecord?.activeMode === "partner" && userRecord?.partner?.approved) ? "partner" : "user";
+  const resolvedTargetMode = targetMode ?? (targetRecord?.activeMode ?? "user");
+
+  // Block only same-user same-mode
+  if (userId === targetUserId && requesterMode === resolvedTargetMode) {
+    throw new Error("Cannot connect with yourself");
+  }
 
   const existing = await prisma.connection.findFirst({
     where: {
       OR: [
-        { userId, targetId: targetUserId },
+        { userId, requesterMode, targetId: targetUserId, targetMode: resolvedTargetMode },
         { userId: targetUserId, targetId: userId },
       ],
     },
@@ -180,9 +222,8 @@ export async function toggleConnect(targetUserId: string) {
     return { connected: false };
   }
 
-  await prisma.connection.create({ data: { userId, targetId: targetUserId } });
-  const senderMode = await getSenderMode(userId);
-  await notify(targetUserId, userId, "CONNECT", undefined, undefined, senderMode, "user");
+  await prisma.connection.create({ data: { userId, requesterMode, targetId: targetUserId, targetMode: resolvedTargetMode } });
+  await notify(targetUserId, userId, "CONNECT", undefined, undefined, requesterMode, resolvedTargetMode);
   return { connected: true };
 }
 

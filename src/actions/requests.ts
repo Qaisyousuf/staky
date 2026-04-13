@@ -118,6 +118,7 @@ export async function createMigrationRequest(input: {
       switches: switches as never,
       budget: null,
       teamSize: null,
+      senderMode: activeMode,
       status: "PENDING",
     },
     select: {

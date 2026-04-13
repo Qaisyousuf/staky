@@ -57,8 +57,15 @@ export default async function MyPostsPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { activeMode: true },
+  });
+  const activeMode = dbUser?.activeMode ?? "user";
+  const isPartnerMode = activeMode === "partner";
+
   const posts = await prisma.alternativePost.findMany({
-    where: { authorId: session.user.id },
+    where: { authorId: session.user.id, postedAsPartner: isPartnerMode },
     orderBy: { createdAt: "desc" },
     include: {
       _count: {

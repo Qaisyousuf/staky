@@ -52,10 +52,11 @@ export function DeleteRequestButton({ requestId }: { requestId: string }) {
   return (
     <button
       onClick={handleDelete}
-      className="h-7 w-7 rounded-lg flex items-center justify-center text-[#9BA39C] hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
-      title="Delete request"
+      className="flex items-center gap-1.5 h-8 px-3 rounded-xl text-[12px] font-semibold text-[#9BA39C] hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"
+      style={{ border: "1.5px solid rgba(0,0,0,0.06)" }}
     >
       <Trash2 className="h-3.5 w-3.5" />
+      Delete
     </button>
   );
 }

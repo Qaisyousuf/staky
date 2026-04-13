@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 // ─── Record profile view ───────────────────────────────────────────────────────
 
-export async function recordProfileView(profileId: string) {
+export async function recordProfileView(profileId: string, viewedPersonaMode?: string) {
   const session = await auth();
   const viewerId = session?.user?.id ?? null;
 
@@ -15,13 +15,7 @@ export async function recordProfileView(profileId: string) {
   // Determine viewer's current mode (partner or user)
   let viewerMode = "user";
   if (viewerId) {
-    // Authenticated: dedup within 24h
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const existing = await prisma.profileView.findFirst({
-      where: { viewerId, profileId, createdAt: { gte: yesterday } },
-    });
-    if (existing) return;
-
+    // Determine viewerMode first — dedup is per-mode so switching persona creates a new view
     const viewerRecord = await prisma.user.findUnique({
       where: { id: viewerId },
       select: { activeMode: true, partner: { select: { approved: true } } },
@@ -29,17 +23,28 @@ export async function recordProfileView(profileId: string) {
     if (viewerRecord?.activeMode === "partner" && viewerRecord?.partner?.approved) {
       viewerMode = "partner";
     }
+
+    // Dedup: only skip if same viewer already viewed in the SAME mode within 24h
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const existing = await prisma.profileView.findFirst({
+      where: { viewerId, profileId, viewerMode, createdAt: { gte: yesterday } },
+    });
+    if (existing) return;
   }
 
-  // Fetch profile owner's active mode so the notification lands in the right inbox
-  const profileOwner = await prisma.user.findUnique({
-    where: { id: profileId },
-    select: { activeMode: true, partner: { select: { approved: true } } },
-  });
-  const recipientMode =
-    profileOwner?.activeMode === "partner" && profileOwner?.partner?.approved
-      ? "partner"
-      : "user";
+  // recipientMode = which persona was being viewed (passed from the profile page).
+  // Falls back to the profile owner's current activeMode only if not explicitly provided.
+  let recipientMode = viewedPersonaMode ?? "user";
+  if (!viewedPersonaMode) {
+    const profileOwner = await prisma.user.findUnique({
+      where: { id: profileId },
+      select: { activeMode: true, partner: { select: { approved: true } } },
+    });
+    recipientMode =
+      profileOwner?.activeMode === "partner" && profileOwner?.partner?.approved
+        ? "partner"
+        : "user";
+  }
 
   await prisma.$executeRaw`
     INSERT INTO profile_views (id, "viewerId", "profileId", "viewerMode", "createdAt")
@@ -78,12 +83,13 @@ export async function getProfileViews(userId: string) {
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-  const [totalCount, thirtyDayViews, recentViewers] = await Promise.all([
+  const [totalCount, thirtyDayViews, recentViewers, partnerViewCount] = await Promise.all([
     prisma.profileView.count({ where: { profileId: userId } }),
     prisma.profileView.findMany({
       where: { profileId: userId, createdAt: { gte: thirtyDaysAgo } },
       select: { createdAt: true },
     }),
+    // No take limit — return all identified viewers
     prisma.profileView.findMany({
       where: { profileId: userId, viewerId: { not: null } },
       include: {
@@ -95,9 +101,15 @@ export async function getProfileViews(userId: string) {
         },
       },
       orderBy: { createdAt: "desc" },
-      take: 50,
     }),
+    // Count views that came from a partner persona
+    prisma.$queryRaw<{ count: bigint }[]>`
+      SELECT COUNT(*)::bigint AS count FROM profile_views
+      WHERE "profileId" = ${userId} AND "viewerMode" = 'partner'
+    `,
   ]);
+
+  const partnerViews = Number(partnerViewCount[0]?.count ?? 0);
 
   // Build 30-day bar chart data
   const dailyCounts: Record<string, number> = {};
@@ -112,16 +124,20 @@ export async function getProfileViews(userId: string) {
   });
   const last30Days = Object.entries(dailyCounts).map(([date, count]) => ({ date, count }));
 
-  // Deduplicate by viewerId, keep most recent
-  const seenViewers = new Set<string>();
+  // Deduplicate by viewerId+viewerMode (each persona visit is unique), keep most recent per combo
+  const seenKeys = new Set<string>();
   const uniqueViewers = recentViewers.filter((v) => {
-    if (!v.viewerId || seenViewers.has(v.viewerId)) return false;
-    seenViewers.add(v.viewerId);
+    const vm = (v as { viewerMode?: string }).viewerMode ?? "user";
+    const key = `${v.viewerId}:${vm}`;
+    if (!v.viewerId || seenKeys.has(key)) return false;
+    seenKeys.add(key);
     return true;
   });
 
   return {
     totalCount,
+    partnerViews,
+    uniqueVisitorCount: new Set(recentViewers.map((v) => v.viewerId).filter(Boolean)).size,
     last30Days,
     recentViewers: uniqueViewers.map((v) => ({
       id: v.id,
@@ -162,9 +178,17 @@ export async function getNetworkData(userId: string) {
   const session = await auth();
   if (!session?.user?.id || session.user.id !== userId) throw new Error("Unauthorized");
 
+  // Always read from DB — JWT activeMode can lag after a mode switch
+  const userRecord = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { activeMode: true, partner: { select: { approved: true } } },
+  });
+  const activeMode = (userRecord?.activeMode === "partner" && userRecord?.partner?.approved) ? "partner" : "user";
+
   const [follows, followers, connections] = await Promise.all([
+    // People this persona follows
     prisma.follow.findMany({
-      where: { followerId: userId },
+      where: { followerId: userId, followerMode: activeMode },
       include: {
         following: {
           select: { id: true, name: true, image: true, title: true, company: true, role: true, activeMode: true,
@@ -173,8 +197,9 @@ export async function getNetworkData(userId: string) {
         },
       },
     }),
+    // People who follow THIS persona (filter by followingMode so each persona has its own followers list)
     prisma.follow.findMany({
-      where: { followingId: userId },
+      where: { followingId: userId, followingMode: activeMode },
       include: {
         follower: {
           select: { id: true, name: true, image: true, title: true, company: true, role: true, activeMode: true,
@@ -183,8 +208,14 @@ export async function getNetworkData(userId: string) {
         },
       },
     }),
+    // Connections for this persona (both initiated and received by this persona)
     prisma.connection.findMany({
-      where: { OR: [{ userId }, { targetId: userId }] },
+      where: {
+        OR: [
+          { userId, requesterMode: activeMode },
+          { targetId: userId, targetMode: activeMode },
+        ],
+      },
       include: {
         user: {
           select: {
@@ -202,16 +233,27 @@ export async function getNetworkData(userId: string) {
     }),
   ]);
 
-  const followingIds = new Set(follows.map((f) => f.followingId));
+  // Build a set of (followingId, followingMode) combos so we can check follow-back accurately
+  const followingSet = new Set(follows.map((f) => `${f.followingId}:${f.followingMode}`));
 
   return {
     followers: followers.map((f) => ({
       ...f.follower,
-      isFollowingBack: followingIds.has(f.followerId),
+      // followerMode = which persona they used when following you
+      followerMode: f.followerMode,
+      isFollowingBack: followingSet.has(`${f.followerId}:${f.followerMode}`),
     })),
-    following: follows.map((f) => f.following),
-    connections: connections.map((c) => ({
-      ...(c.userId === userId ? c.target : c.user),
+    following: follows.map((f) => ({
+      ...f.following,
+      // followingMode = which persona of theirs we followed
+      followingMode: f.followingMode,
     })),
+    connections: connections.map((c) => {
+      const isRequester = c.userId === userId;
+      const otherUser   = isRequester ? c.target : c.user;
+      // personaMode = which persona of the OTHER user is in this connection
+      const personaMode = isRequester ? c.targetMode : c.requesterMode;
+      return { ...otherUser, connectionPersonaMode: personaMode };
+    }),
   };
 }

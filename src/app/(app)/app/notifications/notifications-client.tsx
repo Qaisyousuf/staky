@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 // useRouter also used inside NotifRow below
 import {
   Bell, Heart, MessageCircle, MessageSquare, Reply, UserPlus, ThumbsUp,
-  Link2, Bookmark, Share2, CheckCheck, BriefcaseBusiness, CircleCheckBig, CircleOff, CircleDot, Receipt, CreditCard, ClipboardList, CheckSquare, Inbox, Briefcase,
+  Link2, Bookmark, Share2, CheckCheck, BriefcaseBusiness, CircleCheckBig, CircleOff, CircleDot, Receipt, CreditCard, ClipboardList, CheckSquare, Inbox, Briefcase, Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { markAllNotificationsRead, markNotificationRead } from "@/actions/social";
@@ -21,7 +21,15 @@ interface Notification {
   postId: string | null;
   commentId: string | null;
   requestId: string | null;
-  sender: { id: string; name: string | null; image: string | null; role: string } | null;
+  senderMode: string;
+  sender: {
+    id: string;
+    name: string | null;
+    image: string | null;
+    role: string;
+    partnerName?: string | null;
+    partnerLogoUrl?: string | null;
+  } | null;
   post: { fromTool: string; toTool: string } | null;
 }
 
@@ -42,7 +50,11 @@ function notifUrl(n: Notification, role?: string): string {
         : "/feed";
     case "FOLLOW":
     case "CONNECT":
-      return n.sender?.id ? `/profile/${n.sender.id}` : "/feed";
+    case "PROFILE_VIEW": {
+      if (!n.sender?.id) return "/app/profile/views";
+      const personaParam = n.senderMode === "partner" ? "asPartner=1" : "asUser=1";
+      return `/app/profile/${n.sender.id}?${personaParam}&from=notifications`;
+    }
     case "REQUEST_RECEIVED":
       return n.requestId ? `/leads/${n.requestId}` : "/leads";
     case "REQUEST_ACCEPTED":
@@ -85,7 +97,7 @@ const TYPE_CFG: Record<string, {
   REPLY:          { icon: Reply,         bg: "bg-green-100",  fg: "text-green-600", action: "replied to your comment",   category: "Engagement" },
   FOLLOW:         { icon: UserPlus,      bg: "bg-blue-100",   fg: "text-blue-600",  action: "started following you",     category: "Social" },
   RECOMMENDATION: { icon: ThumbsUp,      bg: "bg-green-100",  fg: "text-green-600", action: "recommended your post",     category: "Engagement" },
-  CONNECT:        { icon: Link2,         bg: "bg-blue-100",   fg: "text-blue-600",  action: "accepted your connection",  category: "Social" },
+  CONNECT:        { icon: Link2,         bg: "bg-blue-100",   fg: "text-blue-600",  action: "connected with you",        category: "Social" },
   SAVE:           { icon: Bookmark,      bg: "bg-amber-100",  fg: "text-amber-500", action: "saved your post",           category: "Engagement" },
   SHARE:          { icon: Share2,        bg: "bg-gray-100",   fg: "text-gray-500",  action: "shared your post",          category: "Engagement" },
   REQUEST_RECEIVED:  { icon: BriefcaseBusiness, bg: "bg-blue-100",    fg: "text-blue-600",    action: "sent you a migration request",            category: "Requests" },
@@ -98,6 +110,7 @@ const TYPE_CFG: Record<string, {
   INVOICE_PAID:          { icon: CreditCard,    bg: "bg-green-100",   fg: "text-green-600",   action: "confirmed invoice payment",                category: "Requests" },
   CONFIG_REQUEST_SENT:   { icon: ClipboardList, bg: "bg-blue-100",    fg: "text-blue-600",    action: "sent you a configuration request",         category: "Requests" },
   CONFIG_SUBMITTED:      { icon: CheckSquare,   bg: "bg-green-100",   fg: "text-green-600",   action: "submitted their configuration",            category: "Requests" },
+  PROFILE_VIEW:             { icon: Eye,       bg: "bg-purple-100", fg: "text-purple-600", action: "viewed your profile",          category: "Social" },
   CONTACT_RECEIVED:         { icon: Inbox,     bg: "bg-blue-100",   fg: "text-blue-600",   action: "sent a contact message",       category: "Admin" },
   JOB_APPLICATION_RECEIVED: { icon: Briefcase, bg: "bg-violet-100", fg: "text-violet-600", action: "submitted a job application",  category: "Admin" },
 };
@@ -139,30 +152,34 @@ function groupByDay(notifications: Notification[]): { label: string; items: Noti
 
 // ─── Sender avatar ────────────────────────────────────────────────────────────
 
-function SenderAvatar({ name, image, role, type }: {
+function SenderAvatar({ name, image, senderMode, partnerName, partnerLogoUrl, type }: {
   name: string | null;
   image: string | null;
-  role: string;
+  senderMode: string;
+  partnerName?: string | null;
+  partnerLogoUrl?: string | null;
   type: string;
 }) {
-  const initials = name?.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase() ?? "?";
-  const isPartner = role === "PARTNER";
+  const isPartner = senderMode === "partner";
+  const displayName  = isPartner ? (partnerName ?? name) : name;
+  const displayImage = isPartner ? (partnerLogoUrl ?? image) : image;
+  const initials = displayName?.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase() ?? "?";
   const cfg = TYPE_CFG[type];
   const TypeIcon = cfg?.icon;
 
   return (
     <div className="relative shrink-0">
-      {image ? (
+      {displayImage ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={image}
-          alt={name ?? ""}
+          src={displayImage}
+          alt={displayName ?? ""}
           className={cn("h-11 w-11 object-cover", isPartner ? "rounded-xl" : "rounded-full")}
         />
       ) : (
         <div className={cn(
-          "h-11 w-11 bg-[#0F6E56] flex items-center justify-center text-white text-sm font-semibold select-none",
-          isPartner ? "rounded-xl" : "rounded-full"
+          "h-11 w-11 flex items-center justify-center text-white text-sm font-semibold select-none",
+          isPartner ? "rounded-xl bg-[#2A5FA5]" : "rounded-full bg-[#0F6E56]"
         )}>
           {initials}
         </div>
@@ -193,7 +210,10 @@ function NotifRow({
   const router = useRouter();
   const cfg = TYPE_CFG[n.type];
   const action = cfg?.action ?? "interacted with your content";
-  const senderName = n.sender?.name ?? "Someone";
+  const isPartnerSender = n.senderMode === "partner";
+  const senderName = isPartnerSender
+    ? (n.sender?.partnerName ?? n.sender?.name ?? "Someone")
+    : (n.sender?.name ?? "Someone");
 
   function handleClick() {
     if (!n.read) onRead(n.id);
@@ -212,7 +232,9 @@ function NotifRow({
       <SenderAvatar
         name={n.sender?.name ?? null}
         image={n.sender?.image ?? null}
-        role={n.sender?.role ?? "USER"}
+        senderMode={n.senderMode}
+        partnerName={n.sender?.partnerName}
+        partnerLogoUrl={n.sender?.partnerLogoUrl}
         type={n.type}
       />
 

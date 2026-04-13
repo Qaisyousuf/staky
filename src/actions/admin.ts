@@ -313,7 +313,10 @@ export async function adminManageUser(
   userId: string,
   action: "suspend" | "activate" | "makeAdmin" | "makePartner" | "makeUser"
 ) {
-  await requireAdmin();
+  const adminId = await requireAdmin();
+
+  // Prevent acting on self
+  if (userId === adminId) throw new Error("Cannot modify your own account");
 
   if (action === "suspend" || action === "activate") {
     await prisma.user.update({
@@ -329,6 +332,19 @@ export async function adminManageUser(
         : "USER";
     await prisma.user.update({ where: { id: userId }, data: { role } });
   }
+
+  revalidatePath("/app/admin");
+}
+
+export async function adminDeleteUser(userId: string) {
+  const adminId = await requireAdmin();
+
+  if (userId === adminId) throw new Error("Cannot delete your own account");
+
+  // prisma cascades (onDelete: Cascade on all User relations) will remove
+  // all posts, comments, likes, follows, connections, notifications, stacks,
+  // migration requests, invoices, partner record, etc.
+  await prisma.user.delete({ where: { id: userId } });
 
   revalidatePath("/app/admin");
 }

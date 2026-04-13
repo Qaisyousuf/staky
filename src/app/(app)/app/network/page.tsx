@@ -16,7 +16,7 @@ export default async function NetworkPage({
 
   const userId = session.user.id;
 
-  const validTabs = ["followers", "following", "connections"] as const;
+  const validTabs = ["followers", "following", "connections", "views"] as const;
   const tab = validTabs.includes(searchParams.tab as (typeof validTabs)[number])
     ? (searchParams.tab as (typeof validTabs)[number])
     : "followers";
@@ -52,6 +52,7 @@ export default async function NetworkPage({
           },
         },
       }),
+      // Counts are persona-scoped via the activeMode field read inside getNetworkData
       prisma.follow.count({ where: { followingId: userId } }),
       prisma.follow.count({ where: { followerId: userId } }),
       getNetworkData(userId),
@@ -106,7 +107,7 @@ export default async function NetworkPage({
         totalCount: profileViewsData.totalCount,
         weeklyCount: weeklyViews,
         last30Days: profileViewsData.last30Days,
-        recentViewers: profileViewsData.recentViewers.slice(0, 5),
+        recentViewers: profileViewsData.recentViewers,
       }}
       followers={networkData.followers}
       following={networkData.following}

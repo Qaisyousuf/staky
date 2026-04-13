@@ -120,7 +120,9 @@ function UserAvatar({
 
 // ─── Follow button ────────────────────────────────────────────────────────────
 
-function FollowButton({ userId, initialFollowing }: { userId: string; initialFollowing: boolean }) {
+function FollowButton({ userId, initialFollowing, targetPersonaMode }: {
+  userId: string; initialFollowing: boolean; targetPersonaMode?: string;
+}) {
   const [following, setFollowing] = useState(initialFollowing);
   const [pending, startTransition] = useTransition();
 
@@ -128,7 +130,7 @@ function FollowButton({ userId, initialFollowing }: { userId: string; initialFol
     const next = !following;
     setFollowing(next);
     startTransition(async () => {
-      try { const res = await toggleFollow(userId); setFollowing(res.following); }
+      try { const res = await toggleFollow(userId, targetPersonaMode); setFollowing(res.following); }
       catch { setFollowing(!next); }
     });
   }
@@ -155,7 +157,9 @@ function FollowButton({ userId, initialFollowing }: { userId: string; initialFol
 
 // ─── Connect button ───────────────────────────────────────────────────────────
 
-function ConnectButton({ userId, initialConnected }: { userId: string; initialConnected: boolean }) {
+function ConnectButton({ userId, initialConnected, targetPersonaMode }: {
+  userId: string; initialConnected: boolean; targetPersonaMode?: string;
+}) {
   const [connected, setConnected] = useState(initialConnected);
   const [pending, startTransition] = useTransition();
 
@@ -163,7 +167,7 @@ function ConnectButton({ userId, initialConnected }: { userId: string; initialCo
     const next = !connected;
     setConnected(next);
     startTransition(async () => {
-      try { const res = await toggleConnect(userId); setConnected(res.connected); }
+      try { const res = await toggleConnect(userId, targetPersonaMode); setConnected(res.connected); }
       catch { setConnected(!next); }
     });
   }
@@ -323,6 +327,62 @@ function PartnerSelfSidebar({ partner }: { partner: NonNullable<ProfileUser["par
   );
 }
 
+// ─── Suggestion action button ─────────────────────────────────────────────────
+
+function SuggestionFollowButton({ userId, followingMode }: { userId: string; followingMode: string }) {
+  const [following, setFollowing] = useState(false);
+  const [pending, startTransition] = useTransition();
+  function toggle() {
+    const next = !following;
+    setFollowing(next);
+    startTransition(async () => {
+      try { const res = await toggleFollow(userId, followingMode); setFollowing(res.following); }
+      catch { setFollowing(!next); }
+    });
+  }
+  return (
+    <button
+      onClick={(e) => { e.preventDefault(); toggle(); }}
+      disabled={pending}
+      className={cn(
+        "shrink-0 flex items-center gap-1 h-7 px-2.5 rounded-lg text-[11px] font-semibold transition-colors disabled:opacity-50",
+        following
+          ? "bg-[#F7F9F8] text-[#5C6B5E] border border-[rgba(0,0,0,0.08)]"
+          : "bg-[#0F6E56] text-white hover:bg-[#0a5a45]"
+      )}
+    >
+      {following ? <><UserCheck className="h-3 w-3" />Following</> : <><UserPlus className="h-3 w-3" />Follow</>}
+    </button>
+  );
+}
+
+function SuggestionConnectButton({ userId, targetMode }: { userId: string; targetMode: string }) {
+  const [connected, setConnected] = useState(false);
+  const [pending, startTransition] = useTransition();
+  function toggle() {
+    const next = !connected;
+    setConnected(next);
+    startTransition(async () => {
+      try { const res = await toggleConnect(userId, targetMode); setConnected(res.connected); }
+      catch { setConnected(!next); }
+    });
+  }
+  return (
+    <button
+      onClick={(e) => { e.preventDefault(); toggle(); }}
+      disabled={pending}
+      className={cn(
+        "shrink-0 flex items-center gap-1 h-7 px-2.5 rounded-lg text-[11px] font-semibold transition-colors disabled:opacity-50",
+        connected
+          ? "bg-[#F7F9F8] text-[#5C6B5E] border border-[rgba(0,0,0,0.08)]"
+          : "bg-[#2A5FA5] text-white hover:bg-[#244d8a]"
+      )}
+    >
+      {connected ? <><UserCheck className="h-3 w-3" />Connected</> : <><Link2 className="h-3 w-3" />Connect</>}
+    </button>
+  );
+}
+
 // ─── People also viewed ───────────────────────────────────────────────────────
 
 function PeopleAlsoViewed({ profiles }: { profiles: SuggestedProfile[] }) {
@@ -330,36 +390,48 @@ function PeopleAlsoViewed({ profiles }: { profiles: SuggestedProfile[] }) {
   return (
     <div className="bg-white rounded-2xl overflow-hidden" style={{ border: CARD_BORDER, boxShadow: CARD_SHADOW }}>
       <div className="px-4 py-3 border-b border-[rgba(0,0,0,0.05)]">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-[#9BA39C]">People also viewed</p>
+        <p className="text-[11px] font-bold text-[#1B2B1F]">People you may know</p>
+        <p className="text-[10px] text-[#9BA39C] mt-0.5">Based on this profile</p>
       </div>
-      <div className="p-2">
-        {profiles.slice(0, 3).map((p) => {
-          const pIsPartner = p.activeMode === "partner" && !!p.partner?.approved;
+      <div className="p-2 space-y-0.5">
+        {profiles.slice(0, 4).map((p) => {
+          const pIsPartner = !!p.partner?.approved;
           const pDisplayName = pIsPartner ? (p.partner!.companyName ?? p.name) : p.name;
           const pDisplayImage = pIsPartner ? (p.partner!.logoUrl ?? null) : p.image;
+          const href = `/app/profile/${p.id}${pIsPartner ? "?asPartner=1" : "?asUser=1"}`;
           return (
-            <Link
-              key={p.id}
-              href={`/app/profile/${p.id}`}
-              className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[#F7F9F8] transition-colors group"
-            >
-              <UserAvatar
-                image={pDisplayImage}
-                name={pDisplayName}
-                isPartner={pIsPartner}
-                className="h-9 w-9 text-sm shrink-0"
-              />
-              <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-semibold text-[#1B2B1F] truncate group-hover:text-[#0F6E56] transition-colors">
+            <div key={p.id} className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-[#F7F9F8] transition-colors group">
+              <Link href={href} className="shrink-0">
+                <UserAvatar
+                  image={pDisplayImage}
+                  name={pDisplayName}
+                  isPartner={pIsPartner}
+                  className="h-9 w-9 text-sm shrink-0"
+                />
+              </Link>
+              <Link href={href} className="min-w-0 flex-1">
+                <p className="text-[12px] font-semibold text-[#1B2B1F] truncate group-hover:text-[#0F6E56] transition-colors leading-tight">
                   {pDisplayName ?? "Anonymous"}
                 </p>
-                <p className="text-[11px] text-[#9BA39C] truncate">
+                <p className="text-[10px] text-[#9BA39C] truncate mt-0.5">
                   {pIsPartner ? "Migration Partner" : (p.title ?? p.company ?? "Staky member")}
                 </p>
-              </div>
-            </Link>
+              </Link>
+              {pIsPartner
+                ? <SuggestionConnectButton userId={p.id} targetMode="partner" />
+                : <SuggestionFollowButton userId={p.id} followingMode="user" />
+              }
+            </div>
           );
         })}
+      </div>
+      <div className="px-4 pb-3">
+        <Link
+          href="/app/network"
+          className="flex items-center gap-1 text-[11px] font-semibold text-[#0F6E56] hover:underline"
+        >
+          <UserPlus className="h-3 w-3" />Grow your network
+        </Link>
       </div>
     </div>
   );
@@ -395,8 +467,9 @@ export function ProfileClient({
   const [bioExpanded, setBioExpanded] = useState(false);
 
   useEffect(() => {
-    recordProfileView(user.id).catch(() => {});
-  }, [user.id]);
+    // user.activeMode is targetPersonaMode set by the server page (?asPartner=1 / ?asUser=1)
+    recordProfileView(user.id, user.activeMode).catch(() => {});
+  }, [user.id, user.activeMode]);
 
   const bioText = user.bio ?? "";
   const bioTruncated = bioText.length > 240 && !bioExpanded ? bioText.slice(0, 240) + "…" : bioText;
@@ -438,7 +511,7 @@ export function ProfileClient({
           style={{ border: CARD_BORDER, boxShadow: CARD_SHADOW }}
         >
           {/* Cover */}
-          <div className="h-36 sm:h-44 relative overflow-hidden">
+          <div className="h-28 sm:h-36 lg:h-44 relative overflow-hidden">
             {activeCover ? (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -451,17 +524,17 @@ export function ProfileClient({
           </div>
 
           {/* Body */}
-          <div className="px-5 sm:px-6 pb-6">
+          <div className="px-4 sm:px-5 lg:px-6 pb-5 sm:pb-6">
 
             {/* Avatar + actions row */}
-            <div className="flex items-end justify-between -mt-10 sm:-mt-12 mb-4">
+            <div className="flex items-end justify-between -mt-8 sm:-mt-10 lg:-mt-12 mb-4">
               {/* Avatar */}
               <div className="relative">
                 <UserAvatar
                   image={displayImage}
                   name={displayName}
                   isPartner={isPartner}
-                  className="h-20 w-20 sm:h-24 sm:w-24 text-2xl border-4 border-white shadow-lg"
+                  className="h-16 w-16 sm:h-20 sm:w-20 lg:h-24 lg:w-24 text-xl sm:text-2xl border-[3px] sm:border-4 border-white shadow-lg"
                 />
                 {user.verified && (
                   <span
@@ -474,40 +547,29 @@ export function ProfileClient({
               </div>
 
               {/* Actions */}
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center flex-wrap justify-end gap-1.5 sm:gap-2 mb-1">
                 {isSelf ? (
                   <Link
                     href={isPartner ? "/app/settings?tab=partner" : "/app/settings"}
-                    className="inline-flex items-center h-8 px-3.5 rounded-xl text-[12px] font-semibold transition-colors hover:bg-[#F7F9F8]"
+                    className="inline-flex items-center h-8 px-3 sm:px-3.5 rounded-xl text-[11px] sm:text-[12px] font-semibold transition-colors hover:bg-[#F7F9F8]"
                     style={{ border: CARD_BORDER, color: accent }}
                   >
-                    {isPartner ? "Edit partner profile" : "Edit profile"}
+                    <span className="sm:hidden">{isPartner ? "Edit" : "Edit"}</span>
+                    <span className="hidden sm:inline">{isPartner ? "Edit partner profile" : "Edit profile"}</span>
                   </Link>
                 ) : (
                   <>
-                    {isPartner ? (
-                      <>
-                        <ConnectButton userId={user.id} initialConnected={isConnected} />
-                        {user.partner?.approved && (
-                          <RequestHelpButton
-                            source="partner_profile"
-                            partnerUserId={user.id}
-                            partnerName={user.partner.companyName}
-                            label="Request help"
-                            className="inline-flex items-center gap-1.5 h-8 rounded-xl bg-[#0F6E56] px-3.5 text-[12px] font-semibold text-white transition-colors hover:bg-[#0a5a45]"
-                          />
-                        )}
-                      </>
-                    ) : (
-                      <FollowButton userId={user.id} initialFollowing={isFollowing} />
-                    )}
+                    {isPartner
+                      ? <ConnectButton userId={user.id} initialConnected={isConnected} targetPersonaMode={user.activeMode} />
+                      : <FollowButton userId={user.id} initialFollowing={isFollowing} targetPersonaMode={user.activeMode} />
+                    }
                     <Link
                       href={`/app/messages?user=${user.id}`}
-                      className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-xl text-[12px] font-semibold text-[#5C6B5E] bg-white transition-colors hover:bg-[#F7F9F8]"
+                      className="inline-flex items-center gap-1.5 h-8 px-2.5 sm:px-3 rounded-xl text-[12px] font-semibold text-[#5C6B5E] bg-white transition-colors hover:bg-[#F7F9F8]"
                       style={{ border: CARD_BORDER }}
                     >
                       <MessageSquare className="h-3.5 w-3.5" />
-                      Message
+                      <span className="hidden sm:inline">Message</span>
                     </Link>
                   </>
                 )}
@@ -593,6 +655,28 @@ export function ProfileClient({
                 </>
               )}
             </div>
+
+            {/* Mobile-only: Partner CTA (lg:hidden — shown in sidebar on desktop) */}
+            {!isSelf && isPartner && user.partner?.approved && (
+              <div className="lg:hidden mb-5 rounded-xl overflow-hidden" style={{ border: CARD_BORDER }}>
+                <div className="p-3.5 text-white" style={{ background: "linear-gradient(135deg, #1e3f6b 0%, #2A5FA5 100%)" }}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Handshake className="h-3.5 w-3.5 text-blue-200" />
+                    <h3 className="text-[12px] font-bold">Need migration help?</h3>
+                  </div>
+                  <p className="text-[11px] text-blue-200 mb-2.5">
+                    {displayName ?? "This partner"} can guide your team through EU software migration.
+                  </p>
+                  <RequestHelpButton
+                    source="partner_profile"
+                    partnerUserId={user.id}
+                    partnerName={user.partner.companyName}
+                    label="Request migration help"
+                    className="w-full inline-flex items-center justify-center gap-1.5 h-8 rounded-lg bg-white text-[12px] font-semibold text-[#2A5FA5] transition-colors hover:bg-blue-50"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Divider */}
             <div className="border-t border-[rgba(0,0,0,0.05)] mb-5" />
@@ -828,9 +912,9 @@ export function ProfileClient({
             </Link>
           )}
 
-          {/* Partner CTA (other partner) */}
+          {/* Partner CTA (other partner, desktop only — mobile version is inline in profile card) */}
           {!isSelf && isPartner && user.partner?.approved && (
-            <div className="rounded-2xl overflow-hidden" style={{ border: CARD_BORDER, boxShadow: CARD_SHADOW }}>
+            <div className="hidden lg:block rounded-2xl overflow-hidden" style={{ border: CARD_BORDER, boxShadow: CARD_SHADOW }}>
               <div
                 className="p-4 text-white"
                 style={{ background: "linear-gradient(135deg, #1e3f6b 0%, #2A5FA5 100%)" }}

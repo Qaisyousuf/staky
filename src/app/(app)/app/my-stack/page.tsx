@@ -11,7 +11,9 @@ export default async function MyStackPage() {
 
   const userId = session.user.id;
 
-  const activeMode = session.user.activeMode ?? "user";
+  // Always read from DB — JWT activeMode can lag after a mode switch
+  const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { activeMode: true } });
+  const activeMode = dbUser?.activeMode ?? "user";
 
   const [stack, requests, dbPartners, availableTools, dbAlts] = await Promise.all([
     prisma.stack.findUnique({

@@ -167,22 +167,19 @@ function SectionHeader({ title, action, blue }: { title: string; action?: { href
 // ─── User Dashboard ───────────────────────────────────────────────────────────
 
 async function UserDashboard({ userId, userName, activeMode, hasPartner }: { userId: string; userName: string | null | undefined; activeMode: string; hasPartner: boolean }) {
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-
-  const [userProfile, stackCount, followingCount, connectionCount, stackItems, profileViewsCount, recentViewers, topAlts] =
+  const [userProfile, followingCount, connectionCount, stackItems, profileViewsCount, recentViewers, topAlts] =
     await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
         select: { name: true, image: true, title: true, company: true, bio: true, location: true },
       }),
-      prisma.stackItem.count({ where: { stack: { userId, mode: activeMode } } }),
-      prisma.follow.count({ where: { followerId: userId } }),
-      prisma.connection.count({ where: { OR: [{ userId }, { targetId: userId }] } }),
+      prisma.follow.count({ where: { followerId: userId, followerMode: activeMode } }),
+      prisma.connection.count({ where: { OR: [{ userId, requesterMode: activeMode }, { targetId: userId, targetMode: activeMode }] } }),
       prisma.stackItem.findMany({ where: { stack: { userId, mode: activeMode } }, orderBy: { order: "asc" }, take: 8 }),
-      prisma.profileView.count({ where: { profileId: userId, createdAt: { gte: weekAgo } } }),
+      prisma.profileView.count({ where: { profileId: userId } }),
       prisma.profileView.findMany({
         where: { profileId: userId, viewerId: { not: null } },
-        include: { viewer: { select: { id: true, name: true, image: true, title: true } } },
+        include: { viewer: { select: { id: true, name: true, image: true, title: true, partner: { select: { companyName: true, logoUrl: true, approved: true } } } } },
         orderBy: { createdAt: "desc" },
         take: 10,
         distinct: ["viewerId"],
@@ -308,7 +305,6 @@ async function UserDashboard({ userId, userName, activeMode, hasPartner }: { use
           {/* Stats strip */}
           <div className="mt-5 flex flex-wrap gap-6 pt-4 border-t border-[#F0EDE8]">
             {[
-              { value: stackCount,        label: "Stack tools",    href: "/app/my-stack",      color: "#0F6E56" },
               { value: followingCount,    label: "Following",       href: "/app/network",       color: "#2A5FA5" },
               { value: connectionCount,   label: "Connected",       href: "/app/network",       color: "#7C5CBF" },
               { value: profileViewsCount, label: "Profile views",   href: "/app/profile/views", color: "#B85C38" },
@@ -383,24 +379,33 @@ async function UserDashboard({ userId, userName, activeMode, hasPartner }: { use
             <SectionHeader title="Who viewed your profile" action={{ href: "/app/profile/views", label: "See all" }} />
             {recentViewers.length > 0 ? (
               <div className="space-y-3">
-                {recentViewers.slice(0, 4).map((v) => (
-                  <Link key={v.id} href={`/app/profile/${v.viewerId}`} className="flex items-center gap-3 group">
-                    {v.viewer?.image ? (
+                {recentViewers.slice(0, 4).map((v) => {
+                  const vm = (v as unknown as { viewerMode?: string }).viewerMode ?? "user";
+                  const vPartner = (v.viewer as unknown as { partner?: { companyName: string; logoUrl: string | null; approved: boolean } | null })?.partner;
+                  const isPC = vm === "partner" && !!vPartner?.approved;
+                  const dName  = isPC ? (vPartner!.companyName ?? v.viewer?.name) : v.viewer?.name;
+                  const dImage = isPC ? (vPartner!.logoUrl ?? v.viewer?.image) : v.viewer?.image;
+                  const shape  = isPC ? "rounded-lg" : "rounded-full";
+                  const bg     = isPC ? "bg-[#2A5FA5]" : "bg-[#0F6E56]";
+                  return (
+                  <Link key={v.id} href={`/app/profile/${v.viewerId}${isPC ? "?asPartner=1" : "?asUser=1"}&from=views`} className="flex items-center gap-3 group">
+                    {dImage ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={v.viewer.image} alt={v.viewer.name ?? ""} className="h-8 w-8 rounded-full object-cover shrink-0" />
+                      <img src={dImage} alt={dName ?? ""} className={`h-8 w-8 ${shape} object-cover shrink-0`} />
                     ) : (
-                      <div className="h-8 w-8 rounded-full bg-[#0F6E56] flex items-center justify-center text-white text-[10px] font-bold shrink-0">
-                        {getInitials(v.viewer?.name)}
+                      <div className={`h-8 w-8 ${shape} ${bg} flex items-center justify-center text-white text-[10px] font-bold shrink-0`}>
+                        {getInitials(dName)}
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
                       <p className="text-[12px] font-semibold text-[#1B2B1F] truncate group-hover:text-[#0F6E56] transition-colors">
-                        {v.viewer?.name ?? "Anonymous"}
+                        {dName ?? "Anonymous"}
                       </p>
-                      <p className="text-[10px] text-[#9BA39C] truncate">{v.viewer?.title ?? "Staky member"}</p>
+                      <p className="text-[10px] text-[#9BA39C] truncate">{isPC ? "Migration Partner" : (v.viewer?.title ?? "Staky member")}</p>
                     </div>
                   </Link>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-5">
@@ -466,29 +471,35 @@ async function UserDashboard({ userId, userName, activeMode, hasPartner }: { use
             <div className="bg-white rounded-2xl p-4" style={{ border: CARD_BORDER, boxShadow: CARD_SHADOW }}>
               <SectionHeader title="Grow your network" action={{ href: "/app/network", label: "View all" }} />
               <div className="space-y-3">
-                {suggestedUsers.slice(0, 3).map((u) => (
-                  <div key={u.id} className="flex items-center gap-3">
-                    {u.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={u.image} alt={u.name ?? ""} className="h-8 w-8 rounded-full object-cover shrink-0" />
-                    ) : (
-                      <div className="h-8 w-8 rounded-full bg-[#0F6E56] flex items-center justify-center text-white text-[10px] font-bold shrink-0">
-                        {getInitials(u.name)}
+                {suggestedUsers.slice(0, 3).map((u) => {
+                  const uIsPC = !!u.partner?.approved;
+                  const uDisplayName = uIsPC ? (u.partner!.companyName ?? u.name) : u.name;
+                  const uDisplayImage = uIsPC ? (u.partner!.logoUrl ?? u.image) : u.image;
+                  const profileHref = `/app/profile/${u.id}${uIsPC ? "?asPartner=1" : "?asUser=1"}`;
+                  return (
+                    <div key={u.id} className="flex items-center gap-3">
+                      {uDisplayImage ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={uDisplayImage} alt={uDisplayName ?? ""} className={`h-8 w-8 object-cover shrink-0 ${uIsPC ? "rounded-xl" : "rounded-full"}`} />
+                      ) : (
+                        <div className={`h-8 w-8 flex items-center justify-center text-white text-[10px] font-bold shrink-0 ${uIsPC ? "rounded-xl bg-[#2A5FA5]" : "rounded-full bg-[#0F6E56]"}`}>
+                          {getInitials(uDisplayName)}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <Link href={profileHref} className="text-[12px] font-semibold text-[#1B2B1F] hover:text-[#0F6E56] truncate block transition-colors">
+                          {uDisplayName ?? "Anonymous"}
+                        </Link>
+                        <p className="text-[10px] text-[#9BA39C] truncate">{uIsPC ? "Migration Partner" : (u.title ?? u.company ?? "Staky member")}</p>
                       </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <Link href={`/app/profile/${u.id}`} className="text-[12px] font-semibold text-[#1B2B1F] hover:text-[#0F6E56] truncate block transition-colors">
-                        {u.name ?? "Anonymous"}
+                      <Link href={profileHref}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-[#E8F5F1] text-[#0F6E56] hover:bg-green-100 transition-colors shrink-0"
+                      >
+                        <UserPlus className="h-3 w-3" />View
                       </Link>
-                      <p className="text-[10px] text-[#9BA39C] truncate">{u.title ?? u.company ?? "Staky member"}</p>
                     </div>
-                    <Link href={`/app/profile/${u.id}`}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-[#E8F5F1] text-[#0F6E56] hover:bg-green-100 transition-colors shrink-0"
-                    >
-                      <UserPlus className="h-3 w-3" />View
-                    </Link>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

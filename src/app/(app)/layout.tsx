@@ -55,9 +55,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         },
       })
       .catch(() => [] as never[]),
-    // Last 20 received messages, dedupe by sender below
+    // Last 20 received messages for this mode, dedupe by sender below
     prisma.message.findMany({
-      where: { recipientId: userId },
+      where: { recipientId: userId, recipientMode: activeMode },
       orderBy: { createdAt: "desc" },
       take: 20,
       select: {
@@ -114,7 +114,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .slice(0, 5)
     .map((m) => ({ ...m, createdAt: m.createdAt.toISOString() }));
 
-  const unreadMessageCount = rawMessages.filter((m) => !m.read).length;
+  const unreadMessageCount = rawMessages.filter((m) => !m.read).length; // rawMessages already filtered by recipientMode
 
   const user = {
     name: session.user.name,

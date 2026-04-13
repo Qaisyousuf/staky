@@ -9,9 +9,16 @@ export default async function NotificationsPage() {
 
   const userId = session.user.id;
 
-  // Fetch all notifications with sender + post data
+  // Always read from DB — JWT activeMode can lag after a mode switch
+  const userRecord = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { activeMode: true },
+  });
+  const activeMode = userRecord?.activeMode ?? "user";
+
+  // Fetch notifications for the current persona only
   const rawNotifications = await prisma.notification.findMany({
-    where: { recipientId: userId },
+    where: { recipientId: userId, recipientMode: activeMode },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -21,7 +28,16 @@ export default async function NotificationsPage() {
       postId: true,
       commentId: true,
       requestId: true,
-      sender: { select: { id: true, name: true, image: true, role: true } },
+      senderMode: true,
+      sender: {
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          role: true,
+          partner: { select: { companyName: true, logoUrl: true } },
+        },
+      },
     },
   });
 
@@ -46,7 +62,17 @@ export default async function NotificationsPage() {
     postId: n.postId,
     commentId: n.commentId,
     requestId: n.requestId,
-    sender: n.sender,
+    senderMode: n.senderMode,
+    sender: n.sender
+      ? {
+          id: n.sender.id,
+          name: n.sender.name,
+          image: n.sender.image,
+          role: n.sender.role,
+          partnerName: n.sender.partner?.companyName ?? null,
+          partnerLogoUrl: n.sender.partner?.logoUrl ?? null,
+        }
+      : null,
     post: n.postId ? (postMap[n.postId] ?? null) : null,
   }));
 

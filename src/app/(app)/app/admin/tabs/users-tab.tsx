@@ -133,6 +133,7 @@ export function UsersTab({
                       currentUserId={currentUserId}
                       suspended={user.suspended}
                       role={user.role}
+                      userName={user.name}
                     />
                   </div>
                 </div>

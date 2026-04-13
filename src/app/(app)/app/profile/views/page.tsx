@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Users, Eye, Lock, TrendingUp } from "lucide-react";
+import { ArrowLeft, Eye, TrendingUp, Users, Handshake, BadgeCheck } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { getProfileViews } from "@/actions/profile";
 import { cn } from "@/lib/utils";
@@ -22,18 +22,10 @@ function timeAgo(dateStr: string): string {
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
-function groupByPeriod(viewers: { createdAt: string }[]) {
-  const now = Date.now();
-  const today: typeof viewers = [];
-  const thisWeek: typeof viewers = [];
-  const thisMonth: typeof viewers = [];
-  for (const v of viewers) {
-    const ms = now - new Date(v.createdAt).getTime();
-    if (ms < 86400000) today.push(v);
-    else if (ms < 7 * 86400000) thisWeek.push(v);
-    else thisMonth.push(v);
-  }
-  return { today, thisWeek, thisMonth };
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-GB", {
+    day: "numeric", month: "short", year: "numeric",
+  });
 }
 
 export default async function ProfileViewsPage() {
@@ -41,76 +33,59 @@ export default async function ProfileViewsPage() {
   if (!session?.user?.id) redirect("/login");
 
   const data = await getProfileViews(session.user.id);
-  const { today, thisWeek, thisMonth } = groupByPeriod(data.recentViewers);
-
-  const isFreePlan =
-    (session.user as { plan?: string }).plan === "FREE" ||
-    !(session.user as { plan?: string }).plan;
-
-  const maxBar = Math.max(...data.last30Days.map((d) => d.count), 1);
 
   const now = Date.now();
   const weeklyCount = data.last30Days
     .filter((d) => now - new Date(d.date).getTime() <= 7 * 86400000)
     .reduce((s, d) => s + d.count, 0);
-  const monthlyCount = data.last30Days.reduce((s, d) => s + d.count, 0);
+  const maxBar = Math.max(...data.last30Days.map((d) => d.count), 1);
 
-  const groups = [
-    { label: "Today", items: today },
-    { label: "This week", items: thisWeek },
-    { label: "This month", items: thisMonth },
-  ].filter((g) => g.items.length > 0);
+  const stats = [
+    { label: "Total views",       value: data.totalCount.toLocaleString(),      icon: Eye,       accent: "#0F6E56", bg: "#EAF3EE" },
+    { label: "This week",         value: weeklyCount.toString(),                 icon: TrendingUp, accent: "#2A5FA5", bg: "#EEF3FA" },
+    { label: "Unique visitors",   value: data.uniqueVisitorCount.toString(),     icon: Users,     accent: "#7C3AED", bg: "#F3F0FF" },
+    { label: "Partner views",     value: data.partnerViews.toString(),           icon: Handshake, accent: "#D97706", bg: "#FFF7ED" },
+  ];
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5">
+    <div className="max-w-3xl mx-auto space-y-5">
 
       {/* ── Header ── */}
       <div className="flex items-center gap-3">
         <Link
           href="/app/network"
-          className="flex items-center justify-center h-8 w-8 rounded-xl border border-gray-200 text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors shrink-0"
+          className="flex items-center justify-center h-8 w-8 rounded-xl border border-gray-200 text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors shrink-0"
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <div>
           <h1 className="text-lg font-bold text-gray-900 leading-tight">Profile views</h1>
-          <p className="text-xs text-gray-400">See who visited your profile</p>
+          <p className="text-xs text-gray-400">See everyone who visited your profile</p>
         </div>
       </div>
 
-      {/* ── Stats + chart ── */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        {/* Stats row */}
-        <div className="grid grid-cols-3 divide-x divide-gray-100">
-          <div className="px-5 py-4">
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <Eye className="h-3.5 w-3.5 text-[#0F6E56]" />
-              <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">Total</span>
+      {/* ── Stats row ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {stats.map(({ label, value, icon: Icon, accent, bg }) => (
+          <div key={label} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: bg }}>
+                <Icon className="h-3.5 w-3.5" style={{ color: accent }} />
+              </div>
+              <span className="text-[11px] font-medium text-gray-400 leading-tight">{label}</span>
             </div>
-            <p className="text-2xl font-bold text-gray-900 leading-none">{data.totalCount.toLocaleString()}</p>
+            <p className="text-2xl font-black text-gray-900 leading-none">{value}</p>
           </div>
-          <div className="px-5 py-4">
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <TrendingUp className="h-3.5 w-3.5 text-[#0F6E56]" />
-              <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">This week</span>
-            </div>
-            <p className="text-2xl font-bold text-gray-900 leading-none">{weeklyCount}</p>
-          </div>
-          <div className="px-5 py-4">
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <Users className="h-3.5 w-3.5 text-[#0F6E56]" />
-              <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">This month</span>
-            </div>
-            <p className="text-2xl font-bold text-gray-900 leading-none">{monthlyCount}</p>
-          </div>
-        </div>
+        ))}
+      </div>
 
-        {/* Chart */}
-        <div className="px-5 pt-3 pb-5 border-t border-gray-100">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-medium text-gray-500">Daily views — last 30 days</p>
-            <p className="text-[10px] text-gray-400">peak: {maxBar}</p>
-          </div>
+      {/* ── 30-day chart ── */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-5 pt-4 pb-1 flex items-center justify-between">
+          <p className="text-[13px] font-semibold text-gray-700">Daily views — last 30 days</p>
+          <span className="text-[11px] text-gray-400">peak: {maxBar}</span>
+        </div>
+        <div className="px-5 pb-5 pt-3">
           <div className="flex items-end gap-[3px] h-20">
             {data.last30Days.map(({ date, count }) => {
               const pct = Math.max((count / maxBar) * 100, count > 0 ? 8 : 2);
@@ -120,9 +95,7 @@ export default async function ProfileViewsPage() {
                   key={date}
                   className="group relative flex-1 flex flex-col justify-end cursor-default"
                   style={{ height: "100%" }}
-                  title={`${label}: ${count} view${count !== 1 ? "s" : ""}`}
                 >
-                  {/* Tooltip */}
                   {count > 0 && (
                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:flex flex-col items-center z-10 pointer-events-none">
                       <div className="bg-gray-900 text-white text-[10px] font-medium px-2 py-1 rounded-md whitespace-nowrap leading-tight">
@@ -133,7 +106,7 @@ export default async function ProfileViewsPage() {
                     </div>
                   )}
                   <div
-                    className={count > 0 ? "w-full rounded-t-[3px] opacity-70 group-hover:opacity-100 transition-opacity duration-150" : "w-full rounded-t-[3px]"}
+                    className={count > 0 ? "w-full rounded-t-[3px] opacity-70 group-hover:opacity-100 transition-opacity" : "w-full rounded-t-[3px]"}
                     style={{
                       height: `${pct}%`,
                       background: count > 0 ? "linear-gradient(to top, #0a5a45, #0F6E56)" : "#f3f4f6",
@@ -152,106 +125,104 @@ export default async function ProfileViewsPage() {
 
       {/* ── Viewers list ── */}
       {data.recentViewers.length > 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-semibold text-gray-900">Recent visitors</h2>
-              <p className="text-xs text-gray-400 mt-0.5">{data.recentViewers.length} people visited your profile</p>
+              <h2 className="text-sm font-semibold text-gray-900">Visitors</h2>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {data.uniqueVisitorCount} unique {data.uniqueVisitorCount === 1 ? "person" : "people"} · {data.totalCount.toLocaleString()} total views
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#EEF3FA] text-[#2A5FA5] font-medium">
+                <Handshake className="h-3 w-3" />{data.partnerViews} partner
+              </span>
             </div>
           </div>
 
-          {groups.map((group) => (
-            <div key={group.label}>
-              {/* Group label */}
-              <div className="px-5 py-2 bg-gray-50 border-y border-gray-100">
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
-                  {group.label}
-                </span>
-              </div>
+          <div className="divide-y divide-gray-50">
+            {data.recentViewers.map((v) => {
+              const isPartnerViewer = v.viewerMode === "partner" && !!(v.viewer as { partner?: { approved?: boolean } | null })?.partner?.approved;
+              const vPartner = (v.viewer as { partner?: { companyName?: string; logoUrl?: string | null; approved?: boolean } | null })?.partner;
+              const displayName  = isPartnerViewer ? (vPartner?.companyName ?? v.viewer?.name) : v.viewer?.name;
+              const displayImage = isPartnerViewer ? (vPartner?.logoUrl ?? v.viewer?.image) : v.viewer?.image;
+              const subtitle     = isPartnerViewer
+                ? "Migration Partner"
+                : [v.viewer?.title, v.viewer?.company].filter(Boolean).join(" · ") || "Staky member";
+              const avatarShape  = isPartnerViewer ? "rounded-xl" : "rounded-full";
+              const avatarBg     = isPartnerViewer ? "bg-[#2A5FA5]" : "bg-[#0F6E56]";
+              const profileHref  = `/app/profile/${v.viewerId}${isPartnerViewer ? "?asPartner=1" : "?asUser=1"}&from=views`;
 
-              {(group.items as typeof data.recentViewers).map((v) => {
-                const overallIdx = data.recentViewers.indexOf(v);
-                const isBlurred = isFreePlan && overallIdx >= 3;
-                const vMode = (v as unknown as { viewerMode?: string }).viewerMode;
-                const isPartnerView = vMode === "partner" && !!(v.viewer as unknown as { partner?: { approved?: boolean } })?.partner?.approved;
-                const vPartner = (v.viewer as unknown as { partner?: { companyName?: string; logoUrl?: string | null; approved?: boolean } })?.partner;
-                const displayName = isPartnerView ? (vPartner?.companyName ?? v.viewer?.name) : v.viewer?.name;
-                const displayImage = isPartnerView ? (vPartner?.logoUrl ?? v.viewer?.image) : v.viewer?.image;
-                const avatarRounded = isPartnerView ? "rounded-xl" : "rounded-full";
-                const subtitle = isPartnerView
-                  ? "Migration Partner"
-                  : [v.viewer?.title, v.viewer?.company].filter(Boolean).join(" · ") || "Staky member";
-
-                return (
-                  <div
-                    key={v.id}
-                    className={cn(
-                      "relative flex items-center gap-3 px-5 py-3 border-b border-gray-50 last:border-0",
-                      !isBlurred && "hover:bg-gray-50/60 transition-colors"
-                    )}
-                  >
-                    <div className={cn("flex items-center gap-3 flex-1 min-w-0", isBlurred && "blur-sm pointer-events-none select-none")}>
-                      {displayImage ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={displayImage}
-                          alt={displayName ?? ""}
-                          className={cn("h-10 w-10 object-cover shrink-0", avatarRounded)}
-                        />
-                      ) : (
-                        <div className={cn("h-10 w-10 flex items-center justify-center text-white text-xs font-bold shrink-0 select-none", isPartnerView ? "rounded-xl bg-[#2A5FA5]" : "rounded-full bg-gray-300")}>
-                          {getInitials(displayName)}
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <Link
-                          href={`/app/profile/${v.viewerId}?from=views`}
-                          className="text-sm font-semibold text-gray-900 hover:text-[#0F6E56] transition-colors truncate block leading-tight"
-                        >
-                          {displayName ?? "Anonymous"}
-                        </Link>
-                        <p className="text-xs text-gray-400 truncate mt-0.5">{subtitle}</p>
+              return (
+                <div key={v.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50/70 transition-colors">
+                  {/* Avatar */}
+                  <Link href={profileHref} className="shrink-0">
+                    {displayImage ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={displayImage}
+                        alt={displayName ?? ""}
+                        className={cn("h-10 w-10 object-cover shrink-0", avatarShape)}
+                      />
+                    ) : (
+                      <div className={cn("h-10 w-10 flex items-center justify-center text-white text-xs font-bold shrink-0 select-none", avatarShape, avatarBg)}>
+                        {getInitials(displayName)}
                       </div>
-                    </div>
+                    )}
+                  </Link>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-xs text-gray-400 tabular-nums">{timeAgo(v.createdAt)}</span>
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <Link
-                        href={`/app/profile/${v.viewerId}?from=views`}
-                        className="rounded-lg border border-gray-200 px-2.5 py-1 text-[11px] font-medium text-gray-500 hover:text-[#0F6E56] hover:border-[#0F6E56] transition-colors whitespace-nowrap"
+                        href={profileHref}
+                        className="text-sm font-semibold text-gray-900 hover:text-[#0F6E56] transition-colors truncate leading-tight"
                       >
-                        View profile
+                        {displayName ?? "Anonymous"}
                       </Link>
+                      {isPartnerViewer && (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-[#EEF3FA] text-[#2A5FA5] shrink-0">
+                          <BadgeCheck className="h-3 w-3" />Partner
+                        </span>
+                      )}
                     </div>
-
-                    {isBlurred && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="flex items-center gap-1.5 bg-white/90 backdrop-blur-sm rounded-xl border border-gray-200 px-3 py-1.5 shadow-sm">
-                          <Lock className="h-3 w-3 text-gray-400" />
-                          <Link
-                            href="/app/settings?tab=billing"
-                            className="text-xs font-medium text-[#0F6E56] hover:underline"
-                          >
-                            Upgrade to see all viewers
-                          </Link>
-                        </div>
-                      </div>
-                    )}
+                    <p className="text-xs text-gray-400 truncate mt-0.5">{subtitle}</p>
                   </div>
-                );
-              })}
-            </div>
-          ))}
+
+                  {/* Right side */}
+                  <div className="shrink-0 flex flex-col items-end gap-1">
+                    <span className="text-xs text-gray-400 tabular-nums">{timeAgo(v.createdAt)}</span>
+                    <span className="text-[10px] text-gray-300">{formatDate(v.createdAt)}</span>
+                  </div>
+
+                  {/* Action */}
+                  <Link
+                    href={profileHref}
+                    className="hidden sm:flex shrink-0 items-center gap-1 border border-gray-200 rounded-lg px-2.5 py-1 text-[11px] font-medium text-gray-500 hover:text-[#0F6E56] hover:border-[#0F6E56] transition-colors"
+                  >
+                    View profile
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-dashed border-gray-200 py-16 text-center shadow-sm">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 mb-3">
-            <Eye className="h-5 w-5 text-gray-300" />
+        <div className="bg-white rounded-2xl border border-dashed border-gray-200 py-20 text-center shadow-sm">
+          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-50 mb-4">
+            <Eye className="h-6 w-6 text-gray-300" />
           </div>
           <p className="text-sm font-semibold text-gray-700">No views yet</p>
-          <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">
-            Share your profile link to start attracting visitors
+          <p className="text-xs text-gray-400 mt-1.5 max-w-xs mx-auto">
+            Share your profile to start attracting visitors
           </p>
+          <Link
+            href="/app/network"
+            className="inline-flex items-center gap-1.5 mt-4 text-xs font-semibold text-[#0F6E56] hover:underline"
+          >
+            <Users className="h-3.5 w-3.5" />
+            Go to your network
+          </Link>
         </div>
       )}
 

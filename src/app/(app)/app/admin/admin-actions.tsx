@@ -22,6 +22,7 @@ import {
   adminMatchPartner,
   adminManagePartner,
   adminManageUser,
+  adminDeleteUser,
 } from "@/actions/admin";
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
@@ -274,11 +275,13 @@ export function UserActions({
   currentUserId,
   suspended,
   role,
+  userName,
 }: {
   userId: string;
   currentUserId: string;
   suspended: boolean;
   role: string;
+  userName: string | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -287,6 +290,16 @@ export function UserActions({
   function act(action: "suspend" | "activate" | "makeAdmin" | "makePartner" | "makeUser") {
     startTransition(async () => {
       await adminManageUser(userId, action);
+      router.refresh();
+    });
+  }
+
+  function deleteUser() {
+    const label = userName ?? "this user";
+    if (!confirm(`Permanently delete "${label}"?\n\nThis removes their account, posts, comments, stack, partner profile, requests, invoices, and all other data. This cannot be undone.`))
+      return;
+    startTransition(async () => {
+      await adminDeleteUser(userId);
       router.refresh();
     });
   }
@@ -302,7 +315,7 @@ export function UserActions({
           <ShieldCheck className="h-3 w-3" /> Activate
         </ActionBtn>
       ) : (
-        <ActionBtn onClick={() => act("suspend")} disabled={pending} variant="red">
+        <ActionBtn onClick={() => act("suspend")} disabled={pending} variant="amber">
           <ShieldAlert className="h-3 w-3" /> Suspend
         </ActionBtn>
       )}
@@ -323,6 +336,9 @@ export function UserActions({
         </select>
         <UserCog className="h-3 w-3 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
       </div>
+      <ActionBtn onClick={deleteUser} disabled={pending} variant="red">
+        <Trash2 className="h-3 w-3" /> Delete
+      </ActionBtn>
     </div>
   );
 }

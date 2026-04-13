@@ -8,7 +8,9 @@ export async function addStackItem(toolName: string, category?: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Not authenticated");
   const userId = session.user.id;
-  const mode = session.user.activeMode ?? "user";
+  // Always read from DB — JWT activeMode can lag after a mode switch
+  const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { activeMode: true } });
+  const mode = dbUser?.activeMode ?? "user";
 
   // Get or create the user's stack for this mode
   let stack = await prisma.stack.findUnique({ where: { userId_mode: { userId, mode } } });
@@ -47,7 +49,8 @@ export async function addStackItem(toolName: string, category?: string) {
 export async function removeStackItem(itemId: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Not authenticated");
-  const mode = session.user.activeMode ?? "user";
+  const dbUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { activeMode: true } });
+  const mode = dbUser?.activeMode ?? "user";
 
   // Verify ownership before deleting (scoped to active mode)
   const item = await prisma.stackItem.findFirst({

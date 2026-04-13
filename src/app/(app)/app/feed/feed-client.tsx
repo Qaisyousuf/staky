@@ -96,7 +96,7 @@ function FilterTabs({ active }: { active: AppFeedFilter }) {
 
 // ─── Follow button for suggested users ───────────────────────────────────────
 
-function SuggestedFollowButton({ userId }: { userId: string }) {
+function SuggestedFollowButton({ userId, followingMode }: { userId: string; followingMode: string }) {
   const [following, setFollowing] = useState(false);
   const [pending, setPending] = useState(false);
 
@@ -106,7 +106,7 @@ function SuggestedFollowButton({ userId }: { userId: string }) {
     const next = !following;
     setFollowing(next);
     try {
-      const res = await toggleFollow(userId);
+      const res = await toggleFollow(userId, followingMode);
       setFollowing(res.following);
     } catch {
       setFollowing(!next);
@@ -149,12 +149,12 @@ function RightSidebar({ suggested, stackTools, trendingAlts }: { suggested: Sugg
           </div>
           <div className="p-3 space-y-1">
             {suggested.map((u) => {
-              const uIsPartner = u.activeMode === "partner" && !!u.partner?.approved;
+              const uIsPartner = !!u.partner?.approved;
               const uDisplayName = uIsPartner ? (u.partner!.companyName ?? u.name) : u.name;
               const uDisplayImage = uIsPartner ? (u.partner!.logoUrl ?? null) : u.image;
               return (
                 <div key={u.id} className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-50">
-                  <Link href={`/app/profile/${u.id}`} className="shrink-0">
+                  <Link href={`/app/profile/${u.id}${uIsPartner ? "?asPartner=1" : "?asUser=1"}`} className="shrink-0">
                     {uDisplayImage ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -168,7 +168,7 @@ function RightSidebar({ suggested, stackTools, trendingAlts }: { suggested: Sugg
                       </div>
                     )}
                   </Link>
-                  <Link href={`/app/profile/${u.id}`} className="flex-1 min-w-0">
+                  <Link href={`/app/profile/${u.id}${uIsPartner ? "?asPartner=1" : "?asUser=1"}`} className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate leading-tight">
                       {uDisplayName ?? "Anonymous"}
                     </p>
@@ -176,7 +176,7 @@ function RightSidebar({ suggested, stackTools, trendingAlts }: { suggested: Sugg
                       {uIsPartner ? "Migration Partner" : (u.title ?? u.company ?? "Staky member")}
                     </p>
                   </Link>
-                  <SuggestedFollowButton userId={u.id} />
+                  <SuggestedFollowButton userId={u.id} followingMode={uIsPartner ? "partner" : "user"} />
                 </div>
               );
             })}
@@ -470,8 +470,8 @@ export function FeedClient({
                   initialLiked={likedIds.has(post.id)}
                   initialSaved={savedIds.has(post.id)}
                   initialRecommended={recommendedIds.has(post.id)}
-                  initialFollowing={followingIds.has(post.author.id)}
-                  initialConnected={connectedIds.has(post.author.id)}
+                  initialFollowing={followingIds.has(`${post.author.id}:${post.postedAsPartner ? "partner" : "user"}`)}
+                  initialConnected={connectedIds.has(`${post.author.id}:${post.postedAsPartner ? "partner" : "user"}`)}
                   autoExpandComments={!!targetCommentId && post.id === targetPostId}
                 />
               ))}
