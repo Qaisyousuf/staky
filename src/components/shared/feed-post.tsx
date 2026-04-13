@@ -719,19 +719,25 @@ export function FeedPost({
             onClick={() => setCommentsOpen(true)}
             className="flex w-full items-start gap-2.5 border-t border-[#f0ece4] px-4 py-3 text-left transition-colors hover:bg-[#faf8f4]"
           >
-            <Avatar
-              name={comments[0].author.name}
-              image={comments[0].author.image}
-              size={6}
-            />
-            <div className="min-w-0 flex-1 rounded-2xl bg-[#f5f3ef] px-3 py-2">
-              <span className="text-[12px] font-semibold text-[#1B2B1F]">
-                {comments[0].author.name}
-              </span>
-              <p className="mt-0.5 line-clamp-1 text-[12px] text-[#667065]">
-                {comments[0].content}
-              </p>
-            </div>
+            {(() => {
+              const c0 = comments[0];
+              const c0IsPartner = c0.senderMode === "partner" && !!c0.author.partner;
+              const c0Name = c0IsPartner ? (c0.author.partner?.companyName ?? c0.author.name) : c0.author.name;
+              const c0Image = c0IsPartner ? (c0.author.partner?.logoUrl ?? c0.author.image) : c0.author.image;
+              return (
+                <>
+                  <Avatar name={c0Name} image={c0Image} size={6} rounded={c0IsPartner ? "xl" : "full"} />
+                  <div className="min-w-0 flex-1 rounded-2xl bg-[#f5f3ef] px-3 py-2">
+                    <span className="text-[12px] font-semibold text-[#1B2B1F]">
+                      {c0Name}
+                    </span>
+                    <p className="mt-0.5 line-clamp-1 text-[12px] text-[#667065]">
+                      {c0.content}
+                    </p>
+                  </div>
+                </>
+              );
+            })()}
           </button>
         )}
 

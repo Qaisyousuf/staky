@@ -37,6 +37,8 @@ export async function POST(request: Request) {
     const fromTool = String(formData.get("fromTool") ?? "");
     const toTool = String(formData.get("toTool") ?? "");
     const story = String(formData.get("story") ?? "");
+    const rawVisibility = String(formData.get("visibility") ?? "public");
+    const visibility = ["public", "community", "private"].includes(rawVisibility) ? rawVisibility : "public";
     const normalizedLinkUrl = normalizeUrl(String(formData.get("linkUrl") ?? ""));
     const explicitTags = (() => {
       const raw = formData.get("tags");
@@ -120,6 +122,7 @@ export async function POST(request: Request) {
         linkDescription: linkMetadata?.description || null,
         linkImage: linkMetadata?.image || null,
         postedAsPartner,
+        visibility,
       },
       select: { id: true },
     });

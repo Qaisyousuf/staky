@@ -45,19 +45,19 @@ function notifUrl(n: NotificationItem, role?: string): string {
     case "RECOMMENDATION":
     case "SAVE":
     case "SHARE":
-      return n.postId ? `/feed?post=${n.postId}` : "/feed";
+      return n.postId ? `/app/feed?post=${n.postId}` : "/app/feed";
     case "COMMENT":
       return n.postId
         ? n.commentId
-          ? `/feed?post=${n.postId}&comment=${n.commentId}`
-          : `/feed?post=${n.postId}`
-        : "/feed";
+          ? `/app/feed?post=${n.postId}&comment=${n.commentId}`
+          : `/app/feed?post=${n.postId}`
+        : "/app/feed";
     case "REPLY":
       return n.postId
         ? n.commentId
-          ? `/feed?post=${n.postId}&comment=${n.commentId}`
-          : `/feed?post=${n.postId}`
-        : "/feed";
+          ? `/app/feed?post=${n.postId}&comment=${n.commentId}`
+          : `/app/feed?post=${n.postId}`
+        : "/app/feed";
     case "FOLLOW":
     case "CONNECT":
     case "PROFILE_VIEW": {
@@ -750,11 +750,8 @@ export function TopBar({
           >
             <Bell className="h-4.5 w-4.5 h-[18px] w-[18px]" />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 flex">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-60" />
-                <span className="relative flex items-center justify-center h-[17px] min-w-[17px] rounded-full bg-red-500 px-1 text-[9px] font-bold text-white leading-none">
-                  {unreadCount > 99 ? "99+" : unreadCount}
-                </span>
+              <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center h-[17px] min-w-[17px] rounded-full bg-red-500 px-1 text-[9px] font-bold text-white leading-none">
+                {unreadCount > 99 ? "99+" : unreadCount}
               </span>
             )}
           </button>

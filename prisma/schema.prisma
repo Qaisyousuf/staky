@@ -279,6 +279,7 @@ model AlternativePost {
   linkDescription String?  @db.Text
   linkImage       String?
   postedAsPartner Boolean  @default(false)
+  visibility      String   @default("public")
   published       Boolean  @default(true)
   featured        Boolean  @default(false)
   createdAt       DateTime @default(now())

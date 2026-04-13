@@ -61,10 +61,10 @@ export async function toggleLike(postId: string) {
   await prisma.like.create({ data: { postId, userId, senderMode } });
   const post = await prisma.alternativePost.findUnique({
     where: { id: postId },
-    select: { authorId: true, postedAsPartner: true },
+    select: { authorId: true },
   });
   if (post) {
-    const recipientMode = post.postedAsPartner ? "partner" : "user";
+    const recipientMode = await getSenderMode(post.authorId);
     await notify(post.authorId, userId, "LIKE", postId, undefined, senderMode, recipientMode);
   }
   const count = await prisma.like.count({ where: { postId } });
@@ -92,10 +92,10 @@ export async function toggleSave(postId: string) {
   await prisma.savedPost.create({ data: { postId, userId, senderMode } });
   const post = await prisma.alternativePost.findUnique({
     where: { id: postId },
-    select: { authorId: true, postedAsPartner: true },
+    select: { authorId: true },
   });
   if (post) {
-    const recipientMode = post.postedAsPartner ? "partner" : "user";
+    const recipientMode = await getSenderMode(post.authorId);
     await notify(post.authorId, userId, "SAVE", postId, undefined, senderMode, recipientMode);
   }
   const count = await prisma.savedPost.count({ where: { postId } });
@@ -123,10 +123,10 @@ export async function toggleRecommend(postId: string) {
   await prisma.recommendation.create({ data: { postId, userId, senderMode } });
   const post = await prisma.alternativePost.findUnique({
     where: { id: postId },
-    select: { authorId: true, postedAsPartner: true },
+    select: { authorId: true },
   });
   if (post) {
-    const recipientMode = post.postedAsPartner ? "partner" : "user";
+    const recipientMode = await getSenderMode(post.authorId);
     await notify(post.authorId, userId, "RECOMMENDATION", postId, undefined, senderMode, recipientMode);
   }
   const count = await prisma.recommendation.count({ where: { postId } });
@@ -262,21 +262,22 @@ export async function addComment(
 
   const post = await prisma.alternativePost.findUnique({
     where: { id: postId },
-    select: { authorId: true, postedAsPartner: true },
+    select: { authorId: true },
   });
   if (post) {
-    const recipientMode = post.postedAsPartner ? "partner" : "user";
+    const recipientMode = await getSenderMode(post.authorId);
     await notify(post.authorId, userId, "COMMENT", postId, comment.id, senderMode, recipientMode);
   }
 
   if (parentId) {
     const parent = await prisma.comment.findUnique({
       where: { id: parentId },
-      select: { authorId: true },
+      select: { authorId: true, senderMode: true },
     });
     if (parent && parent.authorId !== userId) {
-      const recipientMode = post?.postedAsPartner ? "partner" : "user";
-      await notify(parent.authorId, userId, "REPLY", postId, comment.id, senderMode, recipientMode);
+      // Deliver the reply notification to whichever persona the parent commenter was using
+      const replyRecipientMode = (parent as { senderMode?: string | null }).senderMode ?? "user";
+      await notify(parent.authorId, userId, "REPLY", postId, comment.id, senderMode, replyRecipientMode);
     }
   }
 

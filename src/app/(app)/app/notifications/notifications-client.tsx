@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 // useRouter also used inside NotifRow below
 import {
   Bell, Heart, MessageCircle, MessageSquare, Reply, UserPlus, ThumbsUp,
-  Link2, Bookmark, Share2, CheckCheck, BriefcaseBusiness, CircleCheckBig, CircleOff, CircleDot, Receipt, CreditCard, ClipboardList, CheckSquare, Inbox, Briefcase, Eye,
+  Link2, Bookmark, Share2, CheckCheck, BriefcaseBusiness, CircleCheckBig, CircleOff, CircleDot, Receipt, CreditCard, ClipboardList, CheckSquare, Inbox, Briefcase, Eye, FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { markAllNotificationsRead, markNotificationRead } from "@/actions/social";
@@ -36,18 +36,20 @@ interface Notification {
 function notifUrl(n: Notification, role?: string): string {
   const isPartner = role === "PARTNER" || role === "ADMIN";
   switch (n.type) {
+    case "NEW_POST":
+      return n.postId ? `/app/feed?post=${n.postId}` : "/app/feed";
     case "LIKE":
     case "RECOMMENDATION":
     case "SAVE":
     case "SHARE":
-      return n.postId ? `/feed?post=${n.postId}` : "/feed";
+      return n.postId ? `/app/feed?post=${n.postId}` : "/app/feed";
     case "COMMENT":
     case "REPLY":
       return n.postId
         ? n.commentId
-          ? `/feed?post=${n.postId}&comment=${n.commentId}`
-          : `/feed?post=${n.postId}`
-        : "/feed";
+          ? `/app/feed?post=${n.postId}&comment=${n.commentId}`
+          : `/app/feed?post=${n.postId}`
+        : "/app/feed";
     case "FOLLOW":
     case "CONNECT":
     case "PROFILE_VIEW": {
@@ -92,6 +94,7 @@ const TYPE_CFG: Record<string, {
   action: string;
   category: string;
 }> = {
+  NEW_POST:       { icon: FileText,      bg: "bg-green-100",  fg: "text-green-600", action: "shared a new post",          category: "Community" },
   LIKE:           { icon: Heart,         bg: "bg-pink-100",   fg: "text-red-500",   action: "liked your post",           category: "Engagement" },
   COMMENT:        { icon: MessageCircle, bg: "bg-green-100",  fg: "text-green-600", action: "commented on your post",    category: "Engagement" },
   REPLY:          { icon: Reply,         bg: "bg-green-100",  fg: "text-green-600", action: "replied to your comment",   category: "Engagement" },

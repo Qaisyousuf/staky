@@ -14,6 +14,8 @@ import {
   Link2,
   Trash2,
   ChevronDown,
+  Lock,
+  Search,
 } from "lucide-react";
 import { ToolIcon, type DbTool } from "@/components/shared/tool-icon";
 import {
@@ -22,6 +24,7 @@ import {
   MAX_POST_IMAGE_SIZE_BYTES,
   normalizeUrl,
 } from "@/lib/post-utils";
+import { cn } from "@/lib/utils";
 
 type ComposerAlt = {
   id: string;
@@ -29,7 +32,229 @@ type ComposerAlt = {
   toTool:   { slug: string; name: string; logoUrl?: string | null; color: string; abbr: string };
 };
 
+type Visibility = "public" | "community" | "private";
+
 type ImageDraft = { file: File; previewUrl: string; key: string };
+
+const VISIBILITY_OPTIONS: { value: Visibility; label: string; description: string; icon: React.ElementType; color: string }[] = [
+  {
+    value: "public",
+    label: "Public",
+    description: "Visible to everyone, including visitors",
+    icon: Globe,
+    color: "text-green-600",
+  },
+  {
+    value: "community",
+    label: "Community",
+    description: "Only visible to logged-in members",
+    icon: Users,
+    color: "text-blue-600",
+  },
+  {
+    value: "private",
+    label: "Private",
+    description: "Only visible to you",
+    icon: Lock,
+    color: "text-gray-500",
+  },
+];
+
+// ─── Migration path picker ────────────────────────────────────────────────────
+
+function MigrationPathPicker({
+  alternatives,
+  selectedId,
+  onChange,
+}: {
+  alternatives: ComposerAlt[];
+  selectedId: string;
+  onChange: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const fn = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", fn);
+    return () => document.removeEventListener("mousedown", fn);
+  }, [open]);
+
+  const selected = alternatives.find((a) => a.id === selectedId) ?? null;
+
+  const filtered = alternatives.filter((a) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return a.fromTool.name.toLowerCase().includes(q) || a.toTool.name.toLowerCase().includes(q);
+  });
+
+  function ToolChip({ tool }: { tool: ComposerAlt["fromTool"] }) {
+    return (
+      <span className="flex items-center gap-1.5">
+        <ToolIcon toolData={tool as DbTool} size="sm" plain className="h-5 w-5 object-contain shrink-0" />
+        <span className="text-[13px] font-medium text-gray-800">{tool.name}</span>
+      </span>
+    );
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          "w-full flex items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-left transition-colors",
+          open ? "border-[#0F6E56] bg-white" : "border-gray-200 bg-white hover:border-gray-300"
+        )}
+      >
+        {selected ? (
+          <span className="flex items-center gap-2">
+            <ToolChip tool={selected.fromTool} />
+            <ArrowRight className="h-3.5 w-3.5 text-[#0F6E56] shrink-0" />
+            <ToolChip tool={selected.toTool} />
+          </span>
+        ) : (
+          <span className="text-[13px] text-gray-400">No migration path selected</span>
+        )}
+        <ChevronDown className={cn("h-4 w-4 text-gray-400 shrink-0 transition-transform", open && "rotate-180")} />
+      </button>
+
+      {open && (
+        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden">
+          {/* Search */}
+          <div className="flex items-center gap-2 border-b border-gray-100 px-3 py-2">
+            <Search className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+            <input
+              autoFocus
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search tools…"
+              className="flex-1 text-[13px] text-gray-700 outline-none placeholder:text-gray-400"
+            />
+            {search && (
+              <button type="button" onClick={() => setSearch("")} className="text-gray-400 hover:text-gray-600">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Clear option */}
+          <button
+            type="button"
+            onClick={() => { onChange(""); setOpen(false); setSearch(""); }}
+            className={cn(
+              "w-full flex items-center px-3 py-2.5 text-[13px] text-gray-400 hover:bg-gray-50 transition-colors",
+              !selectedId && "bg-gray-50 font-medium text-gray-600"
+            )}
+          >
+            No migration path
+          </button>
+
+          <div className="max-h-52 overflow-y-auto divide-y divide-gray-50">
+            {filtered.length === 0 ? (
+              <p className="px-3 py-3 text-[13px] text-gray-400 text-center">No matches</p>
+            ) : (
+              filtered.map((alt) => (
+                <button
+                  key={alt.id}
+                  type="button"
+                  onClick={() => { onChange(alt.id); setOpen(false); setSearch(""); }}
+                  className={cn(
+                    "w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-[#F7FBF9] transition-colors",
+                    selectedId === alt.id && "bg-[#EAF3EE]"
+                  )}
+                >
+                  <ToolIcon toolData={alt.fromTool as DbTool} size="sm" plain className="h-6 w-6 object-contain shrink-0" />
+                  <span className="text-[13px] font-medium text-gray-700">{alt.fromTool.name}</span>
+                  <ArrowRight className="h-3.5 w-3.5 text-[#0F6E56] shrink-0 mx-0.5" />
+                  <ToolIcon toolData={alt.toTool as DbTool} size="sm" plain className="h-6 w-6 object-contain shrink-0" />
+                  <span className="text-[13px] font-medium text-gray-700">{alt.toTool.name}</span>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Visibility picker ────────────────────────────────────────────────────────
+
+function VisibilityPicker({
+  value,
+  onChange,
+}: {
+  value: Visibility;
+  onChange: (v: Visibility) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const fn = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", fn);
+    return () => document.removeEventListener("mousedown", fn);
+  }, [open]);
+
+  const current = VISIBILITY_OPTIONS.find((o) => o.value === value)!;
+  const Icon = current.icon;
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          "flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[12px] font-medium transition-colors",
+          open ? "border-[#0F6E56] bg-[#EAF3EE] text-[#0F6E56]" : "border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50"
+        )}
+      >
+        <Icon className={cn("h-3.5 w-3.5", current.color)} />
+        {current.label}
+        <ChevronDown className={cn("h-3 w-3 text-gray-400 transition-transform", open && "rotate-180")} />
+      </button>
+
+      {open && (
+        <div className="absolute bottom-full left-0 mb-1.5 z-50 w-64 rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden">
+          {VISIBILITY_OPTIONS.map((opt) => {
+            const OptIcon = opt.icon;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => { onChange(opt.value); setOpen(false); }}
+                className={cn(
+                  "w-full flex items-start gap-3 px-3.5 py-3 hover:bg-gray-50 transition-colors text-left",
+                  value === opt.value && "bg-[#EAF3EE]"
+                )}
+              >
+                <span className={cn("mt-0.5 shrink-0", opt.color)}>
+                  <OptIcon className="h-4 w-4" />
+                </span>
+                <div>
+                  <p className={cn("text-[13px] font-semibold", value === opt.value ? "text-[#0F6E56]" : "text-gray-800")}>
+                    {opt.label}
+                  </p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">{opt.description}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Post modal ───────────────────────────────────────────────────────────────
 
 function PostModal({
   userName,
@@ -58,12 +283,11 @@ function PostModal({
   const [selectedAltId, setSelectedAltId] = useState("");
   const [story, setStory] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
+  const [visibility, setVisibility] = useState<Visibility>("public");
   const [images, setImages] = useState<ImageDraft[]>([]);
   const [error, setError] = useState("");
   const [uploadError, setUploadError] = useState("");
   const [isPending, setIsPending] = useState(false);
-
-  const selectedAlt = alternatives.find((a) => a.id === selectedAltId) ?? null;
 
   useEffect(() => { imagesRef.current = images; }, [images]);
   useEffect(() => {
@@ -107,10 +331,12 @@ function PostModal({
     setIsPending(true);
     try {
       const formData = new FormData();
+      const selectedAlt = alternatives.find((a) => a.id === selectedAltId) ?? null;
       formData.set("fromTool", selectedAlt?.fromTool.slug ?? "");
       formData.set("toTool", selectedAlt?.toTool.slug ?? "");
       formData.set("story", story);
       formData.set("linkUrl", normalizedLinkUrl ?? "");
+      formData.set("visibility", visibility);
       formData.set("tags", "[]");
       for (const img of images) formData.append("images", img.file);
 
@@ -164,37 +390,19 @@ function PostModal({
 
           <div className="max-h-[76vh] space-y-4 overflow-y-auto px-5 py-4">
 
-            {/* Single alternatives dropdown — first */}
+            {/* Migration path picker */}
             <div>
               <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-gray-400">
                 Migration path <span className="normal-case font-normal text-gray-400">(optional)</span>
               </label>
-              <div className="relative">
-                {/* Preview icons when selected */}
-                {selectedAlt && (
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 z-10">
-                    <ToolIcon toolData={selectedAlt.fromTool as DbTool} size="sm" plain className="h-4 w-4 object-contain" />
-                    <ArrowRight className="h-3 w-3 text-[#0F6E56]" />
-                    <ToolIcon toolData={selectedAlt.toTool as DbTool} size="sm" plain className="h-4 w-4 object-contain" />
-                  </span>
-                )}
-                <select
-                  value={selectedAltId}
-                  onChange={(e) => setSelectedAltId(e.target.value)}
-                  className={`w-full appearance-none rounded-xl border border-gray-200 bg-white py-2.5 pr-9 text-[13px] text-gray-700 transition-colors focus:border-[#0F6E56] focus:outline-none ${selectedAlt ? "pl-[86px]" : "pl-3"}`}
-                >
-                  <option value="">No migration path selected</option>
-                  {alternatives.map((alt) => (
-                    <option key={alt.id} value={alt.id}>
-                      {alt.fromTool.name} → {alt.toTool.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              </div>
+              <MigrationPathPicker
+                alternatives={alternatives}
+                selectedId={selectedAltId}
+                onChange={setSelectedAltId}
+              />
             </div>
 
-            {/* Story textarea — after dropdown */}
+            {/* Story textarea */}
             <textarea
               value={story}
               onChange={(e) => setStory(e.target.value)}
@@ -262,17 +470,20 @@ function PostModal({
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-2 border-t border-gray-100 bg-gray-50/60 px-5 py-3">
-            <button onClick={onClose} className="rounded-lg px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100">
-              Cancel
-            </button>
-            <button
-              onClick={handleSubmit}
-              disabled={isPending}
-              className="flex items-center gap-2 rounded-xl bg-[#0F6E56] px-5 py-2 text-sm font-semibold text-white hover:bg-[#0d5f4a] disabled:opacity-60"
-            >
-              {isPending ? <><Loader2 className="h-4 w-4 animate-spin" />Posting…</> : "Post"}
-            </button>
+          <div className="flex items-center justify-between gap-2 border-t border-gray-100 bg-gray-50/60 px-5 py-3">
+            <VisibilityPicker value={visibility} onChange={setVisibility} />
+            <div className="flex items-center gap-2">
+              <button onClick={onClose} className="rounded-lg px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100">
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={isPending}
+                className="flex items-center gap-2 rounded-xl bg-[#0F6E56] px-5 py-2 text-sm font-semibold text-white hover:bg-[#0d5f4a] disabled:opacity-60"
+              >
+                {isPending ? <><Loader2 className="h-4 w-4 animate-spin" />Posting…</> : "Post"}
+              </button>
+            </div>
           </div>
         </div>
       </div>

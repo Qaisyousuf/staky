@@ -466,7 +466,7 @@ export function FeedClient({
                   key={post.id}
                   post={post}
                   currentUserId={currentUserId}
-                  currentUserImage={currentUserImage}
+                  currentUserImage={isPartnerMode ? (partnerLogoUrl ?? currentUserImage) : currentUserImage}
                   initialLiked={likedIds.has(post.id)}
                   initialSaved={savedIds.has(post.id)}
                   initialRecommended={recommendedIds.has(post.id)}

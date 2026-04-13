@@ -35,19 +35,28 @@ export async function getAppFeedPosts({
   }
 
   // Build where clause
+  // Visibility: show public + community to everyone; private only to the author
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = { published: true };
+  const visibilityFilter: any = {
+    OR: [
+      { visibility: { in: ["public", "community"] } },
+      { authorId: userId },
+    ],
+  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const where: any = { published: true, AND: [visibilityFilter] };
+
   if (filter === "following") {
     // Show posts from followed users only when the post persona matches the followed persona
     // postedAsPartner: true ↔ followingMode: "partner"; postedAsPartner: false ↔ followingMode: "user"
     const partnerFollowedIds = followedPairs.filter((p) => p.followingMode === "partner").map((p) => p.followingId);
     const userFollowedIds    = followedPairs.filter((p) => p.followingMode === "user").map((p) => p.followingId);
-    where.OR = [
+    const followingOR = [
       ...(partnerFollowedIds.length > 0 ? [{ authorId: { in: partnerFollowedIds }, postedAsPartner: true }] : []),
       ...(userFollowedIds.length    > 0 ? [{ authorId: { in: userFollowedIds },    postedAsPartner: false }] : []),
     ];
     // If nothing to show, force empty result
-    if (where.OR.length === 0) where.OR = [{ id: "__none__" }];
+    where.AND.push({ OR: followingOR.length > 0 ? followingOR : [{ id: "__none__" }] });
   }
   if (filter === "community") where.author = { role: { not: "PARTNER" } };
   if (filter === "partners") where.author = { role: "PARTNER" };
@@ -188,6 +197,7 @@ export async function checkNewPosts({
   const where: any = {
     published: true,
     createdAt: { gt: new Date(newerThan) },
+    AND: [{ OR: [{ visibility: { in: ["public", "community"] } }, { authorId: userId }] }],
   };
 
   if (filter === "following") {
@@ -199,11 +209,12 @@ export async function checkNewPosts({
     });
     const partnerIds = rows.filter((r) => r.followingMode === "partner").map((r) => r.followingId);
     const userIds    = rows.filter((r) => r.followingMode === "user").map((r) => r.followingId);
-    where.OR = [
+    const followingOR = [
       ...(partnerIds.length > 0 ? [{ authorId: { in: partnerIds }, postedAsPartner: true }] : []),
       ...(userIds.length    > 0 ? [{ authorId: { in: userIds },    postedAsPartner: false }] : []),
     ];
-    if (where.OR.length === 0) return 0;
+    if (followingOR.length === 0) return 0;
+    where.AND.push({ OR: followingOR });
   } else if (filter === "community") {
     where.author = { role: { not: "PARTNER" } };
   } else if (filter === "partners") {

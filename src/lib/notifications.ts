@@ -4,6 +4,7 @@ import { randomUUID } from "crypto";
 import { prisma } from "@/lib/prisma";
 
 export type AppNotificationType =
+  | "NEW_POST"
   | "LIKE"
   | "COMMENT"
   | "REPLY"
