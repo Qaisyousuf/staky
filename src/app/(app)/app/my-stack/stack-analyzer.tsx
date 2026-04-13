@@ -192,8 +192,8 @@ function USToolBrowser({
 
       {/* Tool list */}
       <div
-        className="max-h-[480px] overflow-y-auto rounded-xl divide-y"
-        style={{ border: CARD_BORDER, divideColor: "rgba(0,0,0,0.04)" }}
+        className="max-h-[480px] overflow-y-auto rounded-xl divide-y divide-[rgba(0,0,0,0.04)]"
+        style={{ border: CARD_BORDER }}
       >
         {sorted.length === 0 ? (
           <div className="py-10 text-center text-[13px] text-[#9BA39C]">No tools found.</div>
