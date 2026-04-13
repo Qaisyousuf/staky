@@ -143,7 +143,7 @@ export function SettingsShell({
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 lg:px-0 pb-16" style={{ fontFamily: F }}>
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16" style={{ fontFamily: F }}>
 
       {/* ── Page header ─────────────────────────────────────────────────────── */}
       <div className="mb-6 flex items-center justify-between gap-4">

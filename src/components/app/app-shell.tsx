@@ -59,7 +59,7 @@ export function AppShell({
           recentMessages={recentMessages}
           unreadMessageCount={unreadMessageCount}
         />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto py-5 pb-10">{children}</main>
       </div>
     </div>
   );

@@ -50,7 +50,7 @@ export default async function RequestDetailPage({
   const toolSlugs = Array.from(new Set([request.fromTool, request.toTool]));
   const toolRows = await prisma.softwareTool.findMany({
     where: { slug: { in: toolSlugs } },
-    select: { slug: true, name: true },
+    select: { slug: true, name: true, logoUrl: true, color: true, abbr: true },
   });
   const toolBySlug = new Map(toolRows.map((t) => [t.slug, t]));
   const fromTool = toolBySlug.get(request.fromTool);
@@ -70,6 +70,8 @@ export default async function RequestDetailPage({
       toTool={request.toTool}
       fromToolName={fromTool?.name ?? request.fromTool}
       toToolName={toTool?.name ?? request.toTool}
+      fromToolData={fromTool ? { logoUrl: fromTool.logoUrl, color: fromTool.color, abbr: fromTool.abbr } : null}
+      toToolData={toTool ? { logoUrl: toTool.logoUrl, color: toTool.color, abbr: toTool.abbr } : null}
       status={request.status}
       statusCls={status.cls}
       statusLabel={status.label}

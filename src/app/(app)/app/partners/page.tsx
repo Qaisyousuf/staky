@@ -41,7 +41,10 @@ export default async function AppPartnersPage() {
   const stackAlternatives = usToolSlugs.length > 0
     ? await prisma.softwareAlternative.findMany({
         where: { published: true, fromTool: { slug: { in: usToolSlugs } } },
-        include: { fromTool: { select: { slug: true } }, toTool: { select: { slug: true } } },
+        include: {
+        fromTool: { select: { slug: true, name: true, logoUrl: true, color: true, abbr: true } },
+        toTool:   { select: { slug: true, name: true, logoUrl: true, color: true, abbr: true } },
+      },
         orderBy: { switcherCount: "desc" },
         distinct: ["fromToolId"],
         take: 5,
@@ -49,7 +52,9 @@ export default async function AppPartnersPage() {
     : [];
   const switches = stackAlternatives.map((a) => ({
     fromTool: a.fromTool.slug,
-    toTool: a.toTool.slug,
+    toTool:   a.toTool.slug,
+    fromToolData: { name: a.fromTool.name, logoUrl: a.fromTool.logoUrl, color: a.fromTool.color, abbr: a.fromTool.abbr },
+    toToolData:   { name: a.toTool.name,   logoUrl: a.toTool.logoUrl,   color: a.toTool.color,   abbr: a.toTool.abbr   },
   }));
 
   const requestedPartnerIds = new Set(

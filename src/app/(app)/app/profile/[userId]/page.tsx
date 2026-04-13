@@ -32,7 +32,7 @@ export default async function ProfilePage({
   searchParams,
 }: {
   params: { userId: string };
-  searchParams: { from?: string };
+  searchParams: { from?: string; asPartner?: string };
 }) {
   const session = await auth();
   const currentUserId = session?.user?.id ?? null;
@@ -103,7 +103,9 @@ export default async function ProfilePage({
 
   if (!user) notFound();
 
-  const showAsPartner = user.activeMode === "partner" && user.partner?.approved;
+  // Force partner view when coming from the partners directory
+  const forcePartnerView = searchParams.asPartner === "1" && !!user.partner?.approved;
+  const showAsPartner = (forcePartnerView || user.activeMode === "partner") && !!user.partner?.approved;
   const connectionCount =
     showAsPartner
       ? await prisma.connection.count({
@@ -125,7 +127,7 @@ export default async function ProfilePage({
 
   return (
     <ProfileClient
-      user={{ ...user, createdAt: user.createdAt.toISOString(), socialLinks }}
+      user={{ ...user, activeMode: showAsPartner ? "partner" : user.activeMode, createdAt: user.createdAt.toISOString(), socialLinks }}
       followerCount={followerCount}
       followingCount={followingCount}
       isFollowing={!!isFollowing}
@@ -134,8 +136,9 @@ export default async function ProfilePage({
       isSelf={currentUserId === params.userId}
       suggestedProfiles={suggestedProfiles}
       backHref={
-        searchParams.from === "network" ? "/app/network" :
-        searchParams.from === "views" ? "/app/profile/views" :
+        searchParams.from === "network"   ? "/app/network" :
+        searchParams.from === "views"     ? "/app/profile/views" :
+        searchParams.from === "partners"  ? "/app/partners" :
         undefined
       }
     />

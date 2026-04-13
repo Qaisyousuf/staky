@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
-  Layers, Handshake, Star, Inbox, FileText,
+  Layers, Handshake, Inbox, FileText,
   TrendingUp, ArrowRight, Plus, Compass, PenSquare,
   Heart, MessageCircle, Bookmark, Clock,
   CheckCircle2, CircleDot, XCircle, AlertCircle,
@@ -237,7 +237,7 @@ async function UserDashboard({ userId, userName, activeMode, hasPartner }: { use
   const CARD_BORDER = "1.5px solid rgba(0,0,0,0.06)";
 
   return (
-    <div className="max-w-5xl mx-auto space-y-4 px-4 lg:px-0" style={{ fontFamily: F }}>
+    <div className="max-w-5xl mx-auto space-y-4 px-4 sm:px-6 lg:px-8" style={{ fontFamily: F }}>
 
       {/* ── Profile hero card ─────────────────────────────────────────────────── */}
       <div
@@ -539,15 +539,24 @@ async function PartnerDashboard({ userId }: { userId: string }) {
   const CARD_BORDER = "1.5px solid rgba(0,0,0,0.06)";
 
   return (
-    <div className="max-w-5xl mx-auto space-y-4 px-4 lg:px-0" style={{ fontFamily: F }}>
+    <div className="max-w-5xl mx-auto space-y-4 px-4 sm:px-6 lg:px-8" style={{ fontFamily: F }}>
 
       {/* ── Company hero card ──────────────────────────────────────────────────── */}
       <div
         className="relative flex flex-col rounded-2xl bg-white overflow-hidden"
         style={{ border: CARD_BORDER, boxShadow: CARD_SHADOW }}
       >
-        {/* Blue gradient band */}
-        <div className="h-28 sm:h-32 w-full shrink-0" style={{ background: "linear-gradient(135deg, #2A5FA540, #2A5FA518)" }} />
+        {/* Cover image or gradient band */}
+        {partner?.coverImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={partner.coverImage}
+            alt="Cover"
+            className="h-28 sm:h-36 w-full object-cover shrink-0"
+          />
+        ) : (
+          <div className="h-28 sm:h-32 w-full shrink-0" style={{ background: "linear-gradient(135deg, #2A5FA540, #2A5FA518)" }} />
+        )}
 
         {/* Logo row */}
         <div className="px-6 -mt-12 flex items-end justify-between gap-4">
@@ -568,22 +577,14 @@ async function PartnerDashboard({ userId }: { userId: string }) {
           )}
 
           {/* Action buttons */}
-          <div className="flex items-center gap-2 pb-1 flex-wrap justify-end">
+          <div className="flex items-center gap-2 pb-1">
             <Link
-              href="/app/my-posts"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-[rgba(0,0,0,0.08)] bg-white hover:bg-[#F7F9FC] text-[#5C6B5E] text-[12px] font-semibold px-3.5 py-2 transition-colors"
-              style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
-            >
-              <FileText className="h-3.5 w-3.5 text-[#9BA39C]" />
-              New post
-            </Link>
-            <Link
-              href="/app/leads"
+              href="/app/settings?tab=partner"
               className="inline-flex items-center gap-1.5 rounded-xl bg-[#2A5FA5] hover:bg-[#244d8a] text-white text-[12px] font-semibold px-3.5 py-2 transition-colors"
               style={{ boxShadow: "0 1px 4px rgba(42,95,165,0.25)" }}
             >
-              <Inbox className="h-3.5 w-3.5" />
-              View leads
+              <Settings className="h-3.5 w-3.5" />
+              Edit profile
             </Link>
           </div>
         </div>
@@ -602,7 +603,7 @@ async function PartnerDashboard({ userId }: { userId: string }) {
             )}
           </div>
 
-          {/* Country · rating · projects */}
+          {/* Country · projects */}
           <div className="flex flex-wrap items-center gap-2 mt-1.5">
             {partner?.country && (
               <>
@@ -613,13 +614,6 @@ async function PartnerDashboard({ userId }: { userId: string }) {
                 <span className="text-[#C8D0CA] text-[12px]">·</span>
               </>
             )}
-            <span className="inline-flex items-center gap-1 text-[12px] text-[#5C6B5E]">
-              <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400 shrink-0" />
-              <span className="font-semibold text-[#1B2B1F]">
-                {partner?.rating && partner.rating > 0 ? partner.rating.toFixed(1) : "No rating"}
-              </span>
-            </span>
-            <span className="text-[#C8D0CA] text-[12px]">·</span>
             <span className="text-[12px] text-[#5C6B5E]">
               <span className="font-semibold text-[#1B2B1F]">{partner?.projectCount ?? 0}</span> projects
             </span>
@@ -650,7 +644,6 @@ async function PartnerDashboard({ userId }: { userId: string }) {
             {[
               { value: newLeadsCount,       label: "New leads",       href: "/app/leads", color: "#B85C38" },
               { value: activeProjectsCount, label: "Active projects",  href: "/app/leads", color: "#0F6E56" },
-              { value: partner?.rating && partner.rating > 0 ? partner.rating.toFixed(1) : "—", label: "Rating", href: undefined, color: "#B89C38" },
               { value: followerCount,       label: "Followers",        href: undefined,    color: "#2A5FA5" },
             ].map(({ value, label, href, color }) => {
               const inner = (
