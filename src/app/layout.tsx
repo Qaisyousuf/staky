@@ -14,9 +14,21 @@ const jakarta = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXTAUTH_URL || "http://localhost:3000"),
-  title: "Staky — EU Stack Switcher",
+  title: "Staky",
   description: "Discover European alternatives to US software and connect with migration experts.",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icons/apple-touch-icon.png" },
+    ],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -26,13 +38,13 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "Staky",
-    title: "Staky — EU Stack Switcher",
+    title: "Staky",
     description: "Discover European alternatives to US software and connect with migration experts.",
-    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "Staky — EU Stack Switcher" }],
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "Staky" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Staky — EU Stack Switcher",
+    title: "Staky",
     description: "Discover European alternatives to US software and connect with migration experts.",
     images: ["/opengraph-image"],
   },
@@ -46,10 +58,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
-        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
