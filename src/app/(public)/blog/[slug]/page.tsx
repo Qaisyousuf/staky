@@ -307,8 +307,9 @@ function SidebarPostCard({ post }: { post: RelatedPost }) {
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const post = await getBlogPost(params.slug);
-  const image = `/blog/${params.slug}/opengraph-image`;
   if (!post) return { title: "Post not found — Staky" };
+  // Prefer the actual cover image if one was uploaded; fall back to the generated OG graphic
+  const image = post.coverImage ?? `/blog/${params.slug}/opengraph-image`;
   return {
     title: `${post.title} — Staky Blog`,
     description: post.excerpt,

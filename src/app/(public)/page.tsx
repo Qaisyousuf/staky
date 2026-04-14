@@ -38,7 +38,14 @@ type CommunityPost = {
   toTool: string;
   story: string;
   createdAt: Date;
-  author: { name: string | null; image: string | null; title: string | null; company: string | null };
+  postedAsPartner: boolean;
+  author: {
+    name: string | null;
+    image: string | null;
+    title: string | null;
+    company: string | null;
+    partner: { companyName: string; logoUrl: string | null } | null;
+  };
   _count: { likes: number; comments: number };
   fromToolData: { name: string; logoUrl: string | null; color: string; abbr: string; country: string | null } | null;
   toToolData: { name: string; logoUrl: string | null; color: string; abbr: string; country: string | null } | null;
@@ -450,6 +457,14 @@ function ToolLogoBox({ tool }: { tool: { name: string; logoUrl: string | null; c
 function StoryCard({ post }: { post: CommunityPost }) {
   const fromTool = post.fromToolData;
   const toTool = post.toToolData;
+  const isPartner = post.postedAsPartner && !!post.author.partner;
+  const displayName = isPartner
+    ? (post.author.partner!.companyName ?? post.author.name ?? "Partner")
+    : (post.author.name ?? "Member");
+  const displayImage = isPartner
+    ? post.author.partner!.logoUrl
+    : post.author.image;
+  const authorInitials = displayName.split(" ").map((w: string) => w[0]).slice(0, 2).join("").toUpperCase();
 
   return (
     <Link
@@ -457,37 +472,55 @@ function StoryCard({ post }: { post: CommunityPost }) {
       className="group flex flex-col rounded-2xl bg-white overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_16px_48px_rgba(27,43,31,0.09)]"
       style={{ border: "1.5px solid rgba(0,0,0,0.06)", boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04)" }}
     >
-      {/* Switch header */}
-      <div className="px-4 py-3.5 flex items-center gap-2" style={{ background: "#F4FAF7", borderBottom: "1px solid rgba(15,110,86,0.08)" }}>
-        <ToolLogoBox tool={fromTool} />
-        <span className="text-[12px] font-medium text-[#4D5D52] truncate flex-1">{fromTool?.name ?? "—"}</span>
-        <ArrowRight className="h-3.5 w-3.5 text-[#0F6E56] shrink-0 mx-0.5" />
-        <span className="text-[12px] font-medium text-[#0F6E56] truncate flex-1 text-right">{toTool?.name ?? "—"}</span>
-        <ToolLogoBox tool={toTool} />
+      {/* Author header */}
+      <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+        {displayImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={displayImage}
+            alt={displayName}
+            className={`h-8 w-8 object-cover shrink-0 ${isPartner ? "rounded-lg" : "rounded-full"}`}
+          />
+        ) : (
+          <div className={`h-8 w-8 flex items-center justify-center text-white text-[10px] font-bold shrink-0 select-none ${isPartner ? "rounded-lg bg-[#2A5FA5]" : "rounded-full bg-[#0F6E56]"}`}>
+            {authorInitials}
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <p className="text-[13px] font-semibold text-[#1B2B1F] truncate leading-tight">{displayName}</p>
+            {isPartner && (
+              <span className="shrink-0 rounded-md bg-[#EBF0F9] px-1.5 py-0.5 text-[9px] font-semibold text-[#2A5FA5] uppercase tracking-wide">Partner</span>
+            )}
+          </div>
+          <p className="text-[10px] text-[#9BA39C]">{timeAgo(post.createdAt)}</p>
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <span className="flex items-center gap-1 text-[11px] text-[#9BA39C]">
+            <Heart className="h-3 w-3" />{post._count.likes}
+          </span>
+          <span className="flex items-center gap-1 text-[11px] text-[#9BA39C]">
+            <MessageCircle className="h-3 w-3" />{post._count.comments}
+          </span>
+        </div>
       </div>
 
-      <div className="p-5 flex flex-col flex-1">
-        {/* Story */}
-        <p className="flex-1 line-clamp-3 text-[13px] leading-[1.75] text-[#5C6B5E] mb-4">
+      {/* Migration path */}
+      {(fromTool || toTool) && (
+        <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: "#F4FAF7", borderBottom: "1px solid rgba(15,110,86,0.08)" }}>
+          <ToolLogoBox tool={fromTool} />
+          <span className="text-[11px] font-medium text-[#4D5D52] truncate flex-1">{fromTool?.name ?? "—"}</span>
+          <ArrowRight className="h-3 w-3 text-[#0F6E56] shrink-0 mx-0.5" />
+          <span className="text-[11px] font-medium text-[#0F6E56] truncate flex-1 text-right">{toTool?.name ?? "—"}</span>
+          <ToolLogoBox tool={toTool} />
+        </div>
+      )}
+
+      {/* Story */}
+      <div className="px-4 py-4 flex-1">
+        <p className="line-clamp-3 text-[13px] leading-[1.75] text-[#5C6B5E]">
           &ldquo;{post.story}&rdquo;
         </p>
-
-        {/* Author + engagement */}
-        <div className="flex items-center gap-2.5 pt-3 border-t border-[#F0EDE8]">
-          <Avatar name={post.author.name} image={post.author.image} className="h-7 w-7 rounded-full text-[9px] shrink-0" />
-          <div className="min-w-0 flex-1">
-            <p className="text-[12px] font-semibold text-[#1B2B1F] truncate leading-tight">{post.author.name ?? "Member"}</p>
-            <p className="text-[10px] text-[#9BA39C] truncate">{timeAgo(post.createdAt)}</p>
-          </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <span className="flex items-center gap-1 text-[11px] text-[#9BA39C]">
-              <Heart className="h-3 w-3" />{post._count.likes}
-            </span>
-            <span className="flex items-center gap-1 text-[11px] text-[#9BA39C]">
-              <MessageCircle className="h-3 w-3" />{post._count.comments}
-            </span>
-          </div>
-        </div>
       </div>
     </Link>
   );
@@ -673,15 +706,6 @@ function CommunitySection({
                 </div>
               )}
 
-              {/* Become a partner CTA */}
-              {approvedPartners.length > 0 && (
-                <div className="mt-3 rounded-2xl px-4 py-3.5 flex items-center justify-between" style={{ background: "linear-gradient(135deg,#EBF0F9,#E4ECF7)", border: "1.5px solid rgba(42,95,165,0.12)" }}>
-                  <p className="text-[12px] text-[#2A5FA5] font-medium">Are you a migration expert?</p>
-                  <Link href="/signup" className="text-[11px] font-bold text-[#2A5FA5] hover:underline shrink-0">
-                    Become a partner →
-                  </Link>
-                </div>
-              )}
             </div>
           </FadeIn>
         </div>
@@ -938,11 +962,25 @@ export default async function LandingPage() {
   // ── Community + partners data ───────────────────────────────────────────────
   const [rawPosts, recentUsers, approvedPartners, totalUsers, totalPartners, rawTrustedPartners] = await Promise.all([
     prisma.alternativePost.findMany({
-      where: { published: true },
+      where: { published: true, visibility: "public" },
       orderBy: { createdAt: "desc" },
       take: 4,
-      include: {
-        author: { select: { name: true, image: true, title: true, company: true } },
+      select: {
+        id: true,
+        fromTool: true,
+        toTool: true,
+        story: true,
+        createdAt: true,
+        postedAsPartner: true,
+        author: {
+          select: {
+            name: true,
+            image: true,
+            title: true,
+            company: true,
+            partner: { select: { companyName: true, logoUrl: true } },
+          },
+        },
         _count: { select: { likes: true, comments: true } },
       },
     }),

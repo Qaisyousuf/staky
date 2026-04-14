@@ -24,6 +24,19 @@ export const metadata: Metadata = {
   },
   formatDetection: { telephone: false },
   themeColor: "#0F6E56",
+  openGraph: {
+    type: "website",
+    siteName: "Staky",
+    title: "Staky — EU Stack Switcher",
+    description: "Discover European alternatives to US software and connect with migration experts.",
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "Staky — EU Stack Switcher" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Staky — EU Stack Switcher",
+    description: "Discover European alternatives to US software and connect with migration experts.",
+    images: ["/opengraph-image"],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

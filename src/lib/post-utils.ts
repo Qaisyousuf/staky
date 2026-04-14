@@ -137,13 +137,23 @@ export async function fetchLinkMetadata(url: string) {
     const description =
       extractMetaTag(html, "og:description") ||
       extractMetaTag(html, "description");
-    const image = extractMetaTag(html, "og:image");
+    const rawImage = extractMetaTag(html, "og:image");
     const canonicalUrl = extractMetaTag(html, "og:url") || url;
+
+    // Resolve relative image URLs against the page base URL
+    let image: string | null = null;
+    if (rawImage) {
+      try {
+        image = new URL(rawImage, url).href;
+      } catch {
+        image = rawImage;
+      }
+    }
 
     return {
       title: title || null,
       description: description || null,
-      image: image || null,
+      image,
       domain: getUrlDomain(canonicalUrl),
     };
   } catch {

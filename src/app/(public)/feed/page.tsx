@@ -297,6 +297,7 @@ export default async function PublicFeedPage({
   const rawPosts = await prisma.alternativePost.findMany({
     where: {
       published: true,
+      visibility: "public",
       ...(activeTag ? { tags: { has: activeTag } } : {}),
     },
     orderBy: { createdAt: "desc" },
