@@ -233,7 +233,7 @@ function SwitchCard({ alt }: { alt: PublishedAlternative }) {
   return (
     <Link
       href={`/discover?category=${encodeURIComponent(alt.category)}`}
-      className="group flex min-w-[260px] flex-col rounded-[24px] bg-white p-6 transition-all duration-200"
+      className="group relative flex min-w-[260px] flex-col rounded-[24px] bg-white p-6 transition-all duration-200"
       style={{
         fontFamily: F,
         border: "1.5px solid rgba(0,0,0,0.04)",

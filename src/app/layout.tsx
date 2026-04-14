@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "sonner";
 import { Providers } from "@/components/providers";
@@ -23,7 +23,6 @@ export const metadata: Metadata = {
     title: "Staky",
   },
   formatDetection: { telephone: false },
-  themeColor: "#0F6E56",
   openGraph: {
     type: "website",
     siteName: "Staky",
@@ -37,6 +36,10 @@ export const metadata: Metadata = {
     description: "Discover European alternatives to US software and connect with migration experts.",
     images: ["/opengraph-image"],
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0F6E56",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

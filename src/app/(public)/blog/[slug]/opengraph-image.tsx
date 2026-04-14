@@ -89,7 +89,7 @@ export default async function Image({ params }: { params: { slug: string } }) {
           <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
             <div
               style={{
-                display: "inline-flex",
+                display: "flex",
                 alignSelf: "flex-start",
                 borderRadius: 999,
                 background: "#EAF3EE",

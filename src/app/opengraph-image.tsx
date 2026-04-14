@@ -63,7 +63,7 @@ export default function Image() {
             {/* Logo pill */}
             <div
               style={{
-                display: "inline-flex",
+                display: "flex",
                 alignSelf: "flex-start",
                 alignItems: "center",
                 gap: 12,
