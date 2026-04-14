@@ -72,19 +72,38 @@ export default function Image() {
             >
               <div
                 style={{
-                  width: 28,
+                  width: 34,
                   height: 28,
-                  borderRadius: 8,
-                  background: "rgba(255,255,255,0.25)",
                   display: "flex",
+                  flexDirection: "column",
                   alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 16,
-                  fontWeight: 900,
-                  color: "#fff",
+                  justifyContent: "space-between",
                 }}
               >
-                S
+                <div
+                  style={{
+                    width: 26,
+                    height: 6,
+                    borderRadius: 999,
+                    background: "rgba(255,255,255,0.35)",
+                  }}
+                />
+                <div
+                  style={{
+                    width: 30,
+                    height: 6,
+                    borderRadius: 999,
+                    background: "rgba(255,255,255,0.55)",
+                  }}
+                />
+                <div
+                  style={{
+                    width: 34,
+                    height: 6,
+                    borderRadius: 999,
+                    background: "#ffffff",
+                  }}
+                />
               </div>
               <span style={{ display: "flex", fontSize: 26, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
                 Staky
