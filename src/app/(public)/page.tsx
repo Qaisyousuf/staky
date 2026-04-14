@@ -228,7 +228,7 @@ function SectionLabel({ text, light = false }: { text: string; light?: boolean }
 
 // ─── Popular Switches ──────────────────────────────────────────────────────────
 
-function SwitchCard({ alt }: { alt: PublishedAlternative }) {
+function SwitchCard({ alt, rank }: { alt: PublishedAlternative; rank: number }) {
   const { fromTool, toTool } = alt;
   const fallbackSeed = alt.id.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
   const switcherCount = alt.switcherCount > 0 ? alt.switcherCount : 80 + (fallbackSeed % 180);
@@ -269,7 +269,8 @@ function SwitchCard({ alt }: { alt: PublishedAlternative }) {
         </div>
       </div>
 
-      <div className="mt-6 border-t border-[#EFF0EB] pt-4 text-center">
+      <div className="mt-6 border-t border-[#EFF0EB] pt-4 flex items-center justify-between">
+        <span className="text-[12px] font-bold text-[#C8D1CA]">#{rank}</span>
         <p className="text-[13px] text-[#9BA39C]">
           <span className="font-semibold text-[#1B2B1F]">{switcherCount.toLocaleString()}</span> companies switched
         </p>
@@ -302,18 +303,18 @@ function PopularSwitches({ alternatives }: { alternatives: PublishedAlternative[
 
         {/* Mobile */}
         <div className="mt-8 -mx-4 flex gap-4 overflow-x-auto px-4 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:hidden">
-          {alternatives.slice(0, 8).map((alt) => (
+          {alternatives.slice(0, 8).map((alt, i) => (
             <div key={alt.id} className="w-[260px] shrink-0">
-              <SwitchCard alt={alt} />
+              <SwitchCard alt={alt} rank={i + 1} />
             </div>
           ))}
         </div>
 
         {/* Desktop */}
         <div className="mt-8 hidden sm:flex gap-4 overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {alternatives.slice(0, 10).map((alt) => (
+          {alternatives.slice(0, 10).map((alt, i) => (
             <div key={alt.id} className="w-[260px] shrink-0">
-              <SwitchCard alt={alt} />
+              <SwitchCard alt={alt} rank={i + 1} />
             </div>
           ))}
         </div>

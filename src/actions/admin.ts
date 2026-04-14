@@ -105,7 +105,24 @@ export async function adminModeratePost(
   await requireAdmin();
 
   if (action === "delete") {
+    // Fetch image URLs before deleting so we can clean up files from disk
+    const post = await prisma.alternativePost.findUnique({
+      where: { id: postId },
+      select: { imageUrls: true },
+    });
     await prisma.alternativePost.delete({ where: { id: postId } });
+    // Delete associated image files
+    if (post?.imageUrls?.length) {
+      const { unlink } = await import("fs/promises");
+      const path = await import("path");
+      await Promise.allSettled(
+        post.imageUrls.map((url) => {
+          const filename = url.replace("/uploads/posts/", "");
+          const filepath = path.join(process.cwd(), "public", "uploads", "posts", filename);
+          return unlink(filepath);
+        })
+      );
+    }
   } else {
     await prisma.alternativePost.update({
       where: { id: postId },

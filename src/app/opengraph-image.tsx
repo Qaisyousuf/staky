@@ -14,137 +14,163 @@ export default function Image() {
           height: "100%",
           display: "flex",
           position: "relative",
-          background: "#F8F5EE",
+          background: "#0D1F16",
           fontFamily: "sans-serif",
           overflow: "hidden",
         }}
       >
-        {/* Background gradients */}
+        {/* Background radial glow top-left */}
+        <div
+          style={{
+            position: "absolute",
+            top: -120,
+            left: -80,
+            width: 560,
+            height: 560,
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(15,110,86,0.55) 0%, transparent 70%)",
+          }}
+        />
+        {/* Background radial glow bottom-right */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: -140,
+            right: -60,
+            width: 480,
+            height: 480,
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(42,95,165,0.35) 0%, transparent 70%)",
+          }}
+        />
+
+        {/* Grid lines overlay */}
         <div
           style={{
             position: "absolute",
             inset: 0,
-            background:
-              "radial-gradient(circle at 12% 20%, rgba(15,110,86,0.22), transparent 35%), radial-gradient(circle at 88% 78%, rgba(42,95,165,0.14), transparent 30%)",
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
           }}
         />
 
-        {/* Soft overlay */}
+        {/* Content */}
         <div
           style={{
-            position: "absolute",
-            inset: 0,
-            background: "rgba(255,255,255,0.18)",
-          }}
-        />
-
-        {/* Main card */}
-        <div
-          style={{
-            position: "absolute",
-            left: 60,
-            top: 60,
-            right: 60,
-            bottom: 60,
+            position: "relative",
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
-            borderRadius: 32,
-            border: "1.5px solid rgba(0,0,0,0.07)",
-            background: "rgba(255,255,255,0.82)",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.04), 0 16px 48px rgba(0,0,0,0.08)",
-            padding: "48px 52px",
+            width: "100%",
+            height: "100%",
+            padding: "52px 60px",
           }}
         >
-          {/* Top: logo + tagline */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-            {/* Logo pill */}
+          {/* Top row: logo + domain */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            {/* Logo */}
             <div
               style={{
                 display: "flex",
-                alignSelf: "flex-start",
                 alignItems: "center",
-                gap: 12,
-                borderRadius: 999,
-                background: "#0F6E56",
-                padding: "10px 22px",
+                gap: 14,
               }}
             >
               <div
                 style={{
-                  width: 34,
-                  height: 28,
+                  width: 42,
+                  height: 36,
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "space-between",
                 }}
               >
-                <div
-                  style={{
-                    width: 26,
-                    height: 6,
-                    borderRadius: 999,
-                    background: "rgba(255,255,255,0.35)",
-                  }}
-                />
-                <div
-                  style={{
-                    width: 30,
-                    height: 6,
-                    borderRadius: 999,
-                    background: "rgba(255,255,255,0.55)",
-                  }}
-                />
-                <div
-                  style={{
-                    width: 34,
-                    height: 6,
-                    borderRadius: 999,
-                    background: "#ffffff",
-                  }}
-                />
+                <div style={{ width: 28, height: 7, borderRadius: 999, background: "rgba(255,255,255,0.3)" }} />
+                <div style={{ width: 34, height: 7, borderRadius: 999, background: "rgba(255,255,255,0.55)" }} />
+                <div style={{ width: 42, height: 7, borderRadius: 999, background: "#ffffff" }} />
               </div>
-              <span style={{ display: "flex", fontSize: 26, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
+              <span style={{ display: "flex", fontSize: 30, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
                 Staky
               </span>
             </div>
 
-            {/* Headline */}
+            {/* Domain pill */}
             <div
               style={{
                 display: "flex",
-                fontSize: 62,
+                alignItems: "center",
+                borderRadius: 999,
+                border: "1px solid rgba(255,255,255,0.15)",
+                background: "rgba(255,255,255,0.07)",
+                padding: "8px 18px",
+                fontSize: 18,
+                fontWeight: 600,
+                color: "rgba(255,255,255,0.6)",
+                letterSpacing: "0.02em",
+              }}
+            >
+              staky.dk
+            </div>
+          </div>
+
+          {/* Center: headline */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            {/* Label */}
+            <div
+              style={{
+                display: "flex",
+                alignSelf: "flex-start",
+                alignItems: "center",
+                gap: 8,
+                borderRadius: 999,
+                background: "rgba(15,110,86,0.25)",
+                border: "1px solid rgba(15,110,86,0.5)",
+                padding: "6px 16px",
+                fontSize: 14,
+                fontWeight: 700,
+                color: "#4ECBA0",
+                letterSpacing: "0.06em",
+              }}
+            >
+              EU STACK SWITCHER
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                fontSize: 68,
                 fontWeight: 800,
-                lineHeight: 1.06,
-                letterSpacing: "-0.04em",
-                color: "#1B2B1F",
-                maxWidth: 780,
+                lineHeight: 1.04,
+                letterSpacing: "-0.045em",
+                color: "#ffffff",
+                maxWidth: 820,
               }}
             >
               Switch to European software — together
             </div>
 
-            {/* Sub */}
             <div
               style={{
                 display: "flex",
-                fontSize: 26,
+                fontSize: 24,
                 lineHeight: 1.5,
-                color: "#5C6B5E",
-                maxWidth: 700,
+                color: "rgba(255,255,255,0.55)",
+                maxWidth: 680,
               }}
             >
-              Discover EU alternatives to US tools, share your migration story, and connect with expert partners.
+              Discover EU alternatives, share your migration story, and connect with expert partners.
             </div>
           </div>
 
-          {/* Bottom: stat pills */}
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          {/* Bottom: category pills */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {[
-              { label: "EU Alternatives", color: "#EAF3EE", text: "#0F6E56" },
-              { label: "Community Stories", color: "#EBF0F9", text: "#2A5FA5" },
-              { label: "Migration Partners", color: "#FFF7ED", text: "#C2410C" },
+              { label: "EU Alternatives", bg: "rgba(15,110,86,0.2)", border: "rgba(15,110,86,0.45)", text: "#4ECBA0" },
+              { label: "Community Stories", bg: "rgba(42,95,165,0.2)", border: "rgba(42,95,165,0.45)", text: "#7EB4FF" },
+              { label: "Migration Partners", bg: "rgba(220,150,50,0.15)", border: "rgba(220,150,50,0.4)", text: "#F5C57A" },
+              { label: "GDPR Compliant", bg: "rgba(255,255,255,0.06)", border: "rgba(255,255,255,0.12)", text: "rgba(255,255,255,0.5)" },
             ].map((pill) => (
               <div
                 key={pill.label}
@@ -152,31 +178,17 @@ export default function Image() {
                   display: "flex",
                   alignItems: "center",
                   borderRadius: 999,
-                  background: pill.color,
+                  background: pill.bg,
+                  border: `1px solid ${pill.border}`,
                   padding: "10px 20px",
-                  fontSize: 20,
-                  fontWeight: 700,
+                  fontSize: 18,
+                  fontWeight: 600,
                   color: pill.text,
                 }}
               >
                 {pill.label}
               </div>
             ))}
-
-            <div style={{ flex: 1 }} />
-
-            {/* Domain */}
-            <div
-              style={{
-                display: "flex",
-                fontSize: 22,
-                fontWeight: 700,
-                color: "#9BA39C",
-                letterSpacing: "0.01em",
-              }}
-            >
-              staky.dk
-            </div>
           </div>
         </div>
       </div>
