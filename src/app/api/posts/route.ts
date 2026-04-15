@@ -91,7 +91,7 @@ export async function POST(request: Request) {
     const mergedTags = Array.from(new Set([...explicitTags, ...hashtags])).slice(0, 5);
 
     // Upload images to UploadThing (works in serverless environments)
-    let imageUrls: string[] = [];
+    const imageUrls: string[] = [];
     if (imageFiles.length > 0) {
       const renamedFiles = imageFiles.map((file) => {
         const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
