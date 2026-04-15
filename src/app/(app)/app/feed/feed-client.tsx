@@ -256,7 +256,7 @@ function RightSidebar({ suggested, stackTools, trendingAlts }: { suggested: Sugg
           ))}
         </div>
         <Link
-          href="/discover"
+          href="/app/discover"
           className="mt-3 flex items-center gap-1 text-xs font-medium text-[#0F6E56] hover:underline"
         >
           <Globe className="h-3 w-3" />
@@ -284,7 +284,7 @@ function RightSidebar({ suggested, stackTools, trendingAlts }: { suggested: Sugg
           </p>
         </div>
         <Link
-          href="/partners"
+          href="/app/partners"
           className="mt-4 inline-flex w-full items-center justify-center rounded-[14px] bg-white px-4 py-2.5 text-xs font-semibold text-[#2A5FA5] transition-colors hover:bg-blue-50"
         >
           Browse partners

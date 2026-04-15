@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import {
   Bell, Heart, MessageCircle, MessageSquare, Reply, UserPlus, ThumbsUp,
   Link2, Bookmark, Share2, CheckCheck, BriefcaseBusiness, CircleCheckBig, CircleOff, CircleDot, Receipt, CreditCard, ClipboardList, CheckSquare, Inbox, Briefcase, Eye, FileText,
+  Send, Handshake, ShieldCheck, ShieldX, Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { markAllNotificationsRead, markNotificationRead } from "@/actions/social";
@@ -58,30 +59,41 @@ function notifUrl(n: Notification, role?: string): string {
       return `/app/profile/${n.sender.id}?${personaParam}&from=notifications`;
     }
     case "REQUEST_RECEIVED":
-      return n.requestId ? `/leads/${n.requestId}` : "/leads";
+      return n.requestId ? `/app/leads/${n.requestId}` : "/app/leads";
     case "REQUEST_ACCEPTED":
     case "REQUEST_REJECTED":
     case "REQUEST_ACTIVE":
     case "REQUEST_COMPLETED":
-      return n.requestId ? `/requests/${n.requestId}` : "/requests";
+      return n.requestId ? `/app/requests/${n.requestId}` : "/app/requests";
     case "REQUEST_MESSAGE":
-      if (!n.requestId) return isPartner ? "/leads" : "/requests";
-      return isPartner ? `/leads/${n.requestId}` : `/requests/${n.requestId}`;
+      if (!n.requestId) return isPartner ? "/app/leads" : "/app/requests";
+      return isPartner ? `/app/leads/${n.requestId}` : `/app/requests/${n.requestId}`;
+    case "REQUEST_PROPOSAL":
+      return n.requestId ? `/app/requests/${n.requestId}` : "/app/requests";
+    case "PROPOSAL_ACCEPTED":
+    case "PROPOSAL_DECLINED":
+      return n.requestId ? `/app/leads/${n.requestId}` : "/app/leads";
     case "INVOICE_SENT":
-      return n.requestId ? `/requests/${n.requestId}` : "/requests";
+      return n.requestId ? `/app/requests/${n.requestId}` : "/app/requests";
     case "INVOICE_PAID":
-      if (!n.requestId) return isPartner ? "/leads" : "/requests";
-      return isPartner ? `/leads/${n.requestId}` : `/requests/${n.requestId}`;
+      if (!n.requestId) return isPartner ? "/app/leads" : "/app/requests";
+      return isPartner ? `/app/leads/${n.requestId}` : `/app/requests/${n.requestId}`;
     case "CONFIG_REQUEST_SENT":
-      return n.requestId ? `/requests/${n.requestId}` : "/requests";
+      return n.requestId ? `/app/requests/${n.requestId}` : "/app/requests";
     case "CONFIG_SUBMITTED":
-      return n.requestId ? `/leads/${n.requestId}` : "/leads";
+      return n.requestId ? `/app/leads/${n.requestId}` : "/app/leads";
+    case "PARTNER_APPLICATION":
+      return "/app/admin?tab=partners";
+    case "PARTNER_APPROVED":
+    case "PARTNER_REJECTED":
+    case "PARTNER_DELETED":
+      return "/app/settings?tab=partner";
     case "CONTACT_RECEIVED":
-      return "/admin?tab=contact";
+      return "/app/admin?tab=contact";
     case "JOB_APPLICATION_RECEIVED":
-      return "/admin?tab=jobs";
+      return "/app/admin?tab=jobs";
     default:
-      return "/notifications";
+      return "/app/notifications";
   }
 }
 
@@ -113,9 +125,16 @@ const TYPE_CFG: Record<string, {
   INVOICE_PAID:          { icon: CreditCard,    bg: "bg-green-100",   fg: "text-green-600",   action: "confirmed invoice payment",                category: "Requests" },
   CONFIG_REQUEST_SENT:   { icon: ClipboardList, bg: "bg-blue-100",    fg: "text-blue-600",    action: "sent you a configuration request",         category: "Requests" },
   CONFIG_SUBMITTED:      { icon: CheckSquare,   bg: "bg-green-100",   fg: "text-green-600",   action: "submitted their configuration",            category: "Requests" },
-  PROFILE_VIEW:             { icon: Eye,       bg: "bg-purple-100", fg: "text-purple-600", action: "viewed your profile",          category: "Social" },
-  CONTACT_RECEIVED:         { icon: Inbox,     bg: "bg-blue-100",   fg: "text-blue-600",   action: "sent a contact message",       category: "Admin" },
-  JOB_APPLICATION_RECEIVED: { icon: Briefcase, bg: "bg-violet-100", fg: "text-violet-600", action: "submitted a job application",  category: "Admin" },
+  REQUEST_PROPOSAL:          { icon: Send,          bg: "bg-blue-100",    fg: "text-blue-600",    action: "sent you a proposal",             category: "Requests" },
+  PROPOSAL_ACCEPTED:         { icon: CircleCheckBig, bg: "bg-green-100",  fg: "text-green-600",   action: "accepted your proposal",          category: "Requests" },
+  PROPOSAL_DECLINED:         { icon: CircleOff,     bg: "bg-rose-100",    fg: "text-rose-600",    action: "declined your proposal",          category: "Requests" },
+  PROFILE_VIEW:              { icon: Eye,           bg: "bg-purple-100",  fg: "text-purple-600",  action: "viewed your profile",             category: "Social" },
+  PARTNER_APPLICATION:       { icon: Handshake,     bg: "bg-blue-100",    fg: "text-blue-600",    action: "submitted a partner application", category: "Social" },
+  PARTNER_APPROVED:          { icon: ShieldCheck,   bg: "bg-green-100",   fg: "text-green-600",   action: "approved your partner application", category: "Social" },
+  PARTNER_REJECTED:          { icon: ShieldX,       bg: "bg-rose-100",    fg: "text-rose-600",    action: "rejected your partner application", category: "Social" },
+  PARTNER_DELETED:           { icon: Trash2,        bg: "bg-rose-100",    fg: "text-rose-600",    action: "removed your partner account",    category: "Social" },
+  CONTACT_RECEIVED:          { icon: Inbox,         bg: "bg-blue-100",    fg: "text-blue-600",    action: "sent a contact message",          category: "Admin" },
+  JOB_APPLICATION_RECEIVED:  { icon: Briefcase,     bg: "bg-violet-100",  fg: "text-violet-600",  action: "submitted a job application",     category: "Admin" },
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -319,6 +338,13 @@ export function NotificationsClient(props: {
         "REQUEST_ACTIVE",
         "REQUEST_COMPLETED",
         "REQUEST_MESSAGE",
+        "REQUEST_PROPOSAL",
+        "PROPOSAL_ACCEPTED",
+        "PROPOSAL_DECLINED",
+        "INVOICE_SENT",
+        "INVOICE_PAID",
+        "CONFIG_REQUEST_SENT",
+        "CONFIG_SUBMITTED",
       ].includes(n.type);
     }
     return true;
@@ -406,7 +432,7 @@ export function NotificationsClient(props: {
       {/* Settings link */}
       <div className="mt-6 text-center">
         <Link
-          href="/settings?tab=notifications"
+          href="/app/settings?tab=notifications"
           className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
         >
           Manage notification preferences

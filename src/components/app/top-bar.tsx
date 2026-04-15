@@ -8,7 +8,7 @@ import {
   Menu, Search, Bell, Mail, Settings, X, Plus,
   Heart, MessageCircle, Reply, UserPlus, ThumbsUp,
   Link2, Bookmark, Share2, BriefcaseBusiness, CircleCheckBig, CircleOff, CircleDot, MessageSquare,
-  ArrowLeftRight, Eye, Handshake, ShieldCheck, ShieldX, Trash2, Receipt, CreditCard, ClipboardList, CheckSquare, Inbox, Briefcase, FileText,
+  ArrowLeftRight, Eye, Handshake, ShieldCheck, ShieldX, Trash2, Receipt, CreditCard, ClipboardList, CheckSquare, Inbox, Briefcase, FileText, Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { markAllNotificationsRead, markNotificationRead } from "@/actions/social";
@@ -97,6 +97,11 @@ function notifUrl(n: NotificationItem, role?: string): string {
       return n.requestId ? `/app/leads/${n.requestId}` : "/app/leads";
     case "NEW_POST":
       return n.postId ? `/app/feed?post=${n.postId}` : "/app/feed";
+    case "REQUEST_PROPOSAL":
+      return n.requestId ? `/app/requests/${n.requestId}` : "/app/requests";
+    case "PROPOSAL_ACCEPTED":
+    case "PROPOSAL_DECLINED":
+      return n.requestId ? `/app/leads/${n.requestId}` : "/app/leads";
     case "CONTACT_RECEIVED":
       return "/app/admin?tab=contact";
     case "JOB_APPLICATION_RECEIVED":
@@ -162,6 +167,9 @@ const TYPE_CFG: Record<string, { icon: React.ElementType; bg: string; fg: string
   CONTACT_RECEIVED:          { icon: Inbox,     bg: "bg-blue-100",   fg: "text-blue-600",   action: "sent a contact message" },
   JOB_APPLICATION_RECEIVED:  { icon: Briefcase, bg: "bg-violet-100", fg: "text-violet-600", action: "submitted a job application" },
   NEW_POST:                   { icon: FileText,  bg: "bg-green-100",  fg: "text-green-600",  action: "shared a new post" },
+  REQUEST_PROPOSAL:           { icon: Send,          bg: "bg-blue-100",    fg: "text-blue-600",    action: "sent you a proposal" },
+  PROPOSAL_ACCEPTED:          { icon: CircleCheckBig, bg: "bg-green-100",  fg: "text-green-600",   action: "accepted your proposal" },
+  PROPOSAL_DECLINED:          { icon: CircleOff,     bg: "bg-rose-100",    fg: "text-rose-600",    action: "declined your proposal" },
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
