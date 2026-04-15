@@ -105,23 +105,24 @@ export async function adminModeratePost(
   await requireAdmin();
 
   if (action === "delete") {
-    // Fetch image URLs before deleting so we can clean up files from disk
+    // Fetch image URLs before deleting so we can clean up files from UploadThing
     const post = await prisma.alternativePost.findUnique({
       where: { id: postId },
       select: { imageUrls: true },
     });
     await prisma.alternativePost.delete({ where: { id: postId } });
-    // Delete associated image files
+    // Delete associated images from UploadThing (URLs look like https://utfs.io/f/<key>)
     if (post?.imageUrls?.length) {
-      const { unlink } = await import("fs/promises");
-      const path = await import("path");
-      await Promise.allSettled(
-        post.imageUrls.map((url) => {
-          const filename = url.replace("/uploads/posts/", "");
-          const filepath = path.join(process.cwd(), "public", "uploads", "posts", filename);
-          return unlink(filepath);
+      const { UTApi } = await import("uploadthing/server");
+      const utapi = new UTApi();
+      const keys = post.imageUrls
+        .map((url) => {
+          // Extract key from UploadThing URL: https://utfs.io/f/<key> or https://ufs.io/f/<key>
+          const match = url.match(/\/f\/([^/?#]+)/);
+          return match?.[1] ?? null;
         })
-      );
+        .filter((k): k is string => k !== null);
+      if (keys.length) await utapi.deleteFiles(keys).catch(() => {});
     }
   } else {
     await prisma.alternativePost.update({

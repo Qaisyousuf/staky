@@ -1,8 +1,7 @@
 import { randomUUID } from "crypto";
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
+import { UTApi } from "uploadthing/server";
 import { auth } from "@/lib/auth";
 import {
   ACCEPTED_POST_IMAGE_TYPES,
@@ -14,6 +13,8 @@ import {
   validatePostInput,
 } from "@/lib/post-utils";
 import { prisma } from "@/lib/prisma";
+
+const utapi = new UTApi();
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -89,19 +90,21 @@ export async function POST(request: Request) {
     });
     const mergedTags = Array.from(new Set([...explicitTags, ...hashtags])).slice(0, 5);
 
-    const uploadsDir = path.join(process.cwd(), "public", "uploads", "posts");
-    await mkdir(uploadsDir, { recursive: true });
-
-    const imageUrls = await Promise.all(
-      imageFiles.map(async (file) => {
+    // Upload images to UploadThing (works in serverless environments)
+    let imageUrls: string[] = [];
+    if (imageFiles.length > 0) {
+      const renamedFiles = imageFiles.map((file) => {
         const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
-        const fileName = `${Date.now()}-${randomUUID()}.${extension}`;
-        const targetPath = path.join(uploadsDir, fileName);
-        const arrayBuffer = await file.arrayBuffer();
-        await writeFile(targetPath, Buffer.from(arrayBuffer));
-        return `/uploads/posts/${fileName}`;
-      })
-    );
+        return new File([file], `${Date.now()}-${randomUUID()}.${extension}`, { type: file.type });
+      });
+      const results = await utapi.uploadFiles(renamedFiles);
+      for (const result of results) {
+        if (result.error) {
+          return NextResponse.json({ error: "Image upload failed. Please try again." }, { status: 500 });
+        }
+        imageUrls.push(result.data.ufsUrl);
+      }
+    }
 
     const linkMetadata = normalizedLinkUrl ? await fetchLinkMetadata(normalizedLinkUrl) : null;
     const linkDomain = normalizedLinkUrl
